@@ -61,6 +61,24 @@ def cmd_ingest_inegi(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest_conapo(args: argparse.Namespace) -> int:
+    """Download CONAPO population and convert it to Parquet."""
+    from mortality.ingest import conapo
+
+    print("downloading CONAPO ZIP (about 80 MB)...")
+    result = conapo.download(force=args.force)
+    print(
+        "ZIP ready"
+        + (" (already downloaded)" if result.skipped else f" ({result.bytes / 1e6:.1f} MB)")
+    )
+    if args.no_process:
+        return 0
+    print("converting Excel files to Parquet...")
+    for key, path in conapo.process(force=args.force).items():
+        print(f"  {key}: {path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mortality", description=__doc__)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -79,6 +97,11 @@ def build_parser() -> argparse.ArgumentParser:
     inegi.add_argument("--force", action="store_true", help="download and rebuild again")
     inegi.add_argument("--no-process", action="store_true", help="download only")
     inegi.set_defaults(func=cmd_ingest_inegi)
+
+    conapo = sources.add_parser("conapo", help="CONAPO population 1950-2070")
+    conapo.add_argument("--force", action="store_true", help="download and rebuild again")
+    conapo.add_argument("--no-process", action="store_true", help="download only")
+    conapo.set_defaults(func=cmd_ingest_conapo)
 
     return parser
 
