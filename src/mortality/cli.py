@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import shutil
 import sys
 
 from mortality import __version__
-from mortality.config import MissingCredentialsError, get_paths, hmd_credentials
+from mortality.config import MissingCredentialsError, find_rscript, get_paths, hmd_credentials
 
 
 def cmd_doctor(_: argparse.Namespace) -> int:
@@ -29,8 +28,8 @@ def cmd_doctor(_: argparse.Namespace) -> int:
         print("  HMD login   MISSING: copy .env.example to .env and fill it in")
         ok = False
 
-    rscript = shutil.which("Rscript")
-    print(f"  Rscript     {rscript or 'not on PATH (only needed for the R models)'}")
+    rscript = find_rscript()
+    print(f"  Rscript     {rscript or 'not found (only needed for the R models)'}")
 
     print("\nAll set." if ok else "\nSome items need attention (see above).")
     return 0 if ok else 1

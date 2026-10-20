@@ -54,5 +54,11 @@ def test_cli_doctor_runs(monkeypatch, capsys):
     assert "s3cret" not in out
 
 
+def test_rscript_override(monkeypatch, tmp_path):
+    fake = tmp_path / "Rscript.exe"
+    monkeypatch.setenv("RSCRIPT", str(fake))
+    assert config.find_rscript() == fake
+
+
 def test_paths_are_absolute():
     assert Path(config.get_paths().data).is_absolute()

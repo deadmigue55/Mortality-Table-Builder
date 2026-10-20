@@ -9,6 +9,7 @@ a local ``.env`` file (see ``.env.example``).
 from __future__ import annotations
 
 import os
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -67,6 +68,16 @@ def get_paths() -> Paths:
     data_dir = os.environ.get("MTB_DATA_DIR")
     data = Path(data_dir).expanduser().resolve() if data_dir else PROJECT_ROOT / "data"
     return Paths(root=PROJECT_ROOT, data=data)
+
+
+def find_rscript() -> Path | None:
+    """Locate ``Rscript``: ``RSCRIPT`` env var, then PATH, then the standard Windows install."""
+    if override := os.environ.get("RSCRIPT"):
+        return Path(override)
+    if found := shutil.which("Rscript"):
+        return Path(found)
+    installs = sorted(Path(r"C:\Program Files\R").glob("R-*/bin/Rscript.exe"))
+    return installs[-1] if installs else None  # newest version
 
 
 class MissingCredentialsError(RuntimeError):
