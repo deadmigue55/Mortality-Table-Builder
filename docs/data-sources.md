@@ -67,6 +67,9 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 - **Why:** comparison countries (e.g. USA, Spain, Chile, Canada) and long series for fitting projection models.
 - **Access:** free, but requires [registration](https://www.mortality.org/Account/Auth) and accepting the user agreement. Credentials go in a local `.env` file, never in the repo.
 - **Terms (summary, check the current agreement):** scientific use only; cite HMD as the source; do not redistribute the data. Data is downloaded locally and never committed.
+- **How we use it:** `uv run mortality ingest hmd` logs in with the credentials in `.env` and downloads, for nine comparison countries, five period files at single-year-of-age resolution (deaths, exposure-to-risk, and female / male / both-sexes life tables). Countries: USA, Canada, Chile (Latin America), Spain, Italy, France (total population), Japan (longevity leader), Sweden (longest clean series) and the United Kingdom.
+- **Coverage (October 2026):** Sweden from 1751, France from 1816, USA from 1933, Chile from 1992; most series end in 2022 to 2024. Rates recomputed from deaths and exposure match HMD's published rates (median difference 0.03%); the larger gaps are tiny-count cells at the oldest ages.
+- **Naming note:** HMD's `lx` (survivors) and `Lx` (person-years) differ only by case, which SQL treats as one name, so `Lx` and `Tx` are stored as `person_years` and `total_person_years`.
 - **Citation:** HMD. Human Mortality Database. Max Planck Institute for Demographic Research (Germany), University of California, Berkeley (USA), and French Institute for Demographic Studies (France). Available at www.mortality.org (data downloaded on [date]).
 
 ## Download log

@@ -79,6 +79,22 @@ def cmd_ingest_conapo(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest_hmd(args: argparse.Namespace) -> int:
+    """Download Human Mortality Database tables for comparison countries."""
+    from mortality.ingest import hmd
+
+    countries = [c.upper() for c in args.countries]
+    print(f"logging in to mortality.org and downloading {len(countries)} countries...")
+    results = hmd.download_countries(countries, force=args.force)
+    new = sum(not r.skipped for r in results)
+    print(f"{len(results)} files ready ({new} new)")
+    if args.no_process:
+        return 0
+    for name, path in hmd.process(countries).items():
+        print(f"  {name}: {path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mortality", description=__doc__)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -102,6 +118,19 @@ def build_parser() -> argparse.ArgumentParser:
     conapo.add_argument("--force", action="store_true", help="download and rebuild again")
     conapo.add_argument("--no-process", action="store_true", help="download only")
     conapo.set_defaults(func=cmd_ingest_conapo)
+
+    from mortality.ingest.hmd import DEFAULT_COUNTRIES
+
+    hmd = sources.add_parser("hmd", help="Human Mortality Database (needs a free login in .env)")
+    hmd.add_argument(
+        "--countries",
+        nargs="+",
+        default=list(DEFAULT_COUNTRIES),
+        help="HMD country codes, e.g. USA CAN CHL ESP",
+    )
+    hmd.add_argument("--force", action="store_true", help="download and rebuild again")
+    hmd.add_argument("--no-process", action="store_true", help="download only")
+    hmd.set_defaults(func=cmd_ingest_hmd)
 
     return parser
 

@@ -12,6 +12,7 @@ import csv
 import hashlib
 import re
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -103,11 +104,13 @@ def fetch(
     force: bool = False,
     session: requests.Session | None = None,
     paths: Paths | None = None,
+    validate: Callable[[Path], None] | None = None,
 ) -> Download:
     """Download ``url`` into ``data/raw/<source>/`` and log it in the manifest.
 
     An existing file is reused unless ``force`` is set. The file is written to a temporary
     name first, so an interrupted download never leaves a half-written file behind.
+    ``validate`` may inspect the downloaded file and raise :class:`NotAFileError` to reject it.
     """
     paths = (paths or get_paths()).ensure()
     folder = paths.raw / safe_name(source)
@@ -142,6 +145,8 @@ def fetch(
         # Some servers (INEGI) answer 200 with an HTML "page not found" for bad URLs
         if target.suffix.lower() == ".zip" and not zipfile.is_zipfile(partial):
             raise NotAFileError(f"{url} did not return a ZIP file (wrong or retired URL?)")
+        if validate is not None:
+            validate(partial)
         partial.replace(target)
     except BaseException:
         partial.unlink(missing_ok=True)

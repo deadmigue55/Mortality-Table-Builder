@@ -71,7 +71,7 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] Download framework with a manifest of every file
   - [x] INEGI deaths 2020 to 2024 (earlier years: in progress)
   - [x] CONAPO population and modelled deaths 1950 to 2070
-  - [ ] Human Mortality Database
+  - [x] Human Mortality Database (9 comparison countries)
   - [ ] SOA tables
   - [ ] CNSF 2013
   - [ ] DuckDB warehouse and data validation
