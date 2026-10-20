@@ -188,20 +188,137 @@ def allocate_unknowns(cells: pd.DataFrame, max_key: int | None = None) -> pd.Dat
     return pd.DataFrame(out)
 
 
+# ── Late registration: a chain-ladder triangle ─────────────────────────────
+
+# A death is registered some years after it occurs; the latest years are always incomplete.
+# Rows are year of occurrence, columns are the lag (file year minus occurrence year), exactly
+# like a claims-development triangle, so the actuarial chain-ladder method applies. Late
+# registration depends on age (infants are registered almost on time, the very old and
+# unknown-age records much later), so there is one triangle per age band.
+
+AGE_BANDS = (
+    (0, 0, "0"),
+    (1, 14, "1-14"),
+    (15, 29, "15-29"),
+    (30, 44, "30-44"),
+    (45, 64, "45-64"),
+    (65, 79, "65-79"),
+    (80, 200, "80+"),
+)
+UNKNOWN_BAND = "unknown"
+BAND_ORDER = [b[2] for b in AGE_BANDS] + [UNKNOWN_BAND]
+
+
+def age_band(age) -> str:
+    """Broad age band used for late-registration triangles ("unknown" for a missing age)."""
+    if pd.isna(age):
+        return UNKNOWN_BAND
+    for lo, hi, label in AGE_BANDS:
+        if lo <= age <= hi:
+            return label
+    raise ValueError(f"Age out of range: {age}")
+
+
+def build_triangle(cells: pd.DataFrame) -> pd.DataFrame:
+    """Triangle of deaths by age band, year of occurrence and registration lag.
+
+    ``cells`` has ``occ_year``, ``file_year``, ``age`` and ``deaths``. Only occurrence years
+    that have their own file (lag 0 observed) form complete triangle rows.
+    """
+    df = cells.dropna(subset=["occ_year"]).copy()
+    first_file = int(df["file_year"].min())
+    df = df[df["occ_year"] >= first_file]
+    df["lag"] = (df["file_year"] - df["occ_year"]).astype(int)
+    df["band"] = df["age"].map(age_band)
+    tri = df.groupby(["band", "occ_year", "lag"], as_index=False)["deaths"].sum()
+    tri["occ_year"] = tri["occ_year"].astype(int)
+    tri = tri.sort_values(["band", "occ_year", "lag"], ignore_index=True)
+    tri["cumulative"] = tri.groupby(["band", "occ_year"])["deaths"].cumsum()
+    return tri
+
+
+def chain_ladder_factors(triangle: pd.DataFrame) -> pd.DataFrame:
+    """Volume-weighted development factors: cumulative deaths at lag L+1 over lag L.
+
+    Only occurrence years observed at both lags enter each factor.
+    """
+    rows = []
+    for band, part in triangle.groupby("band"):
+        wide = part.pivot_table(index="occ_year", columns="lag", values="cumulative")
+        for lag in sorted(wide.columns)[:-1]:
+            both = wide[[lag, lag + 1]].dropna()
+            num, den = both[lag + 1].sum(), both[lag].sum()
+            rows.append(
+                {
+                    "band": band,
+                    "lag": int(lag),
+                    "factor": float(num / den) if den else 1.0,
+                    "years_used": len(both),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def tail_factor(late_deaths: float, base_deaths: float) -> float:
+    """1 + share of deaths registered more than the triangle's last lag after occurrence."""
+    return 1.0 if base_deaths <= 0 else 1.0 + late_deaths / base_deaths
+
+
+def completion_factors(
+    triangle: pd.DataFrame, factors: pd.DataFrame, tail: float = 1.0
+) -> pd.DataFrame:
+    """Factor that turns deaths reported so far into the estimated final count.
+
+    For an occurrence year seen up to lag ``k``, the factor is the product of the development
+    factors from lag ``k`` onward, times the tail.
+    """
+    last_file_lag = triangle.groupby("occ_year")["lag"].max()
+    rows = []
+    for band in sorted(factors["band"].unique()):
+        f = factors[factors["band"] == band].set_index("lag")["factor"]
+        for occ_year, k in last_file_lag.items():
+            ahead = f[f.index >= k]
+            rows.append(
+                {
+                    "band": band,
+                    "occ_year": int(occ_year),
+                    "lags_seen": int(k),
+                    "factor": float(ahead.prod() * tail),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def complete_cells(cells: pd.DataFrame, factors: pd.DataFrame) -> pd.DataFrame:
+    """Scale reported deaths up to their estimated final counts.
+
+    ``cells`` has ``year``, ``sex``, ``key`` (age) and ``deaths``; ``factors`` comes from
+    :func:`completion_factors`. Adds ``reported`` and ``completed`` columns.
+    """
+    lookup = factors.set_index(["band", "occ_year"])["factor"]
+    out = cells.copy()
+    bands = out["key"].map(age_band)
+    mult = [lookup.get((b, y), 1.0) for b, y in zip(bands, out["year"], strict=True)]
+    out["reported"] = out["deaths"]
+    out["completed"] = out["deaths"] * np.array(mult)
+    return out
+
+
 # ── Building the warehouse tables ───────────────────────────────────────────
 
 # Residents of Mexico, plus deaths whose state of residence is unspecified (99): they died in
 # Mexico and almost all are residents. Known residents abroad (33-35) are excluded.
-NATIONAL_SCOPE_SQL = """
-    SELECT occ_year AS year, sex, age_years AS key, SUM(deaths) AS deaths
-    FROM inegi_deaths_cells
-    WHERE occ_year IS NOT NULL AND (state BETWEEN '01' AND '32' OR state = '99')
-    GROUP BY occ_year, sex, age_years
-"""
+SCOPE_WHERE = "(state BETWEEN '01' AND '32' OR state = '99') AND occ_year IS NOT NULL"
+TAIL_HORIZON = 5  # deaths registered this many years or more after occurrence form the tail
+COVID_SHARE_THRESHOLD = 0.01  # a year with at least 1% COVID-coded deaths is a COVID year
+
+
+def _table_names(con) -> set[str]:
+    return {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
 
 
 def _heaping_inputs(con) -> dict[str, pd.DataFrame]:
-    tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    tables = _table_names(con)
     sets: dict[str, pd.DataFrame] = {}
     if "deaths_by_occurrence" in tables:
         sets["INEGI deaths"] = pd.read_sql(
@@ -226,15 +343,90 @@ def _heaping_inputs(con) -> dict[str, pd.DataFrame]:
     return sets
 
 
+def estimate_tail(con) -> tuple[float, int]:
+    """Tail factor from older occurrence years: late deaths over that year's registered total.
+
+    Uses occurrence years early enough that lags of 5 and more are observed in the files, with
+    the imported INEGI tables as the base. Returns (factor, number_of_years_used).
+    """
+    if "inegi_cube_registered" not in _table_names(con):
+        return 1.0, 0
+    first_file = con.execute("SELECT MIN(file_year) FROM inegi_deaths_cells").fetchone()[0]
+    base = pd.read_sql(
+        "SELECT reg_year AS year, SUM(deaths) AS base FROM inegi_cube_registered GROUP BY reg_year",
+        con,
+    )
+    late = pd.read_sql(
+        f"SELECT occ_year AS year, SUM(deaths) AS late FROM inegi_deaths_cells "
+        f"WHERE {SCOPE_WHERE} AND file_year - occ_year >= {TAIL_HORIZON} GROUP BY occ_year",
+        con,
+    )
+    both = base.merge(late, on="year")
+    # the files cover lags 5 and up only for years early enough: first_file - 5 or before
+    both = both[both["year"] <= first_file - TAIL_HORIZON]
+    if both.empty:
+        return 1.0, 0
+    return tail_factor(float((both["late"] / both["base"]).mean()), 1.0), len(both)
+
+
+def _registration_tables(con, docs: list[tuple[str, str]]) -> pd.DataFrame | None:
+    """Build triangle, factors and completion; returns the per-band, per-year factors."""
+    cells = pd.read_sql(
+        f"SELECT occ_year, file_year, age_years AS age, SUM(deaths) AS deaths "
+        f"FROM inegi_deaths_cells WHERE {SCOPE_WHERE} GROUP BY occ_year, file_year, age_years",
+        con,
+    )
+    if cells.empty:
+        return None
+    triangle = build_triangle(cells)
+    factors = chain_ladder_factors(triangle)
+    if factors.empty:  # a single file year: no development to measure
+        triangle.to_sql("registration_triangle", con, if_exists="replace", index=False)
+        docs.append(
+            ("registration_triangle", "Deaths by age band, year of occurrence and registration lag")
+        )
+        return None
+    tail, tail_years = estimate_tail(con)
+    comp = completion_factors(triangle, factors, tail)
+
+    reported = triangle.groupby(["band", "occ_year"], as_index=False)["deaths"].sum()
+    comp = comp.merge(reported.rename(columns={"deaths": "reported"}), on=["band", "occ_year"])
+    comp["estimated_final"] = comp["reported"] * comp["factor"]
+    comp["missing_deaths"] = comp["estimated_final"] - comp["reported"]
+    order = {label: i for i, label in enumerate(BAND_ORDER)}
+    comp = comp.sort_values(
+        ["occ_year", "band"], key=lambda c: c.map(order) if c.name == "band" else c
+    )
+
+    triangle.to_sql("registration_triangle", con, if_exists="replace", index=False)
+    factors.to_sql("registration_factors", con, if_exists="replace", index=False)
+    comp.to_sql("registration_completion", con, if_exists="replace", index=False)
+    pd.DataFrame(
+        [{"tail_factor": tail, "years_used": tail_years, "horizon_lag": TAIL_HORIZON}]
+    ).to_sql("registration_tail", con, if_exists="replace", index=False)
+    docs += [
+        (
+            "registration_triangle",
+            "Deaths by age band, year of occurrence and registration lag (a chain-ladder triangle)",
+        ),
+        ("registration_factors", "Chain-ladder development factors by age band and lag"),
+        (
+            "registration_completion",
+            "Reported vs estimated final deaths by age band and year of occurrence",
+        ),
+        ("registration_tail", "Tail factor for deaths registered 5+ years after occurrence"),
+    ]
+    return comp[["band", "occ_year", "factor"]]
+
+
 def build_tables(con) -> list[tuple[str, str]]:
     """Create the quality tables inside the warehouse; returns (name, description) pairs."""
-    tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    tables = _table_names(con)
     docs: list[tuple[str, str]] = []
 
     inputs = _heaping_inputs(con)
     if inputs:
-        heaping = heaping_table(inputs)
-        heaping.to_sql("quality_age_heaping", con, if_exists="replace", index=False)
+        heaping_table(inputs).to_sql("quality_age_heaping", con, if_exists="replace", index=False)
         docs.append(
             (
                 "quality_age_heaping",
@@ -243,20 +435,105 @@ def build_tables(con) -> list[tuple[str, str]]:
             )
         )
 
-    if "inegi_deaths_cells" in tables:
-        scope = pd.read_sql(NATIONAL_SCOPE_SQL, con)
-        scope["sex"] = scope["sex"].where(scope["sex"].isin(["M", "F"]))
-        adjusted = allocate_unknowns(scope).rename(columns={"key": "age"})
-        adjusted.to_sql("deaths_adjusted", con, if_exists="replace", index=False)
-        con.execute(
-            "CREATE INDEX IF NOT EXISTS ix_deaths_adjusted ON deaths_adjusted (year, sex, age)"
+    if "inegi_deaths_cells" not in tables:
+        return docs
+
+    factors = _registration_tables(con, docs)
+
+    # Only years with their own file; earlier years hold just a few late registrations
+    first, last = con.execute(
+        "SELECT MIN(file_year), MAX(file_year) FROM inegi_deaths_cells"
+    ).fetchone()
+    scope = pd.read_sql(
+        f"SELECT occ_year AS year, sex, age_years AS key, SUM(deaths) AS deaths "
+        f"FROM inegi_deaths_cells WHERE {SCOPE_WHERE} AND occ_year BETWEEN {first} AND {last} "
+        f"GROUP BY occ_year, sex, age_years",
+        con,
+    )
+    scope["sex"] = scope["sex"].where(scope["sex"].isin(["M", "F"]))
+    if factors is not None:
+        completed = complete_cells(scope, factors)
+    else:
+        completed = scope.assign(reported=scope["deaths"], completed=scope["deaths"])
+
+    allocated = allocate_unknowns(completed.assign(deaths=completed["completed"]))
+    known = completed.dropna(subset=["sex", "key"]).rename(columns={"key": "age"})
+    known = known.assign(age=known["age"].astype(int))[["year", "sex", "age", "reported"]]
+    adjusted = allocated.rename(columns={"key": "age", "recorded": "completed_known"}).merge(
+        known, on=["year", "sex", "age"], how="left"
+    )
+    adjusted["reported"] = adjusted["reported"].fillna(0.0)
+    adjusted["added_late_registration"] = adjusted["completed_known"] - adjusted["reported"]
+    adjusted = adjusted[
+        [
+            "year",
+            "sex",
+            "age",
+            "reported",
+            "added_late_registration",
+            "added_unknown_sex",
+            "added_unknown_age",
+            "added_unknown_both",
+            "adjusted",
+        ]
+    ]
+    adjusted.to_sql("deaths_adjusted", con, if_exists="replace", index=False)
+    con.execute("CREATE INDEX IF NOT EXISTS ix_deaths_adjusted ON deaths_adjusted (year, sex, age)")
+    docs.append(
+        (
+            "deaths_adjusted",
+            "National deaths by year of occurrence, sex and single age (analysis-ready): late "
+            "registrations completed by chain ladder, then unknown sex and age allocated "
+            "proportionally. Audit columns show every addition",
         )
-        docs.append(
-            (
-                "deaths_adjusted",
-                "National deaths by year of occurrence, sex and single age, including unknown "
-                "state of residence; deaths of unknown sex or age allocated proportionally "
-                "(audit columns show what was added)",
-            )
-        )
+    )
     return docs
+
+
+# ── Cause of death: COVID-19 and the pandemic years ─────────────────────────
+
+
+def cause_tables(con, files: list) -> list[tuple[str, str]]:
+    """Deaths by ICD-10 chapter letter and COVID flag, plus a flag for each COVID year.
+
+    ICD-10 codes beginning ``U07`` (U07.1, U07.2) are COVID-19. A year with at least 1% of its
+    deaths coded that way is flagged as a COVID year, so models can leave it out of baselines.
+    """
+    if not files:
+        return []
+    keys = ["occ_year", "occ_month", "sex", "chapter", "covid"]
+    frames = []
+    first_file = 9999
+    for file in files:
+        df = pd.read_parquet(file, columns=["file_year", "occ_year", "occ_month", "sex", "cause"])
+        first_file = min(first_file, int(df["file_year"].min()))
+        df["chapter"] = df["cause"].str[:1].fillna("?")
+        df["covid"] = df["cause"].str.startswith("U07", na=False).astype(int)
+        frames.append(df.groupby(keys, dropna=False).size().rename("deaths").reset_index())
+    by_cause = pd.concat(frames, ignore_index=True).groupby(keys, dropna=False)["deaths"].sum()
+    by_cause = by_cause.reset_index()
+    by_cause["sex"] = by_cause["sex"].where(by_cause["sex"].isin(["M", "F"]))
+    by_cause.to_sql("deaths_by_cause_chapter", con, if_exists="replace", index=False)
+
+    known = by_cause.dropna(subset=["occ_year"])
+    yearly = pd.DataFrame(
+        {
+            "deaths": known.groupby("occ_year")["deaths"].sum(),
+            "covid_deaths": known[known["covid"] == 1].groupby("occ_year")["deaths"].sum(),
+        }
+    ).fillna(0)
+    yearly = yearly.rename_axis("year").reset_index().astype({"year": int})
+    yearly = yearly[yearly["year"] >= first_file]  # earlier years hold only late registrations
+    yearly["covid_share"] = yearly["covid_deaths"] / yearly["deaths"]
+    yearly["covid_year"] = (yearly["covid_share"] >= COVID_SHARE_THRESHOLD).astype(int)
+    yearly.to_sql("year_flags", con, if_exists="replace", index=False)
+    return [
+        (
+            "deaths_by_cause_chapter",
+            "Deaths by year and month of occurrence, sex, ICD-10 chapter letter and COVID-19 flag",
+        ),
+        (
+            "year_flags",
+            "Per year of occurrence: COVID-coded deaths, their share, and a COVID-year flag (1%+)",
+        ),
+    ]

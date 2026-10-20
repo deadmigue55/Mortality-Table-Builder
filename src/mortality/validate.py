@@ -79,12 +79,20 @@ CHECKS: tuple[Check, ...] = (
         "Under 2% of deaths per file have an unknown age",
     ),
     Check(
-        "inegi_pre_covid_baseline",
+        "inegi_pre_covid_single_ages",
         "WARN",
         (INEGI_TABLE,),
         "SELECT CASE WHEN COALESCE(SUM(deaths) FILTER (WHERE occ_year BETWEEN 2015 AND 2019), 0) "
         f"> 1000000 THEN 0 ELSE 1 END FROM {INEGI_TABLE}",
-        "Pre-COVID years (2015-2019) are loaded; needed for a baseline and excess mortality",
+        "Single-year-of-age deaths exist for 2015-2019 (row-level files, not just 5-year groups)",
+    ),
+    Check(
+        "inegi_pre_covid_grouped_baseline",
+        "WARN",
+        ("inegi_cube_registered",),
+        "SELECT CASE WHEN COUNT(DISTINCT reg_year) >= 4 THEN 0 ELSE 1 END"
+        " FROM inegi_cube_registered WHERE reg_year BETWEEN 2015 AND 2019",
+        "At least 4 of the 5 pre-COVID years (2015-2019) exist as five-year-group tables",
     ),
     Check(
         "inegi_latest_year_complete",
@@ -114,7 +122,16 @@ CHECKS: tuple[Check, ...] = (
         "Each imported year has all 19 age groups (under 1, 1-4, 5-9, ... 85 and over)",
     ),
     Check(
-        "adjusted_conserves_deaths",
+        "adjusted_identity_holds",
+        "FAIL",
+        ("deaths_adjusted",),
+        "SELECT COUNT(*) FROM deaths_adjusted WHERE ABS(reported + added_late_registration"
+        " + added_unknown_sex + added_unknown_age + added_unknown_both - adjusted) > 0.000001"
+        " OR added_late_registration < -0.000001",
+        "Adjusted deaths = reported + late registrations + allocated unknowns, with no negatives",
+    ),
+    Check(
+        "adjusted_keeps_every_reported_death",
         "FAIL",
         ("deaths_adjusted", INEGI_TABLE),
         "SELECT COUNT(*) FROM (SELECT a.year FROM"
@@ -122,16 +139,24 @@ CHECKS: tuple[Check, ...] = (
         f" JOIN (SELECT occ_year AS year, SUM(deaths) AS s FROM {INEGI_TABLE}"
         "  WHERE occ_year IS NOT NULL AND (state BETWEEN '01' AND '32' OR state = '99')"
         "  GROUP BY occ_year) c ON c.year = a.year"
-        " WHERE ABS(a.s - c.s) > 0.5)",
-        "Allocating unknown sex and age creates or loses no deaths",
+        " WHERE a.s < c.s - 0.5)",
+        "Every reported death in scope is still counted after the adjustments",
+    ),
+    Check(
+        "late_registration_completion_is_modest",
+        "WARN",
+        ("deaths_adjusted",),
+        "SELECT COUNT(*) FROM (SELECT year FROM deaths_adjusted GROUP BY year"
+        " HAVING SUM(added_late_registration) / SUM(reported) > 0.05)",
+        "Completing late registrations adds under 5% to any year",
     ),
     Check(
         "unknown_allocation_small",
         "WARN",
-        ("deaths_adjusted", "inegi_completeness"),
-        "SELECT COUNT(*) FROM (SELECT d.year FROM deaths_adjusted d"
-        " JOIN inegi_completeness k ON k.year = d.year WHERE k.file_loaded = 1"
-        " GROUP BY d.year HAVING (SUM(d.adjusted) - SUM(d.recorded)) / SUM(d.adjusted) > 0.02)",
+        ("deaths_adjusted",),
+        "SELECT COUNT(*) FROM (SELECT year FROM deaths_adjusted GROUP BY year"
+        " HAVING SUM(added_unknown_sex + added_unknown_age + added_unknown_both)"
+        " / SUM(adjusted) > 0.02)",
         "Allocated unknowns are under 2% of deaths in each year with its own file",
     ),
     Check(

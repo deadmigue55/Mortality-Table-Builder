@@ -74,10 +74,14 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
-  - [x] SQLite warehouse with 22 automatic data checks
+  - [x] SQLite warehouse with 28 automatic data checks
   - [x] INEGI 2014 to 2019 from the interactive tables (five-year age groups; 2017 still to re-export)
   - [ ] INEGI before 2014 (optional, for a longer forecasting history)
-- [ ] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag
+- [x] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag ([findings](docs/data-quality.md))
+  - Death certificates show no age heaping (Whipple 98 to 101), comparable to the HMD countries
+  - Late registrations completed with an actuarial chain-ladder triangle per age band: 2024 gains 2.3%, within 1% of CONAPO's independent projection
+  - Unknown sex and age allocated proportionally (0.45% to 0.61% of deaths); unspecified-residence deaths kept in the national count
+  - COVID years flagged from cause-of-death codes (2020 to 2022)
 - [ ] **4. Crude rates and exposure:** m<sub>x</sub>, q<sub>x</sub>, confidence intervals, by sex, state and year
 - [ ] **5. Graduation:** Whittaker–Henderson, P-splines, parametric laws, old-age closure, fit tests
 - [ ] **6. Life tables and actuarial functions:** full tables, commutation functions, APVs

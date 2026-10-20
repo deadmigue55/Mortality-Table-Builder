@@ -132,7 +132,8 @@ def test_validate_checks_conservation_and_runs_clean_on_good_data(paths):
     write_inegi(paths, 2023, rows)
     warehouse.build(paths=paths)
     results = {r.name: r for r in validate.validate(paths)}
-    assert results["adjusted_conserves_deaths"].status == "PASS"
+    assert results["adjusted_identity_holds"].status == "PASS"
+    assert results["adjusted_keeps_every_reported_death"].status == "PASS"
     assert results["unknown_allocation_small"].status == "PASS"
 
 
@@ -201,7 +202,7 @@ def test_validate_flags_the_known_gaps(paths):
     results = status(validate.validate(paths))
     assert results["inegi_state_codes"] == "PASS"
     assert results["conapo_complete_grid"] == "PASS"
-    assert results["inegi_pre_covid_baseline"] == "WARN"
+    assert results["inegi_pre_covid_single_ages"] == "WARN"
     assert results["inegi_latest_year_complete"] == "WARN"
     assert results["hmd_keys_unique"] == "SKIP"  # no HMD data in this tiny warehouse
 
@@ -269,7 +270,11 @@ def test_all_check_sql_is_valid(paths):
             "year, deaths, last_file_year, complete, next_file_loaded, file_loaded"
         ),
         "inegi_cube_registered": "reg_year, age_lo, sex, deaths",
-        "deaths_adjusted": "year, sex, age, recorded, adjusted",
+        "registration_completion": "occ_year, band, factor",
+        "deaths_adjusted": (
+            "year, sex, age, reported, added_late_registration, added_unknown_sex, "
+            "added_unknown_age, added_unknown_both, adjusted"
+        ),
         "quality_age_heaping": "dataset, year, sex, whipple",
         "deaths_by_occurrence": "year, state_code_text, sex, age, deaths",
         "conapo_population": "year, state_code, state, sex, age, population",

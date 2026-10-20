@@ -265,6 +265,7 @@ def build(*, paths: Paths | None = None) -> dict[str, int]:
             docs.append((name, description))
 
         docs += quality.build_tables(con)
+        docs += quality.cause_tables(con, inegi_files)
 
         if _load_manifest(con, paths):
             docs.append(("source_manifest", "Every downloaded file: URL, date, size and SHA-256"))
