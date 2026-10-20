@@ -92,6 +92,14 @@ def test_failed_download_leaves_no_partial_file(paths):
     assert download.read_manifest(paths) == []
 
 
+def test_html_page_is_rejected_as_zip(paths):
+    html = FakeSession(body=b"<!DOCTYPE html><title>Pagina no encontrada</title>")
+    with pytest.raises(download.NotAFileError):
+        download.fetch("https://example.org/data.zip", source="demo", session=html, paths=paths)
+    assert not list((paths.raw / "demo").glob("*"))
+    assert download.read_manifest(paths) == []
+
+
 def test_register_local(paths):
     folder = paths.raw / "demo"
     folder.mkdir(parents=True)

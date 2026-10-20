@@ -271,6 +271,15 @@ wheels = [
 ]
 
 [[package]]
+name = "dbfread"
+version = "2.0.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/ae/a5891681f5012724d062a4ca63ec2ff539c73d5804ba594e7e0e72099d3f/dbfread-2.0.7.tar.gz", hash = "sha256:07c8a9af06ffad3f6f03e8fe91ad7d2733e31a26d2b72c4dd4cfbae07ee3b73d", size = 33212, upload-time = "2016-11-25T11:25:01.408Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4c/94/51349e43503e30ed7b4ecfe68a8809cdb58f722c0feb79d18b1f1e36fe74/dbfread-2.0.7-py2.py3-none-any.whl", hash = "sha256:f604def58c59694fa0160d7be5d0b8d594467278d2bb6a47d46daf7162c84cec", size = 20018, upload-time = "2016-11-25T11:27:36.001Z" },
+]
+
+[[package]]
 name = "distlib"
 version = "0.4.4"
 source = { registry = "https://pypi.org/simple" }
@@ -385,6 +394,7 @@ name = "mortality-table-builder"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "dbfread" },
     { name = "duckdb" },
     { name = "numpy" },
     { name = "openpyxl" },
@@ -407,6 +417,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "dbfread", specifier = ">=2.0.7" },
     { name = "duckdb", specifier = ">=1.5.6" },
     { name = "numpy", specifier = ">=2.5.4" },
     { name = "openpyxl", specifier = ">=3.1.5" },

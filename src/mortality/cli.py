@@ -35,6 +35,32 @@ def cmd_doctor(_: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def cmd_ingest_inegi(args: argparse.Namespace) -> int:
+    """Download INEGI death microdata and convert it to Parquet."""
+    from mortality.ingest import inegi  # imported here so `doctor` stays fast
+
+    years = inegi.parse_years(args.years)
+    failed: list[int] = []
+    for year in years:
+        try:
+            print(f"[{year}] downloading...")
+            result = inegi.download_year(year, force=args.force)
+            note = "already downloaded" if result.skipped else f"{result.bytes / 1e6:.1f} MB"
+            print(f"[{year}] ZIP ready ({note})")
+            if args.no_process:
+                continue
+            print(f"[{year}] converting to Parquet (takes a minute)...")
+            out = inegi.process_year(year, force=args.force)
+            print(f"[{year}] wrote {out}")
+        except FileNotFoundError as err:
+            print(f"[{year}] SKIPPED: {err}")
+            failed.append(year)
+    if failed:
+        print(f"\nNot available automatically: {', '.join(map(str, failed))}")
+        return 1
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mortality", description=__doc__)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -42,6 +68,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     doctor = sub.add_parser("doctor", help="check paths, credentials and tools")
     doctor.set_defaults(func=cmd_doctor)
+
+    ingest = sub.add_parser("ingest", help="download and prepare source data")
+    sources = ingest.add_subparsers(dest="source", required=True)
+
+    inegi = sources.add_parser("inegi", help="INEGI registered deaths (microdata)")
+    inegi.add_argument(
+        "--years", nargs="+", default=["2020-2024"], help="e.g. 2020-2024 or 2021 2023"
+    )
+    inegi.add_argument("--force", action="store_true", help="download and rebuild again")
+    inegi.add_argument("--no-process", action="store_true", help="download only")
+    inegi.set_defaults(func=cmd_ingest_inegi)
 
     return parser
 

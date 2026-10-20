@@ -11,6 +11,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import re
+import zipfile
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -23,6 +24,10 @@ MANIFEST_FIELDS = ["source", "file", "url", "downloaded_at", "bytes", "sha256"]
 USER_AGENT = "mortality-table-builder/0.1 (research project; contact via GitHub deadmigue55)"
 CHUNK = 1024 * 256
 TIMEOUT = (15, 120)  # connect, read (seconds)
+
+
+class NotAFileError(RuntimeError):
+    """The server answered, but not with the file we asked for (e.g. an HTML 'not found' page)."""
 
 
 @dataclass(frozen=True)
@@ -134,6 +139,9 @@ def fetch(
                     handle.write(block)
                     digest.update(block)
                     size += len(block)
+        # Some servers (INEGI) answer 200 with an HTML "page not found" for bad URLs
+        if target.suffix.lower() == ".zip" and not zipfile.is_zipfile(partial):
+            raise NotAFileError(f"{url} did not return a ZIP file (wrong or retired URL?)")
         partial.replace(target)
     except BaseException:
         partial.unlink(missing_ok=True)
