@@ -109,6 +109,25 @@ def cmd_ingest_soa(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest_cnsf(args: argparse.Namespace) -> int:
+    """Download and parse the CNSF 2013 regulatory tables (CUSF Annex 5.3.3-a)."""
+    import pandas as pd
+
+    from mortality.ingest import cnsf
+
+    print("downloading CNSF Annex 5.3.3-a (online circular + gob.mx PDF)...")
+    cnsf.download(force=args.force)
+    path = cnsf.process()
+    rates = pd.read_parquet(path)
+    print(f"  {len(rates)} rates in {rates.groupby(['table', 'variant']).ngroups} tables -> {path}")
+    print(f"  annex last modified (DOF): {rates['annex_modified'].iloc[0]}")
+
+    pdf = get_paths().raw / cnsf.SOURCE / cnsf.PDF_FILE
+    diff = cnsf.cross_check(rates, cnsf.parse_pdf_base_tables(pdf))
+    print(f"  cross-check against the PDF, largest difference: {diff:g}")
+    return 0 if diff < 1e-9 else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mortality", description=__doc__)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -150,6 +169,10 @@ def build_parser() -> argparse.ArgumentParser:
     soa.add_argument("--force", action="store_true", help="download and rebuild again")
     soa.add_argument("--no-process", action="store_true", help="download only")
     soa.set_defaults(func=cmd_ingest_soa)
+
+    cnsf = sources.add_parser("cnsf", help="CNSF 2013 regulatory tables (CUSF Annex 5.3.3-a)")
+    cnsf.add_argument("--force", action="store_true", help="download again")
+    cnsf.set_defaults(func=cmd_ingest_cnsf)
 
     return parser
 

@@ -48,7 +48,18 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 ### CNSF (Comisión Nacional de Seguros y Fianzas)
 - **What:** the **CNSF 2013** tables, the regulatory mortality tables currently in force in Mexico for life insurance pricing and reserves. Older tables (e.g. **CNSF 2000-I**, **EMSSA-09** for pensions) are kept as historical comparisons.
 - **Why:** the regulatory benchmark. The CNSF builds its tables from insurer data and deliberately overstates mortality for solvency. A 2021 study using INEGI data found estimates substantially different from EMSSA-09 ([UNAM/INEGI research](https://rde.inegi.org.mx/rde_14/doctos/rde_14_art1.pdf); [UNAM thesis repository](https://ru.dgb.unam.mx/bitstream/20.500.14330/TES01000840308/3/0840308.pdf)).
-- **Where:** CNSF publications and the Circular Única de Seguros y Fianzas (CUSF).
+- **Where:** Annex 5.3.3-a of the Circular Única de Seguros y Fianzas (CUSF), on the CNSF's own site ([CNSF Interactiva](https://lisfcusf.cnsf.gob.mx/CUSF/A_5_3_3_A)); an older copy of the base tables is a [PDF on gob.mx](https://www.gob.mx/cms/uploads/attachment/file/73530/ANEXO_5.3.3-a.pdf). `uv run mortality ingest cnsf` loads both.
+- **What the annex contains (verified October 2026; last modified in the DOF on 8 January 2016):** nine tables of one-year rates for ages 0 to 110, all **mixed-sex** (men and women together; there are no separate male and female CNSF 2013 tables):
+
+  | Table | Variants | Use |
+  |---|---|---|
+  | CNSF M 2013 | base, 99.5th percentile, 0.05th percentile | Death of non-disabled lives; the 0.05th percentile (lower mortality) is for private pensions |
+  | CNSF Inv 2013 | base, 99.5th percentile | Disability |
+  | CNSF MAcc 2013 | base, 99.5th percentile | Accidental death |
+  | CNSF Otros 2013 | base, 99.5th percentile | Other benefits |
+
+- **Checks:** the online page and the PDF agree exactly on the four base tables (largest difference 0). A figure of 0.000287 at age 0 seen in other sources is the 0.05th percentile variant; the base rate is 0.000433.
+- **Reading the numbers:** these are insurer-experience tables, not population mortality. At age 65 CNSF M 2013 gives 0.61% a year, against about 1.9% (men) and 1.3% (women) for the Mexican population in 2023. That gap, driven by who buys life insurance, is one of the questions the project quantifies.
 - **Context:**
   - The 2013 tables rest on experience that is now over a decade old, so they predate the COVID-19 years and recent mortality improvement. That gap is part of the motivation for this project.
   - In practice, each insurer also builds its own experience tables, which are not public. A transparent population table built from official data is the closest public substitute and a useful check on both.

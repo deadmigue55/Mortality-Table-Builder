@@ -73,7 +73,7 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] CONAPO population and modelled deaths 1950 to 2070
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
-  - [ ] CNSF 2013
+  - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
   - [ ] DuckDB warehouse and data validation
 - [ ] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag
 - [ ] **4. Crude rates and exposure:** m<sub>x</sub>, q<sub>x</sub>, confidence intervals, by sex, state and year
