@@ -113,6 +113,29 @@ def test_build_creates_tables_and_documents_them(paths):
     )
 
 
+def test_build_creates_quality_tables_that_conserve_deaths(paths):
+    rows = [(2023, "09", "M", a, 3) for a in range(20, 70)]
+    rows += [(2023, "09", "F", a, 2) for a in range(20, 70)]
+    rows += [(2023, "99", "M", 40, 4)]  # unknown state of residence: still counted nationally
+    rows += [(2023, "33", "M", 40, 5)]  # lives abroad: left out
+    write_inegi(paths, 2023, rows)
+    warehouse.build(paths=paths)
+    con = warehouse.connect(paths)
+    total = con.execute("SELECT SUM(adjusted) FROM deaths_adjusted WHERE year = 2023").fetchone()[0]
+    assert total == pytest.approx(3 * 50 + 2 * 50 + 4)
+    names = {r[0] for r in con.execute("SELECT table_name FROM table_docs")}
+    assert "deaths_adjusted" in names
+
+
+def test_validate_checks_conservation_and_runs_clean_on_good_data(paths):
+    rows = [(2023, "09", "M", a, 3) for a in range(20, 70)]
+    write_inegi(paths, 2023, rows)
+    warehouse.build(paths=paths)
+    results = {r.name: r for r in validate.validate(paths)}
+    assert results["adjusted_conserves_deaths"].status == "PASS"
+    assert results["unknown_allocation_small"].status == "PASS"
+
+
 def test_build_skips_missing_sources(paths):
     write_conapo(paths)
     counts = warehouse.build(paths=paths)
@@ -246,6 +269,8 @@ def test_all_check_sql_is_valid(paths):
             "year, deaths, last_file_year, complete, next_file_loaded, file_loaded"
         ),
         "inegi_cube_registered": "reg_year, age_lo, sex, deaths",
+        "deaths_adjusted": "year, sex, age, recorded, adjusted",
+        "quality_age_heaping": "dataset, year, sex, whipple",
         "deaths_by_occurrence": "year, state_code_text, sex, age, deaths",
         "conapo_population": "year, state_code, state, sex, age, population",
         "conapo_deaths": "year, state_code, sex, age, deaths",

@@ -113,6 +113,35 @@ CHECKS: tuple[Check, ...] = (
         " WHERE age_lo IS NOT NULL GROUP BY reg_year HAVING COUNT(DISTINCT age_lo) <> 19)",
         "Each imported year has all 19 age groups (under 1, 1-4, 5-9, ... 85 and over)",
     ),
+    Check(
+        "adjusted_conserves_deaths",
+        "FAIL",
+        ("deaths_adjusted", INEGI_TABLE),
+        "SELECT COUNT(*) FROM (SELECT a.year FROM"
+        " (SELECT year, SUM(adjusted) AS s FROM deaths_adjusted GROUP BY year) a"
+        f" JOIN (SELECT occ_year AS year, SUM(deaths) AS s FROM {INEGI_TABLE}"
+        "  WHERE occ_year IS NOT NULL AND (state BETWEEN '01' AND '32' OR state = '99')"
+        "  GROUP BY occ_year) c ON c.year = a.year"
+        " WHERE ABS(a.s - c.s) > 0.5)",
+        "Allocating unknown sex and age creates or loses no deaths",
+    ),
+    Check(
+        "unknown_allocation_small",
+        "WARN",
+        ("deaths_adjusted", "inegi_completeness"),
+        "SELECT COUNT(*) FROM (SELECT d.year FROM deaths_adjusted d"
+        " JOIN inegi_completeness k ON k.year = d.year WHERE k.file_loaded = 1"
+        " GROUP BY d.year HAVING (SUM(d.adjusted) - SUM(d.recorded)) / SUM(d.adjusted) > 0.02)",
+        "Allocated unknowns are under 2% of deaths in each year with its own file",
+    ),
+    Check(
+        "inegi_age_heaping_low",
+        "WARN",
+        ("quality_age_heaping",),
+        "SELECT COUNT(*) FROM quality_age_heaping "
+        "WHERE dataset = 'INEGI deaths' AND whipple >= 110",
+        "INEGI deaths have no more than 'fairly accurate' age heaping (Whipple under 110)",
+    ),
     # ── CONAPO ──────────────────────────────────────────────────────────────
     Check(
         "conapo_no_negative",

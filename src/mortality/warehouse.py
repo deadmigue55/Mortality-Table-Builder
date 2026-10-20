@@ -19,6 +19,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from mortality import quality
 from mortality.config import Paths, get_paths
 
 
@@ -262,6 +263,8 @@ def build(*, paths: Paths | None = None) -> dict[str, int]:
             description, sql = DERIVED_SQL[name]
             con.execute(f'CREATE TABLE "{name}" AS {sql}')
             docs.append((name, description))
+
+        docs += quality.build_tables(con)
 
         if _load_manifest(con, paths):
             docs.append(("source_manifest", "Every downloaded file: URL, date, size and SHA-256"))
