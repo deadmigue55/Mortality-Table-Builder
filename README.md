@@ -72,7 +72,7 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] INEGI deaths 2020 to 2024 (earlier years: in progress)
   - [x] CONAPO population and modelled deaths 1950 to 2070
   - [x] Human Mortality Database (9 comparison countries)
-  - [ ] SOA tables
+  - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [ ] CNSF 2013
   - [ ] DuckDB warehouse and data validation
 - [ ] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag

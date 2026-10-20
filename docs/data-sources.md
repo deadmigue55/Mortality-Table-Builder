@@ -58,6 +58,11 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 ### Society of Actuaries: Mortality and Other Rate Tables (MORT)
 - **What:** hundreds of published tables in XTbML (XML), CSV and Excel, e.g. **2017 CSO** (life insurance valuation), **2012 IAM** (individual annuities) and **Pri-2012** (private pension plans).
 - **Why:** industry-standard benchmarks and a check on our table-building methods.
+- **What we download (29 curated tables, `uv run mortality ingest soa`):**
+  - **Mexico (13):** CNSF 2000-I and 2000-G (insured and group lives, 1991 to 1998), MEX 2000 male/female, the older Experiencia Mexicana tables (1962 to 1989), EMSSA 97 and EMSSI 97 (pension and disabled participants), and Seguro Popular 2008 (population).
+  - **United States (16):** 2017 CSO composite (loaded and unloaded, ANB and ALB), 2012 IAM period annuity tables, and Pri-2012 employee, retiree and disabled-retiree tables.
+- **Not on the SOA site:** CNSF 2013 (the table in force) and EMSSA-09. They must come from the CNSF's own publications.
+- **Format:** each table is an XTbML document at `https://mort.soa.org/Export.aspx?Type=xml&TableIdentity=<id>`, with the original source reference (for the CNSF tables, the Diario Oficial regulation) kept in the catalog. CSO composite tables also hold a second, select-period table (age by policy year).
 - **Where:** [mort.soa.org](https://mort.soa.org/Help.aspx). The R package [mortSOA](https://cloud.r-project.org/web/packages/mortSOA/refman/mortSOA.html) reads tables by ID. Pri-2012 background is on the [SOA Pri-2012 page](https://www.soa.org/resources/experience-studies/2019/pri-2012-private-mortality-tables/).
 
 ## International comparison

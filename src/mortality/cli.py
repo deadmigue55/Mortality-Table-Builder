@@ -95,6 +95,20 @@ def cmd_ingest_hmd(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest_soa(args: argparse.Namespace) -> int:
+    """Download the curated SOA / Mexican tables from mort.soa.org."""
+    from mortality.ingest import soa
+
+    print(f"downloading {len(soa.TABLES)} tables from mort.soa.org...")
+    results = soa.download_all(force=args.force)
+    print(f"{len(results)} tables ready ({sum(not r.skipped for r in results)} new)")
+    if args.no_process:
+        return 0
+    for name, path in soa.process().items():
+        print(f"  {name}: {path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mortality", description=__doc__)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -131,6 +145,11 @@ def build_parser() -> argparse.ArgumentParser:
     hmd.add_argument("--force", action="store_true", help="download and rebuild again")
     hmd.add_argument("--no-process", action="store_true", help="download only")
     hmd.set_defaults(func=cmd_ingest_hmd)
+
+    soa = sources.add_parser("soa", help="SOA MORT tables, incl. Mexican ones (CNSF 2000-I, EMSSA)")
+    soa.add_argument("--force", action="store_true", help="download and rebuild again")
+    soa.add_argument("--no-process", action="store_true", help="download only")
+    soa.set_defaults(func=cmd_ingest_soa)
 
     return parser
 

@@ -8,6 +8,7 @@ authors = [{ name = "Miguel Vilchis", email = "migue.vilchis@ciencias.unam.mx" }
 requires-python = ">=3.12"
 dependencies = [
     "dbfread>=2.0.7",
+    "defusedxml>=0.7.1",
     "duckdb>=1.5.6",
     "numpy>=2.5.4",
     "openpyxl>=3.1.5",
