@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# A newer push cancels checks still running for an older one
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   python:
     name: Python · lint and tests

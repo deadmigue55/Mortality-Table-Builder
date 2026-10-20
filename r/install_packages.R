@@ -18,7 +18,12 @@ lib <- Sys.getenv("R_LIBS_USER")
 if (!dir.exists(lib)) dir.create(lib, recursive = TRUE)
 .libPaths(c(lib, .libPaths()))
 
-repos <- c(CRAN = "https://cloud.r-project.org")
+# Keep a repository that is already configured (e.g. CI's fast prebuilt binaries),
+# otherwise use CRAN
+repos <- getOption("repos")
+if (is.null(repos) || identical(unname(repos["CRAN"]), "@CRAN@")) {
+  repos <- c(CRAN = "https://cloud.r-project.org")
+}
 missing <- setdiff(packages, rownames(installed.packages()))
 
 if (length(missing)) {
