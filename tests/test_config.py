@@ -20,7 +20,7 @@ def test_default_data_dir(monkeypatch):
     paths = config.get_paths()
     assert paths.data == config.PROJECT_ROOT / "data"
     assert paths.raw == paths.data / "raw"
-    assert paths.database.suffix == ".duckdb"
+    assert paths.database.suffix == ".sqlite"
 
 
 def test_data_dir_override(monkeypatch, tmp_path):

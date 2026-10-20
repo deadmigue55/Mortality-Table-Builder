@@ -7,7 +7,7 @@ packages <- c(
   "demography",       # demographic data structures, Lee-Carter variants, smoothing
   "lifecontingencies",# life tables, actuarial present values, commutation functions
   "mortSOA",          # read Society of Actuaries MORT tables by table ID
-  "duckdb",           # read the project's DuckDB warehouse
+  "duckdb",           # query the processed Parquet files with SQL (RSQLite is blocked here)
   "DBI",
   "data.table",
   "ggplot2"

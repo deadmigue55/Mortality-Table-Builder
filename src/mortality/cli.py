@@ -128,6 +128,36 @@ def cmd_ingest_cnsf(args: argparse.Namespace) -> int:
     return 0 if diff < 1e-9 else 1
 
 
+def cmd_db_build(_: argparse.Namespace) -> int:
+    """Load every processed source into SQLite and run the data checks."""
+    from mortality import validate, warehouse
+
+    print("building the warehouse...")
+    for table, rows in warehouse.build().items():
+        print(f"  {table:<24}{rows:>12,} rows")
+    return _print_checks(validate.validate())
+
+
+def cmd_db_check(_: argparse.Namespace) -> int:
+    """Re-run the data checks on the existing warehouse."""
+    from mortality import validate
+
+    return _print_checks(validate.validate())
+
+
+def _print_checks(results) -> int:
+    print("\ndata checks:")
+    for r in results:
+        detail = "" if r.violations in (None, 0) else f"  ({r.violations:,} violations)"
+        print(f"  {r.status:<5} {r.name:<34}{r.what}{detail}")
+    counts = {s: sum(r.status == s for r in results) for s in ("PASS", "WARN", "FAIL", "SKIP")}
+    print(
+        f"\n{counts['PASS']} passed, {counts['WARN']} warnings, "
+        f"{counts['FAIL']} failed, {counts['SKIP']} skipped"
+    )
+    return 1 if counts["FAIL"] else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="mortality", description=__doc__)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -135,6 +165,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     doctor = sub.add_parser("doctor", help="check paths, credentials and tools")
     doctor.set_defaults(func=cmd_doctor)
+
+    db = sub.add_parser("db", help="the warehouse")
+    db_sub = db.add_subparsers(dest="action", required=True)
+    db_sub.add_parser("build", help="load all sources and run checks").set_defaults(
+        func=cmd_db_build
+    )
+    db_sub.add_parser("check", help="re-run the data checks").set_defaults(func=cmd_db_check)
 
     ingest = sub.add_parser("ingest", help="download and prepare source data")
     sources = ingest.add_subparsers(dest="source", required=True)

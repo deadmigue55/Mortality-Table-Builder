@@ -21,7 +21,8 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 | Locations | 2023 onward: `contenidos/programas/edr/microdatos/defunciones/<year>/defunciones_base_datos_<year>_dbf.zip`. 2020 to 2022: the same name under `programas/mortalidad/microdatos/defunciones/<year>/`. Earlier years are **not** at these addresses; INEGI answers bad URLs with a normal-looking HTML page, so the downloader checks that it received a real ZIP |
 | Age | `EDAD` is a 4-digit code: first digit = unit (1 hours, 2 days, 3 months, 4 years), last three = value. `4998` = not specified |
 | Sex | `SEXO`: 1 male, 2 female, 9 not specified (about 0.1% of deaths) |
-| Residence | `ENT_RESID`: 01 to 32 are states, 33 and 34 residents abroad, 99 not specified |
+| Residence | `ENT_RESID`: 01 to 32 are states, 33 USA, 34 other Latin American countries, 35 other countries, 99 not specified (from INEGI's own code list) |
+| Type of death | `TIPO_DEFUN` exists only from the 2022 file; it is missing for 2020 and 2021 |
 | Late registration | Each file also holds deaths that occurred in earlier years (about 2% of a file). A year of occurrence is complete only after the *next* year's file is loaded, so the latest year is always understated |
 | Unknown dates | `ANIO_OCUR = 9999` means year of occurrence unknown (about 330 deaths per file) |
 

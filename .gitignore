@@ -4,6 +4,9 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 *.duckdb
+*.sqlite
+*.sqlite-journal
+*.sqlite.tmp
 *.duckdb.wal
 
 # ── Secrets ──

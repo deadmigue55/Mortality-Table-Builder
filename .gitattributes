@@ -9,5 +9,6 @@
 *.xlsx binary
 *.parquet binary
 *.duckdb binary
+*.sqlite binary
 *.png binary
 *.pdf binary

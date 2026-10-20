@@ -45,7 +45,7 @@ All data comes from official or academically recognized sources. Raw data is **n
 
 ## Methodology
 
-1. **Ingestion and storage:** download scripts load raw files into a local **DuckDB** database with a documented SQL schema and data validation.
+1. **Ingestion and storage:** download scripts load processed files into a local **SQLite** warehouse (see [`docs/warehouse.md`](docs/warehouse.md)) with automatic data checks.
 2. **Data quality:** age-heaping diagnostics (Whipple and Myers indices), redistribution of unknown ages, year of occurrence vs year of registration, and flags for the COVID years.
 3. **Crude rates:** central exposure, crude m<sub>x</sub> and q<sub>x</sub> with Poisson confidence intervals.
 4. **Graduation:** Whittaker–Henderson, P-splines, and the Gompertz–Makeham and Heligman–Pollard laws, with old-age closure (Kannisto). Fits are checked with standard actuarial tests: chi-square, standardized deviations, signs and runs.
@@ -57,9 +57,9 @@ All data comes from official or academically recognized sources. Raw data is **n
 
 ## Tech stack
 
-- **Python:** pandas, NumPy, SciPy, statsmodels, DuckDB, Plotly, Streamlit, pytest
+- **Python:** pandas, NumPy, SciPy, statsmodels, SQLite, Plotly, Streamlit, pytest
 - **R:** StMoMo (stochastic mortality models), MortalityLaws, demography, lifecontingencies, used for projections and to cross-check the Python results
-- **SQL:** DuckDB for storage, transformations and A/E queries
+- **SQL:** SQLite for the warehouse, transformations and A/E queries (DuckDB for R, reading Parquet)
 - **Excel:** exported pricing and table workbooks for actuaries who live in spreadsheets
 - **Tooling:** GitHub Actions CI, ruff, pre-commit, Quarto for the methodology report
 
@@ -67,14 +67,15 @@ All data comes from official or academically recognized sources. Raw data is **n
 
 - [x] **0. Repository setup:** README, data-source documentation, license
 - [x] **1. Project skeleton:** Python package layout, environment, tests, linting, CI
-- [ ] **2. Data ingestion:** download scripts for INEGI, CONAPO, SOA, CNSF and HMD; DuckDB schema; validation
+- [ ] **2. Data ingestion:** download scripts for INEGI, CONAPO, SOA, CNSF and HMD; SQLite warehouse; validation
   - [x] Download framework with a manifest of every file
   - [x] INEGI deaths 2020 to 2024 (earlier years: in progress)
   - [x] CONAPO population and modelled deaths 1950 to 2070
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
-  - [ ] DuckDB warehouse and data validation
+  - [x] SQLite warehouse with 20 automatic data checks
+  - [ ] INEGI 2000 to 2019 (the 1990-2025 cube export; needed for a pre-COVID baseline)
 - [ ] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag
 - [ ] **4. Crude rates and exposure:** m<sub>x</sub>, q<sub>x</sub>, confidence intervals, by sex, state and year
 - [ ] **5. Graduation:** Whittaker–Henderson, P-splines, parametric laws, old-age closure, fit tests
@@ -99,6 +100,17 @@ cp .env.example .env            # then add your Human Mortality Database login
 uv run mortality doctor         # check that everything is ready
 ```
 
+Load the data (about 10 minutes, mostly INEGI; every file is logged in `data/raw/MANIFEST.csv`):
+
+```sh
+uv run mortality ingest inegi --years 2020-2024   # registered deaths
+uv run mortality ingest conapo                    # population 1950-2070
+uv run mortality ingest hmd                       # needs the login in .env
+uv run mortality ingest soa                       # SOA and Mexican tables
+uv run mortality ingest cnsf                      # CNSF 2013 regulatory tables
+uv run mortality db build                         # SQLite warehouse + data checks
+```
+
 Development:
 
 ```sh
@@ -113,7 +125,7 @@ uv run pre-commit install       # run these checks automatically before each com
 Mortality-Table-Builder/
 ├── data/            # raw/ and processed/ (git-ignored, filled by download scripts)
 ├── docs/            # data sources, methodology notes
-├── sql/             # DuckDB schema and queries
+├── sql/             # SQL queries
 ├── src/mortality/   # Python package: ingest, quality, rates, graduation, tables, projection, pricing
 ├── r/               # R scripts: StMoMo projections and cross-checks
 ├── notebooks/       # exploratory analysis

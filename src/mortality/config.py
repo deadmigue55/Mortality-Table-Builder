@@ -48,8 +48,8 @@ class Paths:
 
     @property
     def database(self) -> Path:
-        """Local DuckDB warehouse."""
-        return self.data / "mortality.duckdb"
+        """Local SQLite warehouse."""
+        return self.data / "mortality.sqlite"
 
     @property
     def manifest(self) -> Path:
