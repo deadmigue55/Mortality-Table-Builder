@@ -6,6 +6,8 @@ This project builds complete, graduated and projected mortality tables for the M
 
 > **Status:** 🚧 In active development. See the [roadmap](#roadmap) for what's built and what's next.
 
+[![CI](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml/badge.svg)](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml)
+
 ---
 
 ## Why this matters
@@ -64,7 +66,7 @@ All data comes from official or academically recognized sources. Raw data is **n
 ## Roadmap
 
 - [x] **0. Repository setup:** README, data-source documentation, license
-- [ ] **1. Project skeleton:** Python package layout, environment, tests, linting, CI
+- [x] **1. Project skeleton:** Python package layout, environment, tests, linting, CI
 - [ ] **2. Data ingestion:** download scripts for INEGI, CONAPO, SOA, CNSF and HMD; DuckDB schema; validation
 - [ ] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag
 - [ ] **4. Crude rates and exposure:** m<sub>x</sub>, q<sub>x</sub>, confidence intervals, by sex, state and year
@@ -74,6 +76,29 @@ All data comes from official or academically recognized sources. Raw data is **n
 - [ ] **8. Benchmarking:** A/E vs CNSF, SOA and HMD
 - [ ] **9. Applications:** pricing, reserves, longevity and pandemic stress, reinsurance, COVID excess mortality
 - [ ] **10. Dashboard and report:** Streamlit app and Quarto methodology write-up
+
+## Getting started
+
+Requirements: [uv](https://docs.astral.sh/uv/) (installs Python 3.12 for you) and, for the projection models, [R](https://cran.r-project.org/) 4.3+.
+
+```sh
+git clone https://github.com/deadmigue55/Mortality-Table-Builder.git
+cd Mortality-Table-Builder
+
+uv sync                         # create the environment and install Python packages
+Rscript r/install_packages.R    # install R packages (optional, for projections)
+cp .env.example .env            # then add your Human Mortality Database login
+
+uv run mortality doctor         # check that everything is ready
+```
+
+Development:
+
+```sh
+uv run pytest                   # tests
+uv run ruff check . && uv run ruff format .   # lint and format
+uv run pre-commit install       # run these checks automatically before each commit
+```
 
 ## Project structure (planned)
 
