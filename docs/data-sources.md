@@ -13,11 +13,35 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
   - From the 2024 edition, electronic death certificates from the Health Secretariat feed the statistics, so watch for breaks in the series.
   - Use **year of occurrence**, not year of registration, and allow for late registration in the most recent years.
 
+**How the files work (verified October 2026):**
+
+| Item | Detail |
+|---|---|
+| Download | One DBF ZIP per *registration* year, about 30 MB, containing `DEFUNyy.dbf` (about 800,000 to 1,100,000 rows, 74 columns), code catalogs and a PDF description |
+| Locations | 2023 onward: `contenidos/programas/edr/microdatos/defunciones/<year>/defunciones_base_datos_<year>_dbf.zip`. 2020 to 2022: the same name under `programas/mortalidad/microdatos/defunciones/<year>/`. Earlier years are **not** at these addresses; INEGI answers bad URLs with a normal-looking HTML page, so the downloader checks that it received a real ZIP |
+| Age | `EDAD` is a 4-digit code: first digit = unit (1 hours, 2 days, 3 months, 4 years), last three = value. `4998` = not specified |
+| Sex | `SEXO`: 1 male, 2 female, 9 not specified (about 0.1% of deaths) |
+| Residence | `ENT_RESID`: 01 to 32 are states, 33 and 34 residents abroad, 99 not specified |
+| Late registration | Each file also holds deaths that occurred in earlier years (about 2% of a file). A year of occurrence is complete only after the *next* year's file is loaded, so the latest year is always understated |
+| Unknown dates | `ANIO_OCUR = 9999` means year of occurrence unknown (about 330 deaths per file) |
+
+**What we kept from the 74 columns:** sex, age code (decoded into unit, value and completed years), state of residence, year and month of occurrence, year of registration, type of death, cause (ICD-10) and the Mexican cause list.
+
 ### CONAPO: Conciliación Demográfica 1950–2019 and Proyecciones 2020–2070
 - **What:** mid-year population by single year of age, sex and state.
 - **Why:** the denominator (central exposure, E<sub>x</sub>).
 - **Where:** CONAPO open data on gob.mx / datos.gob.mx. The [data dictionary](https://www.gob.mx/cms/uploads/attachment/file/847790/DICCIONARIO_2023_v3_07082023.pdf) describes the mid-year population table (year, state, age, sex, population).
 - **Notes:** the conciliation harmonizes censuses, surveys and administrative records. CONAPO also publishes its own deaths and life-table indicators, which we use as a cross-check.
+
+**How the file works (verified October 2026):** a single 80 MB ZIP (`ConDem50a19_ProyPob20a70.zip`, published August 2023) with long-format Excel workbooks: one row per year, state (national plus 32), single age 0 to 109 and sex.
+
+| Workbook | Use |
+|---|---|
+| `0_Pob_Mitad_1950_2070.xlsx` | Mid-year (1 July) population, the exposure. State rows add up exactly to the national total |
+| `1_Defunciones_1950_2070.xlsx` | CONAPO's modelled deaths, a cross-check against INEGI |
+| `6_Esperanza_Vida_Nacer_1950_2070.xlsx` | Life expectancy at birth (74.8 in 2019, 68.9 in 2020, 68.8 in 2021) |
+
+**Important:** 1950 to 2019 are reconciled estimates, but **2020 onward are projections** from the 2020 census base made before the full COVID-19 impact was known. Recent exposure is therefore a model output, not a count, and modelled 2022 deaths (about 789,000) sit below INEGI's registered 832,000. Rates for 2020 onward carry that uncertainty, which the project reports instead of hiding.
 
 ## Mexico: regulatory and industry tables
 

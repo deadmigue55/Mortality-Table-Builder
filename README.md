@@ -68,6 +68,13 @@ All data comes from official or academically recognized sources. Raw data is **n
 - [x] **0. Repository setup:** README, data-source documentation, license
 - [x] **1. Project skeleton:** Python package layout, environment, tests, linting, CI
 - [ ] **2. Data ingestion:** download scripts for INEGI, CONAPO, SOA, CNSF and HMD; DuckDB schema; validation
+  - [x] Download framework with a manifest of every file
+  - [x] INEGI deaths 2020 to 2024 (earlier years: in progress)
+  - [x] CONAPO population and modelled deaths 1950 to 2070
+  - [ ] Human Mortality Database
+  - [ ] SOA tables
+  - [ ] CNSF 2013
+  - [ ] DuckDB warehouse and data validation
 - [ ] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag
 - [ ] **4. Crude rates and exposure:** m<sub>x</sub>, q<sub>x</sub>, confidence intervals, by sex, state and year
 - [ ] **5. Graduation:** Whittaker–Henderson, P-splines, parametric laws, old-age closure, fit tests
