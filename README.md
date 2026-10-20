@@ -10,7 +10,7 @@ This project builds complete, graduated and projected mortality tables for the M
 
 ## Why this matters
 
-Life insurers and reinsurers price and reserve with mortality tables. In Mexico the regulator (CNSF) publishes tables that are deliberately conservative, and published research suggests they can overstate mortality compared with population data. This project asks:
+Life insurers and reinsurers price and reserve with mortality tables. In Mexico the regulatory tables in force (CNSF 2013) are deliberately conservative, rest on experience that is now over a decade old, and predate COVID-19. Each insurer's own experience tables are private. This project builds a transparent, up-to-date alternative from official data and asks:
 
 - **How far is the population from the regulatory tables?** What does Mexico's actual mortality look like by age, sex, state and year?
 - **What changes in pricing?** How do term life and annuity prices, and the reserves behind them, move when you switch tables?
@@ -37,7 +37,7 @@ All data comes from official or academically recognized sources. Raw data is **n
 |---|---|---|
 | **INEGI**: Estadísticas de Defunciones Registradas | Death microdata by age, sex, state, cause and year of occurrence | Open data |
 | **CONAPO**: Conciliación Demográfica 1950–2019 and Proyecciones 2020–2070 | Mid-year population by age, sex and state (the exposure) | Open data |
-| **CNSF / AMIS**: Mexican regulatory and industry tables (e.g. CNSF 2000-I, EMSSA-09) | Regulatory benchmark | Public documents |
+| **CNSF**: Mexican regulatory tables (CNSF 2013 in force; CNSF 2000-I and EMSSA-09 for history) | Regulatory benchmark | Public documents |
 | **SOA**: Mortality and Other Rate Tables (mort.soa.org) | US benchmarks (e.g. 2017 CSO, 2012 IAM, Pri-2012) | Free, XTbML/CSV |
 | **Human Mortality Database** | International comparison countries (Mexico is not in HMD) | Free registration, scientific use |
 

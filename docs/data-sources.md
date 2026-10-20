@@ -21,10 +21,13 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 
 ## Mexico: regulatory and industry tables
 
-### CNSF (Comisión Nacional de Seguros y Fianzas) and AMIS
-- **What:** tables used by Mexican insurers for pricing and reserves, e.g. **CNSF 2000-I** (individual insurance experience) and **EMSSA-09** (social security / pensions experience).
+### CNSF (Comisión Nacional de Seguros y Fianzas)
+- **What:** the **CNSF 2013** tables, the regulatory mortality tables currently in force in Mexico for life insurance pricing and reserves. Older tables (e.g. **CNSF 2000-I**, **EMSSA-09** for pensions) are kept as historical comparisons.
 - **Why:** the regulatory benchmark. The CNSF builds its tables from insurer data and deliberately overstates mortality for solvency. A 2021 study using INEGI data found estimates substantially different from EMSSA-09 ([UNAM/INEGI research](https://rde.inegi.org.mx/rde_14/doctos/rde_14_art1.pdf); [UNAM thesis repository](https://ru.dgb.unam.mx/bitstream/20.500.14330/TES01000840308/3/0840308.pdf)).
-- **Where:** CNSF publications and the Circular Única de Seguros y Fianzas (CUSF). The tables currently in force must be confirmed against the latest CUSF and the Diario Oficial de la Federación before use.
+- **Where:** CNSF publications and the Circular Única de Seguros y Fianzas (CUSF).
+- **Context:**
+  - The 2013 tables rest on experience that is now over a decade old, so they predate the COVID-19 years and recent mortality improvement. That gap is part of the motivation for this project.
+  - In practice, each insurer also builds its own experience tables, which are not public. A transparent population table built from official data is the closest public substitute and a useful check on both.
 
 ## United States: industry benchmarks
 
