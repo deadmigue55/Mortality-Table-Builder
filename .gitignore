@@ -1,0 +1,47 @@
+# ── Data (fetched by scripts, never committed) ──
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.duckdb
+*.duckdb.wal
+
+# ── Secrets ──
+.env
+.env.*
+!.env.example
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# ── R ──
+.Rhistory
+.RData
+.Rproj.user/
+renv/library/
+renv/staging/
+
+# ── Quarto / reports ──
+/.quarto/
+reports/_output/
+*_files/
+
+# ── Editors / OS ──
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+~$*.xlsx
