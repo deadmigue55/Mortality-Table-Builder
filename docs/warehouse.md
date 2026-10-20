@@ -9,6 +9,7 @@
 | Table | Rows | What it is |
 |---|---:|---|
 | `inegi_deaths_cells` | 546,748 | INEGI deaths as counts per file year, year and month of occurrence, state, sex, age and type of death |
+| `inegi_cube_registered` | 360 | Hand-exported INEGI tables: deaths by year of registration, five-year age group and sex, national |
 | `deaths_by_occurrence` | 43,538 | Deaths of Mexican residents by year of occurrence, state, sex and age (the numerator of death rates) |
 | `deaths_unallocated` | 83 | Deaths with unknown sex, age or residence, by year |
 | `inegi_completeness` | 83 | Per year of occurrence: own file loaded, next file loaded (late registrations), and so whether the year is complete |
@@ -20,7 +21,7 @@
 | `soa_catalog`, `soa_rates` | 29 / 2,869 | SOA tables (13 Mexican) and their rates |
 | `cnsf_rates` | 999 | CNSF 2013: nine tables, ages 0 to 110 |
 | `source_manifest` | 82 | Every downloaded file with URL, date, size and SHA-256 |
-| `validation_results` | 20 | Latest result of every data check |
+| `validation_results` | 22 | Latest result of every data check |
 | `table_docs` | 15 | One-line description of each table above |
 
 Row counts are from the October 2026 build and grow as more INEGI years are added.
@@ -55,6 +56,8 @@ Each check counts violations. `FAIL` means the data is wrong; `WARN` means a kno
 | `inegi_unknown_age_share` | WARN | Under 2% of deaths per file have an unknown age |
 | `inegi_pre_covid_baseline` | WARN | Years 2015 to 2019 are loaded |
 | `inegi_latest_year_complete` | WARN | The latest year has its own file and the next year's file |
+| `inegi_cube_no_year_gaps` | WARN | Registered deaths exist for every year between the first and last (tables plus microdata) |
+| `inegi_cube_complete_age_groups` | FAIL | Each imported year has all 19 age groups |
 | `conapo_no_negative` | FAIL | Population present and non-negative |
 | `conapo_states_sum_to_national` | FAIL | The 32 states add up to the national total |
 | `conapo_complete_grid` | FAIL | Every year, state and sex has ages 0 to 109 |
@@ -65,10 +68,11 @@ Each check counts violations. `FAIL` means the data is wrong; `WARN` means a kno
 | `inegi_vs_conapo_deaths` | WARN | For complete years, INEGI is within 15% of CONAPO's modelled deaths |
 | `manifest_integrity` | FAIL | Raw files match their recorded SHA-256 |
 
-**Current state (October 2026):** 18 pass, 2 warnings, 0 failures. The warnings are the two known gaps: no pre-COVID years yet (waiting on INEGI 2000 to 2019) and 2024 still awaiting the 2025 file's late registrations.
+**Current state (October 2026):** 19 pass, 3 warnings, 0 failures. The warnings are known gaps: the 2017 table has not been exported correctly yet, no row-level pre-2020 data (only five-year groups from the tables), and 2024 still awaiting the 2025 file's late registrations.
 
 ## What the checks have already caught
 
 - **State code 35** ("other countries") appears in the 2020 and 2021 files. INEGI's code list defines 33 to 35, so the check was widened.
 - **"Complete year" logic:** an early version treated 2019 as complete because the 2020 file was loaded, although the 2019 file itself was not. A year now needs its own file and the next one.
+- **A mislabeled export:** the file named `2017.csv` contained registration year 2025. The importer reads the year from inside the file and warns; the gap check then flags 2017 as missing.
 - **`death_type`** (type of death) does not exist in the 2020 and 2021 files, only from 2022, so it is missing for those years.

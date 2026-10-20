@@ -26,6 +26,13 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 | Late registration | Each file also holds deaths that occurred in earlier years (about 2% of a file). A year of occurrence is complete only after the *next* year's file is loaded, so the latest year is always understated |
 | Unknown dates | `ANIO_OCUR = 9999` means year of occurrence unknown (about 330 deaths per file) |
 
+**Interactive tables, exported by hand (years before 2020):** the yearly microdata above only covers 2020 onward from known addresses, so earlier years come from INEGI's [online table](https://www.inegi.org.mx/sistemas/olap/consulta/general_ver4/MDXQueryDatos.asp?c=11144) (1990 onward). It only answers inside a live browser session, so each year is exported to CSV by hand and imported with `uv run mortality ingest inegi-cube <zip or csv files>`. Properties:
+
+- counts by **year of registration**, not occurrence (about 2% of a year's deaths occurred earlier);
+- **five-year age groups** (under 1, 1-4, ..., 85 and over) by sex (male, female, unknown), national only;
+- every file is checked on import: sexes add up across each row and age groups add up to the Total row;
+- the year is read from the header inside the file. A file named `2017.csv` turned out to contain registration year **2025** (a preliminary year), so names are never trusted. Totals for 2014 to 2016, 2018 and 2019 (633,641; 655,688; 685,766; 722,611; 747,784) match INEGI's published figures.
+
 **What we kept from the 74 columns:** sex, age code (decoded into unit, value and completed years), state of residence, year and month of occurrence, year of registration, type of death, cause (ICD-10) and the Mexican cause list.
 
 ### CONAPO: Conciliación Demográfica 1950–2019 and Proyecciones 2020–2070

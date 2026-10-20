@@ -245,6 +245,7 @@ def test_all_check_sql_is_valid(paths):
         "inegi_completeness": (
             "year, deaths, last_file_year, complete, next_file_loaded, file_loaded"
         ),
+        "inegi_cube_registered": "reg_year, age_lo, sex, deaths",
         "deaths_by_occurrence": "year, state_code_text, sex, age, deaths",
         "conapo_population": "year, state_code, state, sex, age, population",
         "conapo_deaths": "year, state_code, sex, age, deaths",

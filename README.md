@@ -74,8 +74,9 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
-  - [x] SQLite warehouse with 20 automatic data checks
-  - [ ] INEGI 2000 to 2019 (the 1990-2025 cube export; needed for a pre-COVID baseline)
+  - [x] SQLite warehouse with 22 automatic data checks
+  - [x] INEGI 2014 to 2019 from the interactive tables (five-year age groups; 2017 still to re-export)
+  - [ ] INEGI before 2014 (optional, for a longer forecasting history)
 - [ ] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag
 - [ ] **4. Crude rates and exposure:** m<sub>x</sub>, q<sub>x</sub>, confidence intervals, by sex, state and year
 - [ ] **5. Graduation:** Whittaker–Henderson, P-splines, parametric laws, old-age closure, fit tests
@@ -104,6 +105,7 @@ Load the data (about 10 minutes, mostly INEGI; every file is logged in `data/raw
 
 ```sh
 uv run mortality ingest inegi --years 2020-2024   # registered deaths
+uv run mortality ingest inegi-cube 2014-2019.zip  # hand-exported INEGI tables (optional)
 uv run mortality ingest conapo                    # population 1950-2070
 uv run mortality ingest hmd                       # needs the login in .env
 uv run mortality ingest soa                       # SOA and Mexican tables

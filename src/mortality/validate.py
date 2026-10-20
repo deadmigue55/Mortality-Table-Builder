@@ -94,6 +94,25 @@ CHECKS: tuple[Check, ...] = (
         "AND year = (SELECT MAX(last_file_year) FROM inegi_completeness)",
         "The latest year is complete: its file and the next one (late registrations) are loaded",
     ),
+    Check(
+        "inegi_cube_no_year_gaps",
+        "WARN",
+        ("inegi_cube_registered", INEGI_TABLE),
+        "WITH have(y) AS (SELECT reg_year FROM inegi_cube_registered"
+        f" UNION SELECT file_year FROM {INEGI_TABLE}),"
+        " span(y) AS (SELECT MIN(y) FROM have"
+        " UNION ALL SELECT y + 1 FROM span WHERE y < (SELECT MAX(y) FROM have))"
+        " SELECT COUNT(*) FROM span WHERE y NOT IN (SELECT y FROM have)",
+        "Registered deaths exist for every year between the first and last (tables + microdata)",
+    ),
+    Check(
+        "inegi_cube_complete_age_groups",
+        "FAIL",
+        ("inegi_cube_registered",),
+        "SELECT COUNT(*) FROM (SELECT reg_year FROM inegi_cube_registered"
+        " WHERE age_lo IS NOT NULL GROUP BY reg_year HAVING COUNT(DISTINCT age_lo) <> 19)",
+        "Each imported year has all 19 age groups (under 1, 1-4, 5-9, ... 85 and over)",
+    ),
     # ── CONAPO ──────────────────────────────────────────────────────────────
     Check(
         "conapo_no_negative",

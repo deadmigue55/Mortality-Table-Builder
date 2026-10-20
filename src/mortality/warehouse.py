@@ -34,6 +34,13 @@ class Source:
 
 SOURCES: tuple[Source, ...] = (
     Source(
+        "inegi_cube_registered",
+        "inegi/cube_registered_grouped.parquet",
+        "INEGI interactive-table exports: deaths by year of REGISTRATION, five-year age group "
+        "and sex, national (imported by hand)",
+        ("reg_year", "sex", "age_lo"),
+    ),
+    Source(
         "conapo_population",
         "conapo/population_mid_year.parquet",
         "CONAPO mid-year population by year, state, single age and sex (the exposure)",

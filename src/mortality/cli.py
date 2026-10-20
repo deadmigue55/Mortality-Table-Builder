@@ -128,6 +128,24 @@ def cmd_ingest_cnsf(args: argparse.Namespace) -> int:
     return 0 if diff < 1e-9 else 1
 
 
+def cmd_ingest_inegi_cube(args: argparse.Namespace) -> int:
+    """Import INEGI interactive-table exports (CSV or ZIP) saved from the browser."""
+    from pathlib import Path
+
+    from mortality.ingest import inegi_cube
+
+    imported = inegi_cube.import_files([Path(p) for p in args.files])
+    for item in imported:
+        note = f"  <-- file was named {item.original_name!r}" if item.renamed else ""
+        print(f"  registration year {item.year}: {item.download.bytes:,} bytes{note}")
+    mislabeled = [i for i in imported if i.renamed]
+    print(f"{len(imported)} tables imported -> {inegi_cube.process()}")
+    if mislabeled:
+        names = ", ".join(f"{i.original_name} is really {i.year}" for i in mislabeled)
+        print(f"\nWARNING: check your export. {names}.")
+    return 0
+
+
 def cmd_db_build(_: argparse.Namespace) -> int:
     """Load every processed source into SQLite and run the data checks."""
     from mortality import validate, warehouse
@@ -206,6 +224,12 @@ def build_parser() -> argparse.ArgumentParser:
     soa.add_argument("--force", action="store_true", help="download and rebuild again")
     soa.add_argument("--no-process", action="store_true", help="download only")
     soa.set_defaults(func=cmd_ingest_soa)
+
+    cube = sources.add_parser(
+        "inegi-cube", help="INEGI interactive-table exports saved by hand (CSV or ZIP)"
+    )
+    cube.add_argument("files", nargs="+", help="exported .csv files or a .zip of them")
+    cube.set_defaults(func=cmd_ingest_inegi_cube)
 
     cnsf = sources.add_parser("cnsf", help="CNSF 2013 regulatory tables (CUSF Annex 5.3.3-a)")
     cnsf.add_argument("--force", action="store_true", help="download again")
