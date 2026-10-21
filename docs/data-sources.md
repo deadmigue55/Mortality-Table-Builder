@@ -38,7 +38,7 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 ### CONAPO: Conciliación Demográfica 1950–2019 and Proyecciones 2020–2070
 - **What:** mid-year population by single year of age, sex and state.
 - **Why:** the denominator (central exposure, E<sub>x</sub>).
-- **Where:** CONAPO open data on gob.mx / datos.gob.mx. The [data dictionary](https://www.gob.mx/cms/uploads/attachment/file/847790/DICCIONARIO_2023_v3_07082023.pdf) describes the mid-year population table (year, state, age, sex, population).
+- **Where:** CONAPO open data on gob.mx / datos.gob.mx. The data dictionary published with the dataset describes the mid-year population table (year, state, age, sex, population).
 - **Notes:** the conciliation harmonizes censuses, surveys and administrative records. CONAPO also publishes its own deaths and life-table indicators, which we use as a cross-check.
 
 **How the file works (verified October 2026):** a single 80 MB ZIP (`ConDem50a19_ProyPob20a70.zip`, published August 2023) with long-format Excel workbooks: one row per year, state (national plus 32), single age 0 to 109 and sex.
@@ -55,7 +55,7 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 
 ### CNSF (Comisión Nacional de Seguros y Fianzas)
 - **What:** the **CNSF 2013** tables, the regulatory mortality tables currently in force in Mexico for life insurance pricing and reserves. Older tables (e.g. **CNSF 2000-I**, **EMSSA-09** for pensions) are kept as historical comparisons.
-- **Why:** the regulatory benchmark. The CNSF builds its tables from insurer data and deliberately overstates mortality for solvency. A 2021 study using INEGI data found estimates substantially different from EMSSA-09 ([UNAM/INEGI research](https://rde.inegi.org.mx/rde_14/doctos/rde_14_art1.pdf); [UNAM thesis repository](https://ru.dgb.unam.mx/bitstream/20.500.14330/TES01000840308/3/0840308.pdf)).
+- **Why:** the regulatory benchmark. The CNSF builds its tables from insurer data and deliberately overstates mortality for solvency. A 2021 study using INEGI data found estimates substantially different from EMSSA-09 ([UNAM thesis repository](https://ru.dgb.unam.mx/bitstream/20.500.14330/TES01000840308/3/0840308.pdf)).
 - **Where:** Annex 5.3.3-a of the Circular Única de Seguros y Fianzas (CUSF), on the CNSF's own site ([CNSF Interactiva](https://lisfcusf.cnsf.gob.mx/CUSF/A_5_3_3_A)); an older copy of the base tables is a [PDF on gob.mx](https://www.gob.mx/cms/uploads/attachment/file/73530/ANEXO_5.3.3-a.pdf). `uv run mortality ingest cnsf` loads both.
 - **What the annex contains (verified October 2026; last modified in the DOF on 8 January 2016):** nine tables of one-year rates for ages 0 to 110, all **mixed-sex** (men and women together; there are no separate male and female CNSF 2013 tables):
 
