@@ -1108,21 +1108,19 @@ def lag_validation(quarterly: pd.DataFrame, truth: pd.DataFrame) -> pd.DataFrame
               "raw_error_pct", "completed_error_pct"]]  # fmt: skip
 
 
-def build_tables(con, *, force_portfolio: bool = False) -> list[tuple[str, str]]:
-    """Run the study on the synthetic portfolio and store its results in the warehouse."""
-    from mortality import portfolio as pf
-    from mortality.config import get_paths
-
+def warehouse_inputs(con):
+    """The expected basis (CNSF 2013, annual q by age), the state mortality ratios and the state
+    population weights, from the warehouse; ``None`` if the warehouse lacks them."""
     names = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
     if not {"cnsf_rates", "state_smr", "conapo_population"} <= names:
-        return []
+        return None
     q = pd.read_sql(
         "SELECT age, qx FROM cnsf_rates WHERE \"table\" = 'CNSF M 2013' AND variant = 'base' "
         "ORDER BY age",
         con,
     ).set_index("age")["qx"]
     if q.empty:
-        return []
+        return None
     smr_df = pd.read_sql("SELECT state, smr FROM state_smr", con)
     state_smr = {
         f"{int(s):02d}": float(v) for s, v in zip(smr_df["state"], smr_df["smr"], strict=True)
@@ -1132,10 +1130,22 @@ def build_tables(con, *, force_portfolio: bool = False) -> list[tuple[str, str]]
         "AND state_code BETWEEN 1 AND 32 GROUP BY state_code",
         con,
     )
+    total = pop["p"].sum()
     weights = {
-        f"{int(c):02d}": float(p / pop["p"].sum())
-        for c, p in zip(pop["state_code"], pop["p"], strict=True)
+        f"{int(c):02d}": float(v / total) for c, v in zip(pop["state_code"], pop["p"], strict=True)
     }
+    return q, state_smr, weights
+
+
+def build_tables(con, *, force_portfolio: bool = False) -> list[tuple[str, str]]:
+    """Run the study on the synthetic portfolio and store its results in the warehouse."""
+    from mortality import portfolio as pf
+    from mortality.config import get_paths
+
+    inputs = warehouse_inputs(con)
+    if inputs is None:
+        return []
+    q, state_smr, weights = inputs
     portfolio = load_or_generate_portfolio(get_paths(), q, state_smr, weights, force_portfolio)
     results = run_study(
         portfolio.policies, q, state_smr, pf.STUDY_START, pf.STUDY_END, pf.EXTRACT_DATE,
@@ -1152,3 +1162,40 @@ def build_tables(con, *, force_portfolio: bool = False) -> list[tuple[str, str]]
             results[key].to_sql(name, con, if_exists="replace", index=False)
             docs.append((name, DESCRIPTIONS[name]))
     return docs
+
+
+# ── Running the study on a real extract ─────────────────────────────────────
+
+DATE_COLUMNS = ("birth_date", "issue_date", "exit_date", "notification_date")
+TEMPLATE_ROWS = [
+    ["P0000001", "M", "1985-04-12", "2019-03-01", "TERM", 20, 1500000, "STANDARD", "AGENT", "09",
+     "IN_FORCE", "", ""],
+    ["P0000002", "F", "1978-11-30", "2016-07-15", "WHOLE_LIFE", "", 600000, "PREFERRED", "AGENT",
+     "14", "LAPSE", "2021-07-15", ""],
+    ["P0000003", "M", "1970-02-02", "2015-01-10", "TERM", 15, 800000, "SIMPLIFIED", "BANK", "19",
+     "DEATH", "2022-05-20", "2022-06-18"],
+]  # fmt: skip
+
+
+def load_extract(path) -> pd.DataFrame:
+    """Read a policy extract from CSV or Parquet; dates are parsed, empty dates become missing."""
+    from pathlib import Path
+
+    path = Path(path)
+    frame = pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path, dtype=str)
+    for column in DATE_COLUMNS:
+        if column in frame.columns:
+            frame[column] = pd.to_datetime(frame[column], errors="coerce")
+    for column in ("sum_assured", "term_years"):
+        if column in frame.columns:
+            frame[column] = pd.to_numeric(frame[column], errors="coerce")
+    return frame
+
+
+def write_template(path) -> None:
+    """Write a CSV with the columns an extract needs and three example rows."""
+    frame = pd.DataFrame(TEMPLATE_ROWS, columns=[
+        "policy_id", "sex", "birth_date", "issue_date", "product", "term_years", "sum_assured",
+        "uw_class", "channel", "state", "status", "exit_date", "notification_date",
+    ])  # fmt: skip
+    frame.to_csv(path, index=False)

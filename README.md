@@ -74,7 +74,7 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
-  - [x] SQLite warehouse with 62 automatic data checks
+  - [x] SQLite warehouse with 71 automatic data checks
   - [x] INEGI 2014 to 2019 from the interactive tables (five-year age groups, all six years verified against INEGI totals)
   - [ ] INEGI before 2014 (optional, for a longer forecasting history)
 - [x] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag ([findings](docs/data-quality.md))
@@ -120,7 +120,16 @@ All data comes from official or academically recognized sources. Raw data is **n
 
 ![Projection fan](docs/img/projection_fan_e0.png)
 ![Longevity risk](docs/img/longevity_risk.png)
-- [ ] **8. Benchmarking:** A/E vs CNSF, SOA and HMD
+- [x] **8. Experience study:** an insurer-style A/E study on a policy-level extract, validated against planted truth ([method and findings](docs/experience-study.md))
+  - Works on any policy extract: `mortality experience run --policies my_extract.csv` (CSV template provided); a synthetic portfolio of 573,000 policies with planted effects, lapses, expiries, a claims lag and injected data defects is used to **validate the method** (every effect in it is an illustrative assumption, not an estimate for any company)
+  - Exact exposure from dates (Lexis split at anniversaries and calendar years), data validation with a record-and-death reconciliation that balances exactly
+  - A/E by count and by amount with intervals; limited-fluctuation and Bühlmann-Straub credibility; a Poisson GLM that **recovers 15 of 15 planted effects** inside their 95% intervals
+  - Select-period analysis: honest about power (a few thousand deaths can date only 2 of 5 select years)
+  - **Claims-lag (IBNR) correction:** the latest quarter reads 0.72 raw and 0.88 completed, within 2% of the truth
+  - A derived company basis with a prudent margin: on this book, CNSF 2013 overprices women's 20-year term by 34% and the in-force block's claims run 12% lower (MXN 3.6 billion of PV)
+
+![A/E overview](docs/img/experience_overview.png)
+![Impact](docs/img/experience_impact.png)
 - [ ] **9. Applications:** pricing, reserves, longevity and pandemic stress, reinsurance, COVID excess mortality
 - [ ] **10. Dashboard and report:** Streamlit app and Quarto methodology write-up
 

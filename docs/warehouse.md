@@ -30,6 +30,7 @@
 | `life_summary`, `commutation_columns`, `actuarial_values`, `life_table_comparison` | 15 / 1,665 / 4,995 / 42 | Life expectancy and other summaries, commutation columns at 4%, insurance, annuity and premium values at 3% to 5%, and the same measures for CNSF, SOA and HMD tables |
 | `projected_qx` | 10,212 | **The projected table:** central m and q by year (2025 to 2070), sex and age 0 to 110. See [projection.md](projection.md) |
 | `projection_scenarios`, `projection_parameters`, `projection_backtest`, `projection_calibration`, `projection_r_crosscheck`, `cohort_tables`, `source_gap` | 1,798 / 700 / 78 / 6 / 22 / 92 / 70 | Scenario fans (5/25/50/75/95 percentiles), fitted Lee-Carter and CBD parameters, the backtest, its calibration, the R cross-check, cohort versus period at 65, and INEGI against CONAPO by age band |
+| `experience_*` (18 tables) | see [experience-study.md](experience-study.md) | The experience study on the synthetic portfolio: data validation and reconciliation, A/E by count and amount, credibility, GLM relativities and their recovery of the planted truth, select factors, claims lag and quarterly A/E, the derived basis, pricing and in-force impact. The policy-level portfolio itself is kept as Parquet in `data/processed/experience/` |
 | `conapo_population` | 737,660 | Mid-year population by year, state, age and sex (the exposure) |
 | `conapo_deaths` | 737,660 | CONAPO modelled deaths, a cross-check |
 | `conapo_life_expectancy` | 10,059 | CONAPO life expectancy at birth |
@@ -38,8 +39,8 @@
 | `soa_catalog`, `soa_rates` | 29 / 2,869 | SOA tables (13 Mexican) and their rates |
 | `cnsf_rates` | 999 | CNSF 2013: nine tables, ages 0 to 110 |
 | `source_manifest` | 88 | Every downloaded file with URL, date, size and SHA-256 |
-| `validation_results` | 62 | Latest result of every data check |
-| `table_docs` | 51 | One-line description of each table above |
+| `validation_results` | 71 | Latest result of every data check |
+| `table_docs` | 69 | One-line description of each table above |
 
 Row counts are from the October 2026 build and grow as more INEGI years are added.
 
@@ -147,7 +148,21 @@ The projection tables of [step 7](projection.md) add nine more:
 
 The R checks are skipped when R or StMoMo is not installed.
 
-**Current state (October 2026):** 58 pass, 4 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it), and the model's own projection fan, which is too narrow for the backtest (an empirical band is added).
+The experience study of [step 8](experience-study.md) adds nine more:
+
+| Check | Severity | Rule |
+|---|---|---|
+| `experience_dq_finds_the_injected_defects` | FAIL | Validation catches every kind of injected defect, in full |
+| `experience_reconciliation_balances` | FAIL | Records and deaths balance from the extract to the clean file |
+| `experience_dimensions_partition_the_portfolio` | FAIL | Every rating factor splits the same exposure, deaths and expected deaths |
+| `experience_recovers_the_planted_effects` | FAIL | At least 80% of planted effects fall inside the 95% intervals |
+| `experience_select_factors_recovered` | WARN | At least 70% of planted select factors fall inside the intervals |
+| `experience_lag_completion_is_accurate` | FAIL | After the lag correction the last two quarters are within 12% of the truth |
+| `experience_lag_correction_improves_the_latest_quarter` | FAIL | The latest quarter is closer to the truth after the correction |
+| `experience_basis_is_a_valid_table` | FAIL | Positive multipliers, q in [0, 1], prudent above best estimate |
+| `experience_overall_ae_is_plausible` | WARN | Overall A/E between 0.3 and 3 |
+
+**Current state (October 2026):** 67 pass, 4 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it), and the model's own projection fan, which is too narrow for the backtest (an empirical band is added).
 
 ## What the checks have already caught
 

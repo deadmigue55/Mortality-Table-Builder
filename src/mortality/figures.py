@@ -29,6 +29,10 @@ BLUE, ORANGE, AQUA, MUTED = "#2a78d6", "#eb6834", "#1baf7a", "#9a998f"
 SEX_COLOR = {"M": BLUE, "F": ORANGE, "T": INK_2}
 SEX_NAME = {"M": "Men", "F": "Women", "T": "Both sexes"}
 SOURCE = "Source: INEGI deaths, CONAPO population · Mortality Table Builder"
+SYNTHETIC = (
+    "Synthetic portfolio with planted effects (illustrative, not a real insurer) · expected basis "
+    "CNSF 2013 · Mortality Table Builder"
+)
 
 
 def _style() -> None:
@@ -59,14 +63,14 @@ def _style() -> None:
     )
 
 
-def _headline(fig, title: str, subtitle: str) -> None:
+def _headline(fig, title: str, subtitle: str, source: str | None = None) -> None:
     """Left-aligned headline that states the finding, a muted line beneath, a source footer."""
     fig.text(0.015, 0.965, title, fontsize=15.5, fontweight="bold", va="top", ha="left")
     wrapped = textwrap.fill(subtitle, width=125)
     fig.text(
         0.015, 0.905, wrapped, fontsize=10.5, color=INK_2, va="top", ha="left", linespacing=1.4
     )
-    fig.text(0.015, 0.012, SOURCE, fontsize=8, color=INK_2, va="bottom", ha="left")
+    fig.text(0.015, 0.012, source or SOURCE, fontsize=8, color=INK_2, va="bottom", ha="left")
 
 
 def _save(fig, out: Path, name: str) -> Path:
@@ -1118,6 +1122,330 @@ def source_gap_chart(con, out: Path) -> Path:
     return _save(fig, out, "source_gap.png")
 
 
+# ── Experience study ────────────────────────────────────────────────────────
+
+DIM_LABEL = {
+    "sex": "Sex", "uw_class": "Underwriting class", "channel": "Channel", "product": "Product",
+    "amount_band": "Sum assured (MXN)", "age_group": "Attained age",
+    "duration_group": "Policy year",
+    "region": "State mortality", "calendar_year": "Calendar year",
+}  # fmt: skip
+LEVEL_ORDER = {
+    "sex": ["M", "F"], "uw_class": ["PREFERRED", "STANDARD", "RATED", "SIMPLIFIED"],
+    "channel": ["AGENT", "BANK", "DIGITAL"], "product": ["TERM", "WHOLE_LIFE", "ENDOWMENT"],
+    "amount_band": ["<250k", "250k-1M", "1M-5M", "5M+"],
+    "age_group": ["18-29", "30-39", "40-49", "50-59", "60+"],
+    "duration_group": ["1", "2", "3", "4", "5", "6-10", "11+"],
+    "region": ["LOW", "MID", "HIGH"],
+}  # fmt: skip
+
+
+def experience_overview_chart(con, out: Path) -> Path:
+    df = _query(
+        con,
+        "SELECT dimension, level, deaths, ae, ae_lower, ae_upper, credibility FROM experience_ae "
+        "WHERE years = 'excluding_2020_2022' AND dimension <> 'calendar_year'",
+    )
+    total = df[df["dimension"] == "all"].iloc[0]
+    rows = []
+    for dim, levels in LEVEL_ORDER.items():
+        for level in levels:
+            r = df[(df["dimension"] == dim) & (df["level"] == level)]
+            if len(r):
+                rows.append((dim, level, r.iloc[0]))
+    fig, ax = plt.subplots(figsize=(11, 9.2))
+    fig.subplots_adjust(top=0.84, bottom=0.07, left=0.27, right=0.95)
+    y = 0.0
+    ticks, labels, previous = [], [], None
+    for dim, level, r in rows:
+        if previous is not None and dim != previous:
+            y += 0.8
+        previous = dim
+        thin = r["credibility"] < 0.5
+        ax.plot(
+            [r["ae_lower"], r["ae_upper"]], [y, y], color=BLUE, lw=2.2, alpha=0.5 if thin else 0.9
+        )
+        ax.plot(r["ae"], y, "o", ms=8, mec=BLUE, mew=1.6,
+                mfc=SURFACE if thin else BLUE, zorder=3)  # fmt: skip
+        ticks.append(y)
+        labels.append(f"{DIM_LABEL[dim]}: {level}")
+        y += 1.0
+    ax.axvline(1.0, color=INK, lw=1)
+    ax.axvline(total["ae"], color=ORANGE, lw=1.4, ls=(0, (4, 3)))
+    ax.text(total["ae"] + 0.01, -0.9, f"portfolio {total['ae']:.2f}", color=ORANGE, fontsize=9.5)
+    ax.text(1.01, -0.9, "CNSF 2013 = 1.00", color=INK, fontsize=9.5)
+    ax.set_yticks(ticks, labels, fontsize=9.2)
+    ax.set_ylim(y, -1.4)
+    ax.set_xlim(0.2, 1.9)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x", visible=True)
+    ax.set_xlabel("Actual deaths / deaths expected on CNSF 2013 (count basis, 95% interval)")
+    lo, hi = (
+        df[df["dimension"] == "uw_class"]["ae"].min(),
+        df[df["dimension"] == "uw_class"]["ae"].max(),
+    )
+    _headline(
+        fig,
+        f"The portfolio runs at {total['ae']:.0%} of CNSF 2013, but classes range from {lo:.0%} "
+        f"to {hi:.0%}",
+        "Actual-to-expected by one rating factor at a time, excluding the pandemic years "
+        f"({total['deaths']:,.0f} deaths). Hollow dots have less than half credibility: their "
+        "intervals are wide and a pricing decision should not rest on them alone. Synthetic "
+        "portfolio.",
+        source=SYNTHETIC,
+    )
+    return _save(fig, out, "experience_overview.png")
+
+
+def experience_recovery_chart(con, out: Path) -> Path:
+    import numpy as np
+
+    df = _query(con, "SELECT factor, level, planted, relativity, lower, upper, inside_interval "
+                     "FROM experience_recovery")  # fmt: skip
+    fig, ax = plt.subplots(figsize=(10, 7.6))
+    fig.subplots_adjust(top=0.78, bottom=0.09, left=0.09, right=0.96)
+    span = np.array([0.42, 2.1])
+    ax.plot(span, span, color=INK_2, lw=1, ls=(0, (4, 3)))
+    for _, r in df.iterrows():
+        color = BLUE if r["inside_interval"] else ORANGE
+        ax.plot([r["planted"]] * 2, [r["lower"], r["upper"]], color=color, lw=2, alpha=0.6)
+        ax.plot(
+            r["planted"], r["relativity"], "o", color=color, ms=8, mec=SURFACE, mew=1.2, zorder=3
+        )
+    for _, r in df.iterrows():
+        if abs(r["planted"] - 1) > 0.25 and r["level"] != "18-29":
+            lift = 10 if r["level"] == "SIMPLIFIED" else -3
+            ax.annotate(f"{r['level']}", (r["planted"], r["relativity"]), xytext=(7, lift),
+                        textcoords="offset points", fontsize=8.5, color=INK_2)  # fmt: skip
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ticks = [0.5, 0.7, 1.0, 1.4, 2.0]
+    ax.set_xticks(ticks, [str(t) for t in ticks])
+    ax.set_yticks(ticks, [str(t) for t in ticks])
+    ax.minorticks_off()
+    ax.set_xlim(*span)
+    ax.set_ylim(*span)
+    ax.grid(axis="x", visible=True)
+    ax.set_xlabel("Relativity planted in the synthetic portfolio")
+    ax.set_ylabel("Relativity estimated by the study (95% interval)")
+    n_in, n = int(df["inside_interval"].sum()), len(df)
+    _headline(
+        fig,
+        f"The study recovers {n_in} of {n} planted rating effects within their 95% intervals",
+        "A synthetic portfolio is built with known mortality effects; the study never sees them. "
+        "Each dot is one level of a rating factor against its reference level, other factors held "
+        "equal (Poisson GLM). Dots on the dashed line are exact. This is what makes the method "
+        "trustworthy on a real extract.",
+        source=SYNTHETIC,
+    )
+    return _save(fig, out, "experience_recovery.png")
+
+
+def experience_select_chart(con, out: Path) -> Path:
+    df = _query(con, "SELECT * FROM experience_select")
+    fig, axes = _two_panels(sharey=True)
+    for ax, kind in zip(axes, ("fully underwritten", "simplified issue"), strict=True):
+        d = df[df["underwriting"] == kind].sort_values("duration")
+        ax.axhline(1, color=INK_2, lw=1)
+        ax.plot(d["duration"], d["planted"], color=INK, lw=2, ls=(0, (4, 3)), label="Planted")
+        ax.step(
+            d["duration"], d["smoothed"], where="mid", color=BLUE, lw=2.2, label="Smoothed estimate"
+        )
+        err = [d["relativity"] - d["lower"], d["upper"] - d["relativity"]]
+        ax.errorbar(d["duration"], d["relativity"], yerr=err,
+                    fmt="o", color=BLUE, ms=7, mec=SURFACE, mew=1.2, capsize=3, lw=1.4,
+                    alpha=0.8, label="Estimate, 95% interval")  # fmt: skip
+        ax.set_xticks([1, 2, 3, 4, 5], ["1", "2", "3", "4", "5"])
+        ax.set_xlabel("Policy year")
+        found = int(d["select_period"].iloc[0])
+        ax.set_title(f"{kind.capitalize()}: select period found {found} years", loc="left",
+                     fontweight="bold", color=INK, fontsize=10.5)  # fmt: skip
+        ax.set_ylim(0.3, 1.45)
+        ax.set_xlim(0.6, 5.4)
+    axes[0].set_ylabel("Mortality relative to the ultimate level (policy years 6-10)")
+    axes[0].legend(loc="lower right", fontsize=9)
+    full = df[df["underwriting"] == "fully underwritten"]
+    _headline(
+        fig,
+        "Underwriting selection is real, but a few thousand deaths cannot date its end",
+        f"Mortality by policy year relative to years 6 to 10. The planted effect fades over five "
+        f"years; only years 1 to {int(full['select_period'].iloc[0])} are statistically "
+        "distinguishable from ultimate, so the 'select period' is a lower bound. Smoothing "
+        "(isotonic) removes the zig-zag without inventing a shape.",
+        source=SYNTHETIC,
+    )
+    return _save(fig, out, "experience_select.png")
+
+
+def experience_quarterly_chart(con, out: Path) -> Path:
+
+    from mortality import rates
+
+    df = _query(con, "SELECT * FROM experience_ae_quarterly WHERE year >= 2020").reset_index(
+        drop=True
+    )
+    x = df["year"] + (df["quarter"] - 1) / 4
+    lo, hi = rates.poisson_interval(df["deaths_completed"].to_numpy(), 0.05)
+    fig, ax = plt.subplots(figsize=(11, 6.4))
+    fig.subplots_adjust(top=0.78, bottom=0.10, left=0.08, right=0.95)
+    ax.axvspan(2020, 2023, color=GRID, alpha=0.55, lw=0)
+    ax.text(2021.5, 0.34, "pandemic years", ha="center", fontsize=9.5, color=INK_2)
+    ax.fill_between(x, lo / df["expected"], hi / df["expected"], color=BLUE, alpha=0.15, lw=0)
+    ax.plot(x, df["ae_completed"], color=BLUE, lw=2.4, marker="o", ms=5, mec=SURFACE, mew=1.1,
+            label="Completed for the claims lag")  # fmt: skip
+    ax.plot(x, df["ae"], color=ORANGE, lw=2.0, ls=(0, (4, 2)), marker="o", ms=5,
+            mec=SURFACE, mew=1.1,
+            label="As reported")  # fmt: skip
+    ax.axhline(1, color=INK_2, lw=1)
+    last = df.iloc[-1]
+    ax.annotate(f"{last['ae']:.2f} reported\n{last['ae_completed']:.2f} completed",
+                (x.iloc[-1], last["ae"]), xytext=(-110, -42), textcoords="offset points",
+                fontsize=9.5,
+                arrowprops={"arrowstyle": "-", "color": INK_2, "lw": 0.9})  # fmt: skip
+    ax.set_xlim(2020, 2024.8)
+    ax.set_ylim(0.3, 1.5)
+    ax.set_xlabel("Calendar quarter")
+    ax.set_ylabel("Actual-to-expected on CNSF 2013 (count)")
+    ax.legend(loc="upper left", fontsize=10)
+    shortfall = 1 - last["ae"] / last["ae_completed"]
+    _headline(
+        fig,
+        f"Unreported claims make the latest quarter look {shortfall:.0%} healthier than it is",
+        f"Quarterly A/E, 95% band on the completed series. The extract was taken 46 days after "
+        f"the study ended; deaths take a median 30 days to be notified, so the last quarters are "
+        f"incomplete ({last['completion']:.0%} of the final quarter's deaths are in). Completion "
+        "factors come from the portfolio's own notification lags.",
+        source=SYNTHETIC,
+    )
+    return _save(fig, out, "experience_quarterly.png")
+
+
+def experience_credibility_chart(con, out: Path) -> Path:
+    df = (
+        _query(con, "SELECT * FROM experience_credibility")
+        .sort_values("deaths")
+        .reset_index(drop=True)
+    )
+    fig, ax = plt.subplots(figsize=(11, 8.2))
+    fig.subplots_adjust(top=0.84, bottom=0.08, left=0.25, right=0.95)
+    for i, r in df.iterrows():
+        ax.plot([r["ae"], r["bs_credible_ae"]], [i, i], color=GRID, lw=2, zorder=1)
+        ax.plot(r["ae"], i, "o", ms=8, mfc=SURFACE, mec=INK_2, mew=1.4, zorder=2)
+        ax.plot(r["ae_credible"], i, "s", ms=6, color=MUTED, zorder=3)
+        ax.plot(r["bs_credible_ae"], i, "o", ms=8, color=BLUE, mec=SURFACE, mew=1.0, zorder=4)
+    ax.axvline(1.0, color=INK, lw=1)
+    ax.axvline(float(df["grand_mean"].iloc[0]), color=ORANGE, lw=1.3, ls=(0, (4, 3)))
+    from matplotlib.lines import Line2D
+
+    ax.legend(
+        handles=[
+            Line2D([], [], marker="o", ls="", mfc=SURFACE, mec=INK_2, mew=1.4, ms=8, label="Raw"),
+            Line2D([], [], marker="s", ls="", color=MUTED, ms=6, label="Pulled toward CNSF (1.00)"),
+            Line2D([], [], marker="o", ls="", color=BLUE, ms=8, label="Pulled toward the mean"),
+        ],
+        loc="lower right", fontsize=9,
+    )  # fmt: skip
+    names = [
+        f"{c}  ({int(d)} death{'s' if d != 1 else ''})"
+        for c, d in zip(df["class"], df["deaths"], strict=True)
+    ]
+    ax.set_yticks(range(len(df)), names, fontsize=8.6)
+    ax.set_xlim(-0.05, 1.75)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x", visible=True)
+    ax.set_xlabel("Actual-to-expected on CNSF 2013")
+    candidates = df[df["deaths"] >= 30]
+    gap = (candidates["ae_credible"] - candidates["bs_credible_ae"]).abs()
+    thin = candidates.iloc[gap.to_numpy().argmax()]
+    mean = float(df["grand_mean"].iloc[0])
+    _headline(
+        fig,
+        "Thin segments should borrow strength from the portfolio, not from the old table",
+        f"{thin['class']}: {int(thin['deaths'])} deaths, raw A/E {thin['ae']:.2f}. "
+        f"Limited-fluctuation credibility pulls it to {thin['ae_credible']:.2f} (toward the "
+        f"pricing basis, 1.00); Bühlmann-Straub to {thin['bs_credible_ae']:.2f} (toward the "
+        f"portfolio mean, dashed orange, {mean:.2f}). Sex, class and channel, no pandemic years.",
+        source=SYNTHETIC,
+    )
+    return _save(fig, out, "experience_credibility.png")
+
+
+def experience_impact_chart(con, out: Path) -> Path:
+    import numpy as np
+
+    price = _query(con, "SELECT * FROM experience_pricing")
+    impact = _query(con, "SELECT * FROM experience_impact")
+    fig, axes = plt.subplots(1, 2, figsize=(11, 6.4), gridspec_kw={"width_ratios": [1.25, 1]})
+    fig.subplots_adjust(top=0.76, bottom=0.12, left=0.08, right=0.97, wspace=0.28)
+    ax = axes[0]
+    labels, x = [], np.arange(len(price))
+    for i, r in price.iterrows():
+        color = SEX_COLOR[r["sex"]]
+        ax.bar(i - 0.2, r["change_pct"] * 100, width=0.36, color=color, label=None)
+        prudent = r["premium_prudent_per_1000"] / r["premium_cnsf_per_1000"] - 1
+        ax.bar(i + 0.2, prudent * 100, width=0.36, color=color, alpha=0.4)
+        labels.append(f"{SEX_NAME[r['sex']]}\nage {int(r['issue_age'])}")
+        ax.text(i - 0.2, r["change_pct"] * 100 + (2 if r["change_pct"] >= 0 else -5),
+                f"{r['change_pct']:+.0%}", ha="center", fontsize=9, color=INK)  # fmt: skip
+    ax.axhline(0, color=INK, lw=1)
+    ax.set_ylim(-46, 26)
+    ax.set_xticks(x, labels, fontsize=9)
+    ax.set_ylabel("Change in the net premium against CNSF 2013 (%)")
+    ax.set_title("20-year term premium", loc="left", fontweight="bold", color=INK)
+    ax.text(
+        0.02,
+        0.04,
+        "solid: best estimate    faded: prudent",
+        transform=ax.transAxes,
+        fontsize=9,
+        color=INK_2,
+    )
+    ax2 = axes[1]
+    order = ["ALL", "TERM", "WHOLE_LIFE", "ENDOWMENT"]
+    d = impact.set_index("product").loc[order].reset_index()
+    names = {
+        "ALL": "All business",
+        "TERM": "Term",
+        "WHOLE_LIFE": "Whole life",
+        "ENDOWMENT": "Endowment",
+    }
+    for i, r in d.iterrows():
+        ax2.barh(
+            i, r["pv_change_pct"] * 100, color=BLUE if r["product"] != "ALL" else INK_2, height=0.6
+        )
+        ax2.text(
+            r["pv_change_pct"] * 100 - 0.6,
+            i,
+            f"{r['pv_change_pct']:+.0%}",
+            ha="right",
+            va="center",
+            fontsize=9.5,
+        )
+    ax2.set_yticks(range(len(d)), [names[p] for p in d["product"]])
+    ax2.set_xlim(-26, 2)
+    ax2.axvline(0, color=INK, lw=1)
+    ax2.invert_yaxis()
+    ax2.grid(axis="y", visible=False)
+    ax2.grid(axis="x", visible=True)
+    ax2.set_xlabel("Change in the PV of future death claims (%)")
+    ax2.set_title("In-force block", loc="left", fontweight="bold", color=INK)
+    total = impact[impact["product"] == "ALL"].iloc[0]
+    saved = (total["pv_cnsf"] - total["pv_experience"]) / 1e6
+    f40 = price[(price["sex"] == "F") & (price["issue_age"] == 40)].iloc[0]
+    m40 = price[(price["sex"] == "M") & (price["issue_age"] == 40)].iloc[0]
+    _headline(
+        fig,
+        f"CNSF 2013 overprices women's term cover by {-f40['change_pct']:.0%}; "
+        f"the block's claims run {-total['pv_change_pct']:.0%} lower",
+        f"Net 20-year term premium: women at 40 {f40['change_pct']:+.0%}, men "
+        f"{m40['change_pct']:+.0%} (a unisex table cross-subsidises). PV of future death "
+        f"benefits of the in-force block falls MXN {saved:,.0f} million at 4% interest. The "
+        "prudent margin (95% upper bound) is the price of the data's thinness.",
+        source=SYNTHETIC,
+    )
+    return _save(fig, out, "experience_impact.png")
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -1141,6 +1469,12 @@ FIGURES = (
     longevity_risk,
     cohort_vs_period,
     source_gap_chart,
+    experience_overview_chart,
+    experience_recovery_chart,
+    experience_select_chart,
+    experience_quarterly_chart,
+    experience_credibility_chart,
+    experience_impact_chart,
 )
 
 

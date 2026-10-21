@@ -174,6 +174,77 @@ def cmd_figures(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_experience_template(args: argparse.Namespace) -> int:
+    """Write a CSV template with the columns a policy extract needs."""
+    from mortality import experience
+
+    experience.write_template(args.out)
+    print(f"wrote {args.out}: the extract needs these columns, one row per policy")
+    return 0
+
+
+def cmd_experience_generate(args: argparse.Namespace) -> int:
+    """(Re)build the synthetic portfolio that the warehouse's experience study is run on."""
+    from mortality import experience, warehouse
+    from mortality.config import get_paths
+
+    inputs = experience.warehouse_inputs(warehouse.connect())
+    if inputs is None:
+        print("The warehouse lacks the CNSF table: run `mortality db build` first.")
+        return 1
+    q, state_smr, weights = inputs
+    portfolio = experience.load_or_generate_portfolio(
+        get_paths(), q, state_smr, weights, args.force
+    )
+    print(
+        f"{len(portfolio.policies):,} policy records, "
+        f"{(portfolio.truth['true_status'] == 'DEATH').sum():,} true deaths, "
+        f"{len(portfolio.defects):,} injected defects"
+    )
+    return 0
+
+
+def cmd_experience_run(args: argparse.Namespace) -> int:
+    """Run the experience study on a policy extract and write every result table as CSV."""
+    from pathlib import Path
+
+    import pandas as pd
+
+    from mortality import experience, warehouse
+
+    inputs = experience.warehouse_inputs(warehouse.connect())
+    if inputs is None:
+        print("The warehouse lacks the CNSF table: run `mortality db build` first.")
+        return 1
+    q, state_smr, _ = inputs
+    if args.basis_csv:
+        table = pd.read_csv(args.basis_csv)
+        q = table.set_index("age")["qx"]
+    policies = experience.load_extract(args.policies)
+    print(f"{len(policies):,} records read from {args.policies}")
+    results = experience.run_study(
+        policies, q, state_smr, args.study_start, args.study_end, args.extract_date,
+        interest=args.interest,
+    )  # fmt: skip
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for name, frame in results.items():
+        frame.to_csv(out / f"{name}.csv", index=False)
+    print("\ndata validation:")
+    print(results["dq_checks"].to_string(index=False))
+    print("\nreconciliation:")
+    print(results["dq_reconciliation"].to_string(index=False))
+    total = results["ae_one_way"].query("years == 'excluding_2020_2022' and dimension == 'all'")
+    if len(total):
+        t = total.iloc[0]
+        print(
+            f"\nA/E excluding 2020-2022: {t['ae']:.3f} "
+            f"(95% {t['ae_lower']:.3f} to {t['ae_upper']:.3f}), {t['deaths']:,.0f} deaths"
+        )
+    print(f"\nresults written to {out}")
+    return 0
+
+
 def _print_checks(results) -> int:
     print("\ndata checks:")
     for r in results:
@@ -205,6 +276,26 @@ def build_parser() -> argparse.ArgumentParser:
     figs = sub.add_parser("figures", help="draw the README figures from the warehouse")
     figs.add_argument("--out", default="docs/img", help="output folder (default: docs/img)")
     figs.set_defaults(func=cmd_figures)
+
+    exp = sub.add_parser("experience", help="insurer-style mortality experience study")
+    exp_sub = exp.add_subparsers(dest="action", required=True)
+    tmpl = exp_sub.add_parser("template", help="write a CSV template of the extract columns")
+    tmpl.add_argument("--out", default="policy_extract_template.csv")
+    tmpl.set_defaults(func=cmd_experience_template)
+    gen = exp_sub.add_parser("generate", help="rebuild the synthetic portfolio")
+    gen.add_argument("--force", action="store_true", help="generate again even if cached")
+    gen.set_defaults(func=cmd_experience_generate)
+    run = exp_sub.add_parser("run", help="run the study on a policy extract (CSV or Parquet)")
+    run.add_argument("--policies", required=True, help="the extract")
+    run.add_argument("--study-start", required=True, help="first day observed, e.g. 2018-01-01")
+    run.add_argument("--study-end", required=True, help="last day observed, e.g. 2024-06-30")
+    run.add_argument("--extract-date", required=True, help="date the extract was taken")
+    run.add_argument(
+        "--basis-csv", help="expected table as CSV with columns age,qx (default CNSF 2013)"
+    )
+    run.add_argument("--interest", type=float, default=0.04, help="rate for the financial impact")
+    run.add_argument("--out", default="data/processed/experience_study", help="output folder")
+    run.set_defaults(func=cmd_experience_run)
 
     ingest = sub.add_parser("ingest", help="download and prepare source data")
     sources = ingest.add_subparsers(dest="source", required=True)
