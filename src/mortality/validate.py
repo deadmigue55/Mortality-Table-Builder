@@ -764,6 +764,65 @@ CHECKS: tuple[Check, ...] = (
         " WHERE s.year IN (2020, 2021) AND (e.x < 0.85 * s.excess OR e.x > 1.15 * s.excess)",
         "State excess against 2023 rates adds up to within 15% of the national excess",
     ),
+    # ── Pricing ─────────────────────────────────────────────────────────────
+    Check(
+        "pricing_premium_earns_the_hurdle",
+        "FAIL",
+        ("pricing_premiums",),
+        "SELECT COUNT(*) FROM pricing_premiums WHERE ABS(irr - 0.10) > 0.001",
+        "The solved gross premium of every product earns the 10% target return",
+    ),
+    Check(
+        "pricing_premium_exceeds_net_and_rises_with_age",
+        "FAIL",
+        ("pricing_premiums",),
+        "SELECT (SELECT COUNT(*) FROM pricing_premiums"
+        "        WHERE gross_premium_per_1000 <= net_premium_per_1000)"
+        " + (SELECT COUNT(*) FROM pricing_premiums a JOIN pricing_premiums b"
+        "      ON b.sex = a.sex AND b.term = a.term AND b.issue_age = a.issue_age + 5"
+        "      WHERE b.gross_premium_per_1000 <= a.gross_premium_per_1000)",
+        "The gross premium is above the net premium and rises with issue age",
+    ),
+    Check(
+        "pricing_heavier_mortality_lowers_the_margin",
+        "FAIL",
+        ("pricing_adequacy",),
+        "SELECT COUNT(*) FROM pricing_adequacy h JOIN pricing_adequacy b"
+        " ON b.sex = h.sex AND b.issue_age = h.issue_age AND b.basis = 'cnsf'"
+        " WHERE h.basis IN ('cnsf_p995', 'population') AND h.margin >= b.margin",
+        "On a heavier mortality basis (99.5th percentile, the population) the margin falls",
+    ),
+    Check(
+        "pricing_improvement_raises_the_margin",
+        "FAIL",
+        ("pricing_adequacy",),
+        "SELECT COUNT(*) FROM pricing_adequacy i JOIN pricing_adequacy b"
+        " ON b.sex = i.sex AND b.issue_age = i.issue_age AND b.basis = 'cnsf'"
+        " WHERE i.basis = 'improving' AND i.margin <= b.margin",
+        "Projected mortality improvement raises the margin of a term product",
+    ),
+    Check(
+        "pricing_reserves_are_sound",
+        "FAIL",
+        ("pricing_reserves",),
+        "SELECT COUNT(*) FROM pricing_reserves WHERE statutory_reserve_end < -1e-6"
+        " OR (policy_year = 20 AND ABS(statutory_reserve_end) > 1e-6)"
+        " OR (policy_year = 1 AND statutory_reserve_end <= 0)",
+        "The statutory reserve is positive after year 1, never negative, and zero at expiry",
+    ),
+    Check(
+        "pricing_sensitivities_point_the_right_way",
+        "FAIL",
+        ("pricing_sensitivity",),
+        "SELECT COUNT(*) FROM pricing_sensitivity b JOIN pricing_sensitivity m"
+        " ON m.sex = b.sex AND m.scenario = 'mortality +20%'"
+        " JOIN pricing_sensitivity l ON l.sex = b.sex AND l.scenario = 'mortality -20%'"
+        " JOIN pricing_sensitivity p ON p.sex = b.sex"
+        " AND p.scenario = 'pandemic: year 2 mortality x2'"
+        " WHERE b.scenario = 'base case'"
+        " AND NOT (m.margin < b.margin AND b.margin < l.margin AND p.margin < b.margin)",
+        "Heavier mortality and a pandemic year lower the margin; lighter mortality raises it",
+    ),
 )
 
 

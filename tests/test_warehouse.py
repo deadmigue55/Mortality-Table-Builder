@@ -288,6 +288,12 @@ def test_all_check_sql_is_valid(paths):
         "crude_rates_single": (
             "year, sex, age, exposure, deaths, mx, mx_lower, mx_upper, qx, credible"
         ),
+        "pricing_premiums": (
+            "sex, issue_age, term, irr, gross_premium_per_1000, net_premium_per_1000"
+        ),
+        "pricing_adequacy": "sex, issue_age, basis, margin",
+        "pricing_reserves": "policy_year, statutory_reserve_end",
+        "pricing_sensitivity": "sex, scenario, margin",
         "excess_mortality": "year, observed, excess",
         "excess_summary": (
             "year, sex, observed, excess, excess_low, excess_per_covid_coded, expected_low, "
