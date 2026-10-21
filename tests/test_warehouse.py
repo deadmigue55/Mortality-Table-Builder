@@ -294,6 +294,10 @@ def test_all_check_sql_is_valid(paths):
         "pricing_adequacy": "sex, issue_age, basis, margin",
         "pricing_reserves": "policy_year, statutory_reserve_end",
         "pricing_sensitivity": "sex, scenario, margin",
+        "stress_pandemic_book": "kind, year, dampening, severity, base_claims, extra_claims",
+        "stress_pandemic_age": "year, extra_claims",
+        "stress_longevity": "scenario, reserve_T",
+        "stress_hedge": "shock, life_book_change, annuity_change",
         "excess_mortality": "year, observed, excess",
         "excess_summary": (
             "year, sex, observed, excess, excess_low, excess_per_covid_coded, expected_low, "

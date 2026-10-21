@@ -823,6 +823,70 @@ CHECKS: tuple[Check, ...] = (
         " AND NOT (m.margin < b.margin AND b.margin < l.margin AND p.margin < b.margin)",
         "Heavier mortality and a pandemic year lower the margin; lighter mortality raises it",
     ),
+    # ── Stress tests ────────────────────────────────────────────────────────
+    Check(
+        "stress_replays_add_claims_and_halve_with_dampening",
+        "FAIL",
+        ("stress_pandemic_book",),
+        "SELECT COUNT(*) FROM stress_pandemic_book a JOIN stress_pandemic_book b"
+        " ON a.kind = 'replay' AND b.kind = 'replay' AND a.year = b.year"
+        " AND a.dampening = 1.0 AND b.dampening = 0.5"
+        " WHERE a.extra_claims <= 0"
+        " OR ABS(b.extra_claims - a.extra_claims / 2) > 1e-6 * a.base_claims",
+        "Every replay adds claims, and an insured-lives dampening of 50% halves the extra claims",
+    ),
+    Check(
+        "stress_severity_is_proportional",
+        "FAIL",
+        ("stress_pandemic_book",),
+        "SELECT COUNT(*) FROM stress_pandemic_book a JOIN stress_pandemic_book b"
+        " ON a.kind = 'severity' AND b.kind = 'severity' AND a.severity = 0.5 AND b.severity = 2.0"
+        " WHERE ABS(b.extra_claims - 4 * a.extra_claims) > 1e-6 * a.base_claims",
+        "Four times the severity gives four times the extra claims",
+    ),
+    Check(
+        "stress_age_table_adds_up",
+        "FAIL",
+        ("stress_pandemic_age", "stress_pandemic_book"),
+        "SELECT COUNT(*) FROM (SELECT SUM(extra_claims) AS x FROM stress_pandemic_age) a"
+        " JOIN stress_pandemic_book b ON b.kind = 'replay' AND b.year = 2021 AND b.dampening = 1.0"
+        " WHERE ABS(a.x - b.extra_claims) > 1e-6 * b.base_claims",
+        "The age-band split of the 2021 replay adds up to the book's extra claims",
+    ),
+    Check(
+        "stress_longevity_points_the_right_way",
+        "FAIL",
+        ("stress_longevity",),
+        "SELECT COUNT(*) FROM stress_longevity c"
+        " JOIN stress_longevity n ON n.scenario = 'no_improvement'"
+        " JOIN stress_longevity d ON d.scenario = 'improvement_x2'"
+        " JOIN stress_longevity l ON l.scenario = 'level_minus_20'"
+        " JOIN stress_longevity i ON i.scenario = 'interest_minus_1'"
+        " JOIN stress_longevity u ON u.scenario = 'interest_plus_1'"
+        " WHERE c.scenario = 'central' AND NOT (n.reserve_T < c.reserve_T"
+        " AND c.reserve_T < d.reserve_T AND c.reserve_T < l.reserve_T"
+        " AND i.reserve_T > c.reserve_T AND c.reserve_T > u.reserve_T)",
+        "Less improvement lowers the annuity reserve, more improvement, lower mortality or lower"
+        " interest raise it",
+    ),
+    Check(
+        "stress_hedge_signs",
+        "FAIL",
+        ("stress_hedge",),
+        "SELECT COUNT(*) FROM stress_hedge WHERE (shock LIKE '%2020%' OR shock LIKE '%2021%')"
+        " AND NOT (life_book_change > 0 AND annuity_change < 0)"
+        " OR (shock LIKE 'Mortality%' AND NOT (life_book_change < 0 AND annuity_change > 0))",
+        "A pandemic costs the life book and releases annuity reserve; longevity does the opposite",
+    ),
+    Check(
+        "stress_pensions_table_is_prudent",
+        "WARN",
+        ("stress_longevity",),
+        "SELECT COUNT(*) FROM stress_longevity p JOIN stress_longevity c"
+        " ON c.scenario = 'central' WHERE p.scenario = 'cnsf_pensions'"
+        " AND p.reserve_T <= c.reserve_T",
+        "The regulatory pensions table holds a larger reserve than the central projection",
+    ),
 )
 
 

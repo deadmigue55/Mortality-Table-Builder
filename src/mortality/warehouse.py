@@ -19,7 +19,17 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from mortality import excess, experience, graduation, lifetable, pricing, projection, quality, rates
+from mortality import (
+    excess,
+    experience,
+    graduation,
+    lifetable,
+    pricing,
+    projection,
+    quality,
+    rates,
+    stress,
+)
 from mortality.config import Paths, get_paths
 
 
@@ -273,6 +283,7 @@ def build(*, paths: Paths | None = None) -> dict[str, int]:
         docs += experience.build_tables(con)
         docs += excess.build_tables(con)
         docs += pricing.build_tables(con)
+        docs += stress.build_tables(con)
 
         if _load_manifest(con, paths):
             docs.append(("source_manifest", "Every downloaded file: URL, date, size and SHA-256"))
