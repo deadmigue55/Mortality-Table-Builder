@@ -395,7 +395,7 @@ Mortality-Table-Builder/
 
 **Miguel Vilchis**: Actuarial Science, Facultad de Ciencias UNAM · Pricing & Risk Analytics at SCOR Reinsurance
 
-[Portfolio](https://portfolio-psi-nine-sz4lsw795q.vercel.app/) · [GitHub](https://github.com/deadmigue55) · [LinkedIn](https://www.linkedin.com/in/deadmigue)
+[Portfolio](https://deadmigue.vercel.app/) · [GitHub](https://github.com/deadmigue55) · [LinkedIn](https://www.linkedin.com/in/deadmigue)
 
 ## Citation and license
 
