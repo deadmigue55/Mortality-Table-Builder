@@ -33,6 +33,7 @@
 | `excess_baselines`, `excess_mortality`, `excess_summary`, `excess_monthly`, `excess_by_cause`, `excess_state` | 760 / 190 / 15 / 60 / 69 / 96 | Excess mortality in the pandemic: four baselines, observed against expected by age band and sex, totals with ranges and years of life lost, monthly waves, by cause chapter, by state. See [excess-mortality.md](excess-mortality.md) |
 | `pricing_premiums`, `pricing_adequacy`, `pricing_profit_test`, `pricing_sensitivity`, `pricing_reserves` | 32 / 80 / 40 / 26 / 40 | Pricing, profit testing and reserves of an illustrative term product: premiums solved for a 10% return, adequacy on five mortality bases, year-by-year cash flows, sensitivities, statutory reserve against best-estimate liability. See [pricing.md](pricing.md) |
 | `stress_pandemic_book`, `stress_pandemic_age`, `stress_longevity`, `stress_hedge` | 10 / 10 / 9 / 4 | Stress tests: the 2020-2022 excess replayed on the synthetic in-force book (with the regulator's 99.5th percentile table for comparison), an illustrative annuity block on eight bases, and the shocks on both books together. See [stress-tests.md](stress-tests.md) |
+| `reinsurance_concentration`, `reinsurance_aggregate`, `reinsurance_structures`, `reinsurance_frontier`, `reinsurance_price_sensitivity`, `reinsurance_yrt_rating`, `reinsurance_longevity_swap`, `reinsurance_longevity_distribution` | 6 / 3 / 11 / 36 / 9 / 9 / 1 / 7 | Reinsurance: size concentration, simulated aggregate claims by source of risk, quota share / surplus / excess of loss / stop loss with cost and capital relief, retention layers and their price, sensitivity to the reinsurer's return, YRT experience rating by cedant segment, and a longevity swap on the annuity block. See [reinsurance.md](reinsurance.md) |
 | `experience_*` (18 tables) | see [experience-study.md](experience-study.md) | The experience study on the synthetic portfolio: data validation and reconciliation, A/E by count and amount, credibility, GLM relativities and their recovery of the planted truth, select factors, claims lag and quarterly A/E, the derived basis, pricing and in-force impact. The policy-level portfolio itself is kept as Parquet in `data/processed/experience/` |
 | `conapo_population` | 737,660 | Mid-year population by year, state, age and sex (the exposure) |
 | `conapo_deaths` | 737,660 | CONAPO modelled deaths, a cross-check |
@@ -42,8 +43,8 @@
 | `soa_catalog`, `soa_rates` | 29 / 2,869 | SOA tables (13 Mexican) and their rates |
 | `cnsf_rates` | 999 | CNSF 2013: nine tables, ages 0 to 110 |
 | `source_manifest` | 88 | Every downloaded file with URL, date, size and SHA-256 |
-| `validation_results` | 91 | Latest result of every data check |
-| `table_docs` | 84 | One-line description of each table above |
+| `validation_results` | 100 | Latest result of every data check |
+| `table_docs` | 92 | One-line description of each table above |
 
 Row counts are from the October 2026 build and grow as more INEGI years are added.
 
@@ -200,7 +201,21 @@ The stress tables of [step 9c](stress-tests.md) add six more:
 | `stress_hedge_signs` | FAIL | A pandemic costs the life book and releases annuity reserve; longevity does the opposite |
 | `stress_pensions_table_is_prudent` | WARN | The regulatory pensions table holds more than the central projection |
 
-**Current state (October 2026):** 87 pass, 4 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it), and the model's own projection fan, which is too narrow for the backtest (an empirical band is added).
+The reinsurance tables of [step 9d](reinsurance.md) add nine more:
+
+| Check | Severity | Rule |
+|---|---|---|
+| `reinsurance_concentration_adds_up` | FAIL | The size bands partition policies, sum at risk and expected claims |
+| `reinsurance_each_source_of_risk_widens_the_tail` | FAIL | Adding the mortality level and the pandemic widens the distribution of claims |
+| `reinsurance_simulation_matches_expected_claims` | FAIL | Simulated mean claims within 2% of the expected claims |
+| `reinsurance_covers_never_add_risk` | FAIL | Non-negative recoveries and cost; the cedant is no worse off |
+| `reinsurance_retention_frontier_is_monotone` | FAIL | A higher retention costs less and relieves less capital |
+| `reinsurance_dearer_capital_raises_the_price` | FAIL | A higher reinsurer return raises the price of every cover |
+| `reinsurance_excess_of_loss_is_cheaper_than_quota_share` | WARN | Per capital relieved, non-proportional covers cost less than a quota share |
+| `reinsurance_credibility_is_valid` | FAIL | Credibility in [0, 1]; experience factor between the manual rate and the A/E |
+| `reinsurance_swap_agrees_with_the_stress_tests` | FAIL | The swap's central reserve is the stress tests'; positive capital and fee |
+
+**Current state (October 2026):** 96 pass, 4 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it), and the model's own projection fan, which is too narrow for the backtest (an empirical band is added).
 
 ## What the checks have already caught
 

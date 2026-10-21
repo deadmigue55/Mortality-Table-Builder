@@ -307,6 +307,9 @@ def test_all_check_sql_is_valid(paths):
             "retained_mean, price_of_relief"
         ),
         "reinsurance_frontier": "family, parameter, cost, capital_relief",
+        "reinsurance_price_sensitivity": (
+            "reinsurer_coc, xl_price_of_relief, stop_loss_price_of_relief"
+        ),
         "reinsurance_yrt_rating": "credibility, ae_amount, experience_factor",
         "reinsurance_longevity_swap": "central_reserve, capital, fee_pv",
         "excess_mortality": "year, observed, excess",

@@ -16,6 +16,7 @@ import matplotlib
 matplotlib.use("Agg")  # no display needed
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 
@@ -1943,6 +1944,212 @@ def stress_hedge(con, out: Path) -> Path:
     return _save(fig, out, "stress_hedge.png")
 
 
+REINSURANCE_SOURCE = (
+    "Synthetic in-force block and illustrative annuity block (not a real insurer); market terms "
+    "assumed (reinsurer cost of capital 6%, cedant 10%) · Mortality Table Builder"
+)
+
+
+def _short_structure(name: str) -> str:
+    rules = (
+        ("Quota share", lambda n: "QS " + n.split()[-1]),
+        ("Surplus", lambda n: "Surplus " + n.split("retention ")[1].split(",")[0]),
+        ("+ stop loss", lambda n: "XL 8M xs 1M\n+ stop loss"),
+        ("Per-life", lambda n: "XL " + n.split("XL ")[1]),
+        ("Stop loss", lambda n: "Stop loss xs " + n.split("xs ")[1].split(" ")[0]),
+    )
+    for key, make in rules:
+        if key in name:
+            return make(name)
+    return name
+
+
+def reinsurance_risk(con, out: Path) -> Path:
+    c = _query(con, "SELECT * FROM reinsurance_concentration")
+    a = _query(con, "SELECT * FROM reinsurance_aggregate")
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(11, 6.0), gridspec_kw={"width_ratios": [1.2, 1]})
+    fig.subplots_adjust(top=0.76, bottom=0.13, left=0.07, right=0.97, wspace=0.22)
+    x = range(len(c))
+    ax.bar([i - 0.2 for i in x], c["share_of_policies"] * 100, width=0.38, color=MUTED,
+           label="Share of policies")  # fmt: skip
+    ax.bar([i + 0.2 for i in x], c["share_of_sum_at_risk"] * 100, width=0.38, color=BLUE,
+           label="Share of sum at risk")  # fmt: skip
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(c["band"], fontsize=9.5)
+    ax.set_xlabel("Sum assured")
+    ax.set_ylabel("%")
+    ax.legend(loc="upper left", fontsize=9.5)
+    cap = a["capital"].to_numpy() / 1e6
+    steps = [cap[0], cap[1] - cap[0], cap[2] - cap[1]]
+    bottoms = [0, cap[0], cap[1]]
+    names = ["Who dies\n(random)", "Uncertain\nmortality level", "Pandemic"]
+    colors = [BLUE, AQUA, ORANGE]
+    for i, (s, b, col) in enumerate(zip(steps, bottoms, colors, strict=True)):
+        bx.bar(i, s, bottom=b, color=col, width=0.6)
+        bx.text(i, b + s + 5, f"+{s:,.0f}" if i else f"{s:,.0f}", ha="center", fontsize=10,
+                color=INK_2)  # fmt: skip
+    bx.bar(3, cap[2], color=INK, width=0.6)
+    bx.text(3, cap[2] + 5, f"{cap[2]:,.0f}", ha="center", fontsize=10, color=INK_2)
+    bx.set_xticks(range(4))
+    bx.set_xticklabels([*names, "Capital"], fontsize=9.5)
+    bx.set_ylabel("Capital: 99.5% claims over the mean (MXN million)")
+    bx.set_ylim(0, cap[2] * 1.15)
+    big = c[c["band"].isin(["2M-5M", "5M+"])]
+    pandemic_share = steps[2] / cap[2]
+    _headline(
+        fig,
+        f"The pandemic is {pandemic_share:.0%} of the claims capital; "
+        f"{big['share_of_policies'].sum():.0%} of policies hold "
+        f"{big['share_of_sum_at_risk'].sum():.0%} of the sum at risk",
+        f"Policies of 2 million or more are {big['share_of_policies'].sum():.0%} of the block and "
+        f"{big['share_of_sum_at_risk'].sum():.0%} of its sum at risk. Next year's expected claims "
+        f"are MXN {a['mean'].iloc[0] / 1e6:,.0f} million; random fluctuation alone is a "
+        f"{a['cv'].iloc[0]:.1%} coefficient of variation, and the mortality level and a "
+        f"pandemic (1 year in 30, half the population's excess) double the capital needed.",
+        REINSURANCE_SOURCE,
+    )
+    return _save(fig, out, "reinsurance_risk.png")
+
+
+def reinsurance_structures_chart(con, out: Path) -> Path:
+    s = _query(con, "SELECT * FROM reinsurance_structures WHERE family <> 'none'")
+    fig, ax = plt.subplots(figsize=(11, 6.2))
+    fig.subplots_adjust(top=0.76, bottom=0.11, left=0.09, right=0.96)
+    colors = {"proportional": ORANGE, "excess of loss": BLUE, "combined": INK}
+    top = float(s["capital_relief"].max()) / 1e6 * 1.1
+    xs = np.linspace(0, top, 2)
+    ax.fill_between(xs, 0, 0.10 * xs, color=AQUA, alpha=0.12, lw=0)
+    ax.plot(xs, 0.10 * xs, color=AQUA, lw=1.5, ls=(0, (4, 3)))
+    ax.text(top * 0.99, 0.10 * top * 0.99 + 0.4, "Cedant's cost of capital, 10%", ha="right",
+            fontsize=9, color=AQUA, va="bottom")  # fmt: skip
+    for fam, part in s.groupby("family"):
+        ax.scatter(part["capital_relief"] / 1e6, part["cost"] / 1e6, s=90, color=colors[fam],
+                   label=fam.capitalize(), zorder=3)  # fmt: skip
+    offsets = {"Surplus 0.5M": (-6, 4), "Surplus 1M": (-6, 4), "QS 40%": (6, -12),
+               "XL 8M xs 1M": (6, -14), "XL 16M xs 2M": (6, -14)}  # fmt: skip
+    for _, r in s.iterrows():
+        label = _short_structure(r["structure"])
+        dx, dy = offsets.get(label, (6, 4))
+        ax.annotate(label, (r["capital_relief"] / 1e6, r["cost"] / 1e6), xytext=(dx, dy),
+                    textcoords="offset points", fontsize=8.5, color=INK_2,
+                    ha="right" if dx < 0 else "left")  # fmt: skip
+    ax.set_xlabel("Capital relieved (MXN million, 99.5% claims over the mean)")
+    ax.set_ylabel("Net cost of the cover (MXN million a year)")
+    ax.set_xlim(0, top)
+    ax.set_ylim(0, float(s["cost"].max()) / 1e6 * 1.15)
+    ax.legend(loc="upper left", fontsize=9.5)
+    stop = s[s["structure"].str.contains("115")].iloc[0]
+    qs = s[s["structure"] == "Quota share 40%"].iloc[0]
+    _headline(
+        fig,
+        "Cover for the tail is cheaper per MXN of capital than sharing every claim",
+        f"Each cover on the same 10,000 simulated years; below the dashed line a cover costs less "
+        f"than the cedant's own 10% cost of holding the capital. A stop loss relieves "
+        f"{stop['relief_share']:.0%} of the capital for MXN {stop['cost'] / 1e6:,.0f} million "
+        f"a year; a 40% quota share relieves {qs['relief_share']:.0%} for "
+        f"MXN {qs['cost'] / 1e6:,.0f} million. Proportional treaties cost about "
+        f"{qs['price_of_relief']:.0%} of the capital they relieve.",
+        REINSURANCE_SOURCE,
+    )
+    return _save(fig, out, "reinsurance_structures.png")
+
+
+def reinsurance_frontier_chart(con, out: Path) -> Path:
+    f = _query(con, "SELECT * FROM reinsurance_frontier")
+    sens = _query(con, "SELECT * FROM reinsurance_price_sensitivity ORDER BY reinsurer_coc")
+    xl = f[(f["family"] == "excess of loss") & f["marginal_price"].notna()].sort_values("parameter")
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(11, 6.0))
+    fig.subplots_adjust(top=0.76, bottom=0.13, left=0.08, right=0.97, wspace=0.25)
+    ax.plot(xl["parameter"] / 1e6, xl["marginal_price"] * 100, color=BLUE, lw=2.4)
+    ax.axhline(10, color=AQUA, lw=1.5, ls=(0, (4, 3)))
+    ax.text(0.105, 10.6, "Cedant's cost of capital, 10%", fontsize=9, color=AQUA)
+    ax.set_xscale("log")
+    ax.set_xticks([0.1, 0.25, 0.5, 1, 2, 5, 10])
+    ax.set_xticklabels(["0.1M", "0.25M", "0.5M", "1M", "2M", "5M", "10M"])
+    ax.set_xlabel("Retention (layer from here to the next retention up)")
+    ax.set_ylabel("Price of the layer: cost per MXN of capital relieved (%)")
+    ax.set_ylim(0, max(float(xl["marginal_price"].max()) * 100 * 1.05, 16))
+    ax.set_title("Reinsurer asks 6% on its capital", loc="left", fontsize=10.5, color=INK_2)
+    r = sens["reinsurer_coc"] * 100
+    bx.plot(r, sens["xl_price_of_relief"] * 100, color=BLUE, lw=2.4, marker="o",
+            label="Per-life XL, retention 1M")  # fmt: skip
+    bx.plot(r, sens["stop_loss_price_of_relief"] * 100, color=ORANGE, lw=2.4, marker="o",
+            label="Stop loss, 100% xs 125%")  # fmt: skip
+    bx.axhline(10, color=AQUA, lw=1.5, ls=(0, (4, 3)))
+    bx.set_xlabel("Return the reinsurer asks on its capital (%)")
+    bx.set_ylabel("Price of capital relief (%)")
+    bx.legend(loc="upper left", fontsize=9.5)
+    bx.set_title("Layers priced against the cedant's 10%", loc="left", fontsize=10.5, color=INK_2)
+    cross = float(np.interp(10.0, sens["xl_price_of_relief"] * 100, r))
+    cut = sens.loc[sens["reinsurer_coc"] == 0.06, "cutoff_retention"]
+    cut_text = f"up to {cut.iloc[0] / 1e6:.1f} million" if len(cut) and cut.notna().all() else ""
+    dead = sens.loc[sens["cutoff_retention"].isna(), "reinsurer_coc"]
+    dead_text = (
+        f"at {dead.min():.0%} even the lowest layer is not"
+        if len(dead)
+        else "at every rate some are"
+    )
+    _headline(
+        fig,
+        f"A per-life cover pays only while the reinsurer asks under {cross:.1f}% on its capital",
+        f"Each layer of a per-life excess of loss costs the cedant a few percent of the capital "
+        f"it relieves; the thin layers above 5 million are dearer and noisier. At a 6% reinsurer "
+        f"return the layers {cut_text} are cheaper than the cedant's own 10%; {dead_text}. A "
+        f"stop loss stays worth buying until the reinsurer asks 10%.",
+        REINSURANCE_SOURCE,
+    )
+    return _save(fig, out, "reinsurance_frontier.png")
+
+
+def reinsurance_rating_swap(con, out: Path) -> Path:
+    r = _query(con, "SELECT * FROM reinsurance_yrt_rating")
+    r["segment"] = r["dimension"].map({"channel": "Channel", "uw_class": "UW class",
+                                       "sex": "Sex"}) + ": " + r["level"].astype(str)  # fmt: skip
+    r = r.sort_values("experience_factor", ascending=False).reset_index(drop=True)
+    swap = _query(con, "SELECT * FROM reinsurance_longevity_swap").iloc[0]
+    dist = _query(con, "SELECT * FROM reinsurance_longevity_distribution")
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(11, 6.2), gridspec_kw={"width_ratios": [1.5, 1]})
+    fig.subplots_adjust(top=0.76, bottom=0.12, left=0.22, right=0.97, wspace=0.40)
+    y = range(len(r))
+    for i, row in r.iterrows():
+        ax.plot([row["ae_amount"], row["experience_factor"]], [i, i], color=GRID, lw=3, zorder=1)
+    ax.scatter(r["ae_amount"], list(y), color=MUTED, s=55, zorder=2, label="Amount A/E")
+    ax.scatter(r["experience_factor"], list(y), color=BLUE, s=75, zorder=3,
+               label="Rated factor (credibility-weighted)")  # fmt: skip
+    ax.axvline(1.0, color=INK_2, lw=1.0)
+    ax.set_yticks(list(y))
+    ax.set_yticklabels(
+        [f"{s}  (Z {z:.0%})" for s, z in zip(r["segment"], r["credibility"], strict=True)],
+        fontsize=9,
+    )
+    ax.invert_yaxis()
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x")
+    ax.set_xlabel("Relative to the manual rate (1.0)")
+    ax.legend(loc="upper left", fontsize=8.5)
+    lev = dist.set_index("level")["change_vs_central"] * 100
+    cols = [BLUE if v < 0 else ORANGE for v in lev]
+    bx.bar(range(len(lev)), lev.to_numpy(), color=cols, width=0.65)
+    bx.set_xticks(range(len(lev)))
+    bx.set_xticklabels([f"{x * 100:g}" for x in lev.index], fontsize=9)
+    bx.axhline(0, color=INK_2, lw=0.9)
+    bx.set_xlabel("Percentile of the reserve")
+    bx.set_ylabel("Reserve against central (%)")
+    _headline(
+        fig,
+        f"A longevity swap on this block costs about {swap['fee_bps_per_year']:.0f} basis points a "
+        f"year",
+        f"Left: experience rating of a yearly renewable term treaty by cedant segment; "
+        f"credibility Z allows for the variability of claim sizes. "
+        f"Right: the annuity block's reserve (central MXN {swap['central_reserve'] / 1e9:,.1f} "
+        f"billion) under uncertain improvement and a finite pool. The 99.5% tail adds "
+        f"MXN {swap['capital'] / 1e6:,.0f} million; the fee is "
+        f"{swap['fee_share_of_reserve']:.1%} of the reserve.",
+        REINSURANCE_SOURCE,
+    )
+    return _save(fig, out, "reinsurance_rating_swap.png")
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -1983,6 +2190,10 @@ FIGURES = (
     stress_pandemic,
     stress_longevity,
     stress_hedge,
+    reinsurance_risk,
+    reinsurance_structures_chart,
+    reinsurance_frontier_chart,
+    reinsurance_rating_swap,
 )
 
 

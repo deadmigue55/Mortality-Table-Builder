@@ -945,6 +945,16 @@ CHECKS: tuple[Check, ...] = (
         "Per capital relieved, non-proportional covers cost less than a quota share",
     ),
     Check(
+        "reinsurance_dearer_capital_raises_the_price",
+        "FAIL",
+        ("reinsurance_price_sensitivity",),
+        "SELECT COUNT(*) FROM reinsurance_price_sensitivity a JOIN reinsurance_price_sensitivity b"
+        " ON a.reinsurer_coc < b.reinsurer_coc"
+        " WHERE a.xl_price_of_relief > b.xl_price_of_relief + 1e-9"
+        " OR a.stop_loss_price_of_relief > b.stop_loss_price_of_relief + 1e-9",
+        "A higher return on the reinsurer's capital raises the price of every cover",
+    ),
+    Check(
         "reinsurance_credibility_is_valid",
         "FAIL",
         ("reinsurance_yrt_rating",),

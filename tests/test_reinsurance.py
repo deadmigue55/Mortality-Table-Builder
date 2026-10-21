@@ -165,3 +165,30 @@ def test_longevity_swap_prices_a_positive_fee_and_reproduces_the_central_reserve
     )
     assert dist["reserve"].is_monotonic_increasing
     assert 0.0 < summary["pool_share_of_variance"] < 1.0
+
+
+def test_dearer_reinsurer_capital_raises_prices_and_shrinks_the_worthwhile_layers():
+    sa, q = block()
+    terms = small_terms(pandemic_probability=0.05)
+    sim = re.simulate_claims(sa, q, np.minimum(q * 1.4, 1.0), terms)
+    table = re.price_sensitivity(sim, terms, rates=(0.04, 0.08, 0.12))
+    assert table["xl_price_of_relief"].is_monotonic_increasing
+    assert table["stop_loss_price_of_relief"].is_monotonic_increasing
+    cutoff = table["cutoff_retention"].fillna(0.0)
+    assert cutoff.is_monotonic_decreasing
+    assert (table["net_benefit"] >= -1e-6).all()
+
+
+def test_marginal_layer_prices_average_to_the_overall_price():
+    sa, q = block()
+    terms = small_terms()
+    sim = re.simulate_claims(sa, q, q, terms)
+    f = re.retention_frontier(sim, terms, points=10)
+    xl = f[f["family"] == "excess of loss"].sort_values("parameter")
+    assert xl["marginal_price"].iloc[:-1].notna().all() and np.isnan(xl["marginal_price"].iloc[-1])
+    # the layers from the lowest retention to the highest add up to the cover at the lowest
+    cost = xl["cost"].to_numpy()
+    relief = xl["capital_relief"].to_numpy()
+    layer_relief = relief[:-1] - relief[1:]
+    average = np.average(xl["marginal_price"].iloc[:-1], weights=layer_relief)
+    assert (cost[0] - cost[-1]) / (relief[0] - relief[-1]) == pytest.approx(average)

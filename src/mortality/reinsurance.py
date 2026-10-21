@@ -22,7 +22,7 @@ is illustrative of the method, not of a real treaty. The pieces:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 import pandas as pd
@@ -260,22 +260,68 @@ def retention_frontier(
     sim: Simulation, terms: Terms = DEFAULT_TERMS, points: int = 25
 ) -> pd.DataFrame:
     """Cost against capital relief for a per-life excess of loss (unlimited) across retentions,
-    and for a quota share across shares: the frontier a cedant chooses its retention on."""
+    and for a quota share across shares: the frontier a cedant chooses its retention on.
+
+    ``net_benefit`` is the cedant's cost of capital on the capital relieved less the cost of the
+    cover; ``marginal_price`` the price of the layer between a retention and the next one up."""
     rows = []
+
+    def add(family: str, parameter: float, recoveries: np.ndarray, premium: float) -> None:
+        e = evaluate(family, family, sim, recoveries, premium, terms)
+        rows.append(
+            {"family": family, "parameter": float(parameter), "cost": e["cost"],
+             "capital_relief": e["capital_relief"],
+             "expected_recoveries": e["expected_recoveries"], "sd_reduction": e["sd_reduction"],
+             "net_benefit": terms.cedant_coc * e["capital_relief"] - e["cost"]}
+        )  # fmt: skip
+
     for retention in np.geomspace(100_000, 10_000_000, points):
         r = per_life_xl(sim, retention)
-        e = evaluate("xl", "excess of loss", sim, r, non_proportional_premium(r, terms), terms)
-        rows.append({"family": "excess of loss", "parameter": float(retention),
-                     "cost": e["cost"], "capital_relief": e["capital_relief"],
-                     "expected_recoveries": e["expected_recoveries"],
-                     "sd_reduction": e["sd_reduction"]})  # fmt: skip
+        add("excess of loss", retention, r, non_proportional_premium(r, terms))
     for share in np.linspace(0.0, 1.0, 11):
         r = quota_share(sim, share)
-        e = evaluate("qs", "proportional", sim, r, proportional_premium(r, terms), terms)
-        rows.append({"family": "quota share", "parameter": float(share),
-                     "cost": e["cost"], "capital_relief": e["capital_relief"],
-                     "expected_recoveries": e["expected_recoveries"],
-                     "sd_reduction": e["sd_reduction"]})  # fmt: skip
+        add("quota share", share, r, proportional_premium(r, terms))
+    table = pd.DataFrame(rows)
+    table["marginal_price"] = np.nan
+    xl = table[table["family"] == "excess of loss"].sort_values("parameter")
+    d_cost = xl["cost"].to_numpy()[:-1] - xl["cost"].to_numpy()[1:]
+    d_relief = xl["capital_relief"].to_numpy()[:-1] - xl["capital_relief"].to_numpy()[1:]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        table.loc[xl.index[:-1], "marginal_price"] = d_cost / d_relief
+    return table
+
+
+def price_sensitivity(
+    sim: Simulation,
+    terms: Terms = DEFAULT_TERMS,
+    rates=(0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12),
+) -> pd.DataFrame:
+    """How the layers worth buying move with the return the reinsurer asks on its capital.
+
+    Moving the retention of a per-life excess of loss down adds a layer; its marginal price is the
+    extra cost over the extra capital relieved. High layers relieve little capital for what they
+    cost, so the marginal price rises with the retention. A layer is worth buying when its price is
+    below the cedant's own cost of capital. Going up from the lowest retention, ``cutoff_retention``
+    is where the layers first become too dear (missing when even the lowest is), and
+    ``net_benefit`` what the worthwhile layers below it earn the cedant."""
+    mean = float(sim.totals.mean())
+    rows = []
+    for rate in rates:
+        t = replace(terms, reinsurer_coc=rate)
+        frontier = retention_frontier(sim, t)
+        xl = frontier[frontier["family"] == "excess of loss"].sort_values("parameter")
+        too_dear = np.flatnonzero((xl["marginal_price"] >= t.cedant_coc).to_numpy())
+        stop_at = int(too_dear[0]) if len(too_dear) else len(xl) - 1  # first layer not worth it
+        cutoff = float(xl["parameter"].iloc[stop_at]) if stop_at > 0 else np.nan
+        benefit = float(xl["net_benefit"].iloc[0] - xl["net_benefit"].iloc[stop_at])
+        one = xl.iloc[(xl["parameter"] - 1_000_000.0).abs().argmin()]
+        r = stop_loss(sim.totals, 1.25 * mean, mean)
+        stop = evaluate("stop loss", "excess of loss", sim, r, non_proportional_premium(r, t), t)
+        rows.append(
+            {"reinsurer_coc": rate, "cutoff_retention": cutoff, "net_benefit": benefit,
+             "xl_price_of_relief": float(one["cost"] / one["capital_relief"]),
+             "stop_loss_price_of_relief": stop["price_of_relief"]}
+        )  # fmt: skip
     return pd.DataFrame(rows)
 
 
@@ -436,6 +482,10 @@ DESCRIPTIONS = {
         "Cost against capital relief for a per-life excess of loss across retentions and for a "
         "quota share across shares"
     ),
+    "reinsurance_price_sensitivity": (
+        "Best retention of a per-life excess of loss and the price of capital relief against the "
+        "return the reinsurer asks on its own capital"
+    ),
     "reinsurance_yrt_rating": (
         "Experience rating of a yearly renewable term treaty by cedant segment: claim-size "
         "variability, credibility, experience factor and rated rate per 1,000"
@@ -497,6 +547,7 @@ def build_tables(con, terms: Terms = DEFAULT_TERMS) -> list[tuple[str, str]]:
         "reinsurance_aggregate": aggregate_table(sa, q, q_pandemic, terms),
         "reinsurance_structures": structure_table(sim, terms),
         "reinsurance_frontier": retention_frontier(sim, terms),
+        "reinsurance_price_sensitivity": price_sensitivity(sim, terms),
         "reinsurance_yrt_rating": yrt_rating(ae),
         "reinsurance_longevity_swap": pd.DataFrame([swap]),
         "reinsurance_longevity_distribution": swap_dist,

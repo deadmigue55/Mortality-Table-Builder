@@ -130,11 +130,11 @@ All data comes from official or academically recognized sources. Raw data is **n
 
 ![A/E overview](docs/img/experience_overview.png)
 ![Impact](docs/img/experience_impact.png)
-- [ ] **9. Applications:** pricing, reserves, longevity and pandemic stress, reinsurance, COVID excess mortality
+- [x] **9. Applications:** pricing, reserves, longevity and pandemic stress, reinsurance, COVID excess mortality
   - [x] **COVID excess mortality** ([analysis](docs/excess-mortality.md)): about **746,000 excess deaths in 2020 to 2022** (range 676,000 to 791,000 over four independent baselines), 1.56 per certified COVID-19 death, 13.0 million years of life lost; men aged 65-69 died at **1.70x** the expected rate in 2021; 64% of the excess was certified as COVID-19, the rest mostly as heart disease, diabetes and respiratory causes; Estado de México, Ciudad de México and Tlaxcala highest (about 48%), Colima lowest (19%). The baselines predict 2023 to within 4%
   - [x] **Pricing, profit testing and reserves** ([analysis](docs/pricing.md)): a level term policy priced for a 10% return (40-year-old, 20 years: 2.32 per 1,000 against a net premium of 1.74); it loses 87% of its first premium on day one and is in profit by year 9; on the CNSF premium the population's mortality would cost a man of 40 171% of premium, while the synthetic company book's women earn 31% to 41%; mortality ±20% moves the margin ±11.6%, a year of doubled mortality costs 6.5 points of IRR; the best-estimate liability is negative (-2,230) where the statutory reserve holds 776
   - [x] **Pandemic and longevity stress tests** ([analysis](docs/stress-tests.md)): replaying 2021 on the in-force book adds **60% to the next year's claims** (MXN 447 million on 742 million), 71% of it from policyholders aged 50 and over, more than the regulator's own 99.5th percentile table (+51%) if insureds die like the population; for an annuity book one point less interest (+8.1%) matters more than doubling the projected improvement (+2.3%), and the regulatory pensions table holds 16% more than the central projection; an annuity block 1.2 times the size of the life book would offset a repeat of 2021 exactly, while a 20% fall in mortality gains the life book more than it costs the annuities
-  - [ ] Reinsurance
+  - [x] **Reinsurance** ([analysis](docs/reinsurance.md)): on a simulated year of claims the **pandemic is 41% of the claims capital** and policies of 2 million or more hold 49% of the sum at risk; quota share and surplus treaties cost about 20% of the capital they relieve, a per-life excess of loss 9%, a stop loss 6%, and a per-life cover stays worth buying only while the reinsurer asks under 6.9% on its own capital; YRT experience rating with credibility that allows for claim-size variability (full credibility takes about 3,000 deaths for amounts, not 1,082); a longevity swap on the annuity block needs capital of 3% of the reserve and a fee of about 18 basis points a year
 
 ![Excess mortality waves](docs/img/excess_waves.png)
 ![Excess by age](docs/img/excess_age_profile.png)
@@ -142,6 +142,8 @@ All data comes from official or academically recognized sources. Raw data is **n
 ![Pricing adequacy](docs/img/pricing_adequacy.png)
 ![Pandemic stress](docs/img/stress_pandemic.png)
 ![Longevity stress](docs/img/stress_longevity.png)
+![Reinsurance risk](docs/img/reinsurance_risk.png)
+![Reinsurance structures](docs/img/reinsurance_structures.png)
 - [ ] **10. Dashboard and report:** Streamlit app and Quarto methodology write-up
 
 ## Getting started
