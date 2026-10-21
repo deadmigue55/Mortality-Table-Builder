@@ -26,6 +26,11 @@ dependencies = [
 [project.scripts]
 mortality = "mortality.cli:main"
 
+[project.optional-dependencies]
+app = [
+    "streamlit>=1.66.1",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -54,6 +59,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011"]
+"app/**" = ["E501"]  # dashboard prose and chart specs read better on long lines
 
 # ── Tests ──
 [tool.pytest.ini_options]

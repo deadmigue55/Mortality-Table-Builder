@@ -5,6 +5,7 @@ data/processed/*
 !data/processed/.gitkeep
 *.duckdb
 *.sqlite
+!app/data/demo.sqlite
 *.sqlite-journal
 *.sqlite.tmp
 *.duckdb.wal

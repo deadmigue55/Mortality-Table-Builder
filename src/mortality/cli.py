@@ -163,6 +163,46 @@ def cmd_db_check(_: argparse.Namespace) -> int:
     return _print_checks(validate.validate())
 
 
+def cmd_app_data(args: argparse.Namespace) -> int:
+    """Build the shareable demo bundle the dashboard reads (no HMD data, no raw microdata)."""
+    from pathlib import Path
+
+    from mortality import demo, experience
+    from mortality.config import get_paths
+
+    paths = get_paths()
+    inputs = experience.warehouse_inputs(__import__("sqlite3").connect(paths.database))
+    if inputs is None:
+        print("The warehouse lacks the tables the bundle needs. Run `mortality db build` first.")
+        return 1
+    q, state_smr, weights = inputs
+    portfolio = experience.load_or_generate_portfolio(paths, q, state_smr, weights)
+    out = Path(args.out)
+    counts = demo.build_bundle(paths.database, out, portfolio.policies)
+    for table, rows in counts.items():
+        print(f"  {table:<36}{rows:>10,} rows")
+    bad = demo.forbidden_in(out / "demo.sqlite")
+    leaked = demo.hmd_rows_in(out / "demo.sqlite")
+    if bad or leaked:
+        print(f"Bundle must not hold {bad} or HMD rows ({leaked}).")
+        return 1
+    size = sum(f.stat().st_size for f in out.iterdir() if f.is_file()) / 1e6
+    print(f"wrote {out} ({size:.1f} MB)")
+    return 0
+
+
+def cmd_app(args: argparse.Namespace) -> int:
+    """Launch the dashboard."""
+    import subprocess
+    import sys
+
+    from mortality.config import PROJECT_ROOT
+
+    entry = PROJECT_ROOT / "app" / "streamlit_app.py"
+    cmd = [sys.executable, "-m", "streamlit", "run", str(entry), "--server.port", str(args.port)]
+    return subprocess.call(cmd)
+
+
 def cmd_figures(args: argparse.Namespace) -> int:
     """Draw the README figures from the warehouse."""
     from pathlib import Path
@@ -276,6 +316,14 @@ def build_parser() -> argparse.ArgumentParser:
     figs = sub.add_parser("figures", help="draw the README figures from the warehouse")
     figs.add_argument("--out", default="docs/img", help="output folder (default: docs/img)")
     figs.set_defaults(func=cmd_figures)
+
+    data = sub.add_parser("app-data", help="build the shareable demo bundle for the dashboard")
+    data.add_argument("--out", default="app/data", help="output folder (default: app/data)")
+    data.set_defaults(func=cmd_app_data)
+
+    app = sub.add_parser("app", help="launch the Streamlit dashboard")
+    app.add_argument("--port", type=int, default=8501)
+    app.set_defaults(func=cmd_app)
 
     exp = sub.add_parser("experience", help="insurer-style mortality experience study")
     exp_sub = exp.add_subparsers(dest="action", required=True)
