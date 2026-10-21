@@ -298,6 +298,17 @@ def test_all_check_sql_is_valid(paths):
         "stress_pandemic_age": "year, extra_claims",
         "stress_longevity": "scenario, reserve_T",
         "stress_hedge": "shock, life_book_change, annuity_change",
+        "reinsurance_concentration": (
+            "share_of_policies, share_of_sum_at_risk, share_of_expected_claims"
+        ),
+        "reinsurance_aggregate": "source, mean, sd, capital",
+        "reinsurance_structures": (
+            "structure, family, expected_recoveries, cost, capital, capital_relief, "
+            "retained_mean, price_of_relief"
+        ),
+        "reinsurance_frontier": "family, parameter, cost, capital_relief",
+        "reinsurance_yrt_rating": "credibility, ae_amount, experience_factor",
+        "reinsurance_longevity_swap": "central_reserve, capital, fee_pv",
         "excess_mortality": "year, observed, excess",
         "excess_summary": (
             "year, sex, observed, excess, excess_low, excess_per_covid_coded, expected_low, "

@@ -887,6 +887,81 @@ CHECKS: tuple[Check, ...] = (
         " AND p.reserve_T <= c.reserve_T",
         "The regulatory pensions table holds a larger reserve than the central projection",
     ),
+    # ── Reinsurance ─────────────────────────────────────────────────────────
+    Check(
+        "reinsurance_concentration_adds_up",
+        "FAIL",
+        ("reinsurance_concentration",),
+        "SELECT COUNT(*) FROM (SELECT SUM(share_of_sum_at_risk) a, SUM(share_of_expected_claims) b,"
+        " SUM(share_of_policies) c FROM reinsurance_concentration)"
+        " WHERE ABS(a - 1) > 1e-9 OR ABS(b - 1) > 1e-9 OR ABS(c - 1) > 1e-9",
+        "The size bands partition the policies, the sum at risk and the expected claims",
+    ),
+    Check(
+        "reinsurance_each_source_of_risk_widens_the_tail",
+        "FAIL",
+        ("reinsurance_aggregate",),
+        "SELECT COUNT(*) FROM reinsurance_aggregate a JOIN reinsurance_aggregate b"
+        " ON a.source LIKE 'random%' AND b.source LIKE '+ uncertain%'"
+        " JOIN reinsurance_aggregate c ON c.source LIKE '+ pandemic%'"
+        " WHERE NOT (a.sd < b.sd AND b.sd < c.sd AND a.capital < c.capital)",
+        "Adding the mortality-level and the pandemic risk widens the distribution of claims",
+    ),
+    Check(
+        "reinsurance_simulation_matches_expected_claims",
+        "FAIL",
+        ("reinsurance_aggregate", "stress_pandemic_book"),
+        "SELECT COUNT(*) FROM reinsurance_aggregate a JOIN (SELECT base_claims FROM"
+        " stress_pandemic_book LIMIT 1) b WHERE a.source LIKE 'random%'"
+        " AND ABS(a.mean / b.base_claims - 1) > 0.02",
+        "Simulated mean claims of the in-force block are within 2% of its expected claims",
+    ),
+    Check(
+        "reinsurance_covers_never_add_risk",
+        "FAIL",
+        ("reinsurance_structures",),
+        "SELECT COUNT(*) FROM reinsurance_structures s JOIN reinsurance_structures n"
+        " ON n.family = 'none' WHERE s.family <> 'none'"
+        " AND (s.expected_recoveries < 0 OR s.cost < -1e-6 * n.capital"
+        " OR s.capital_relief < -1e-3 * n.capital OR s.retained_mean > n.retained_mean + 1e-6)",
+        "Every cover has non-negative recoveries and cost and leaves the cedant no worse off",
+    ),
+    Check(
+        "reinsurance_retention_frontier_is_monotone",
+        "FAIL",
+        ("reinsurance_frontier",),
+        "SELECT COUNT(*) FROM reinsurance_frontier a JOIN reinsurance_frontier b"
+        " ON a.family = b.family AND a.family = 'excess of loss' AND a.parameter < b.parameter"
+        " WHERE a.cost < b.cost - 1e-6 OR a.capital_relief < b.capital_relief - 1e-3",
+        "A higher retention costs less and relieves less capital",
+    ),
+    Check(
+        "reinsurance_excess_of_loss_is_cheaper_than_quota_share",
+        "WARN",
+        ("reinsurance_structures",),
+        "SELECT COUNT(*) FROM reinsurance_structures x JOIN reinsurance_structures q"
+        " ON q.structure = 'Quota share 20%' WHERE x.family = 'excess of loss'"
+        " AND x.price_of_relief >= q.price_of_relief",
+        "Per capital relieved, non-proportional covers cost less than a quota share",
+    ),
+    Check(
+        "reinsurance_credibility_is_valid",
+        "FAIL",
+        ("reinsurance_yrt_rating",),
+        "SELECT COUNT(*) FROM reinsurance_yrt_rating WHERE credibility < 0 OR credibility > 1"
+        " OR experience_factor < MIN(1, ae_amount) - 1e-9"
+        " OR experience_factor > MAX(1, ae_amount) + 1e-9",
+        "Credibility lies in [0, 1] and the experience factor between the manual rate and the A/E",
+    ),
+    Check(
+        "reinsurance_swap_agrees_with_the_stress_tests",
+        "FAIL",
+        ("reinsurance_longevity_swap", "stress_longevity"),
+        "SELECT COUNT(*) FROM reinsurance_longevity_swap w JOIN stress_longevity c"
+        " ON c.scenario = 'central' WHERE ABS(w.central_reserve / c.reserve_T - 1) > 1e-9"
+        " OR w.capital <= 0 OR w.fee_pv <= 0",
+        "The swap's central reserve is the stress tests' and it needs positive capital and a fee",
+    ),
 )
 
 

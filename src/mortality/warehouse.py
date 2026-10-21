@@ -28,6 +28,7 @@ from mortality import (
     projection,
     quality,
     rates,
+    reinsurance,
     stress,
 )
 from mortality.config import Paths, get_paths
@@ -284,6 +285,7 @@ def build(*, paths: Paths | None = None) -> dict[str, int]:
         docs += excess.build_tables(con)
         docs += pricing.build_tables(con)
         docs += stress.build_tables(con)
+        docs += reinsurance.build_tables(con)
 
         if _load_manifest(con, paths):
             docs.append(("source_manifest", "Every downloaded file: URL, date, size and SHA-256"))
