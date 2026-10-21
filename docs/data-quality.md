@@ -132,5 +132,4 @@ Every rule above is also an automatic check (see [warehouse.md](warehouse.md)): 
 ## Known gaps
 
 - **Single-year ages before 2020.** The 2014 to 2019 data are five-year groups by registration year. Row-level files for those years were not found at any address INEGI serves.
-- **2017** was exported with the wrong year (it contained 2025) and still needs re-exporting.
 - **State-level tables** need unspecified-residence deaths allocated across states.

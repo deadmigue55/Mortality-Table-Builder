@@ -31,7 +31,7 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 - counts by **year of registration**, not occurrence (about 2% of a year's deaths occurred earlier);
 - **five-year age groups** (under 1, 1-4, ..., 85 and over) by sex (male, female, unknown), national only;
 - every file is checked on import: sexes add up across each row and age groups add up to the Total row;
-- the year is read from the header inside the file. A file named `2017.csv` turned out to contain registration year **2025** (a preliminary year), so names are never trusted. Totals for 2014 to 2016, 2018 and 2019 (633,641; 655,688; 685,766; 722,611; 747,784) match INEGI's published figures.
+- the year is read from the header inside the file. A file named `2017.csv` turned out to contain registration year **2025** (a preliminary year), so names are never trusted (the first 2017 export was caught this way and has since been replaced). Totals for 2014 to 2019 (633,641; 655,688; 685,766; 703,047; 722,611; 747,784) match INEGI's published figures.
 
 **What we kept from the 74 columns:** sex, age code (decoded into unit, value and completed years), state of residence, year and month of occurrence, year of registration, type of death, cause (ICD-10) and the Mexican cause list.
 

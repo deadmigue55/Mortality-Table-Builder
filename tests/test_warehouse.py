@@ -285,6 +285,10 @@ def test_all_check_sql_is_valid(paths):
         "soa_rates": "table_id, sub_table, age, rate",
         "soa_catalog": 'table_id, "group"',
         "cnsf_rates": '"table", variant, age, qx',
+        "crude_rates_single": "year, age, exposure, deaths, mx, mx_lower, mx_upper, qx, credible",
+        "crude_rates_grouped": "year, sex, basis, deaths, mx, mx_lower, mx_upper",
+        "basis_bridge": "year, registered, occurred_adjusted, registered_to_occurred",
+        "state_smr": "observed, expected",
     }
     for name, cols in schemas.items():
         con.execute(f'CREATE TABLE "{name}" ({cols})')

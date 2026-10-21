@@ -280,6 +280,85 @@ CHECKS: tuple[Check, ...] = (
         " HAVING SUM(d.deaths) / c.deaths < 0.85 OR SUM(d.deaths) / c.deaths > 1.15)",
         "For complete years, INEGI deaths are within 15% of CONAPO's modelled deaths",
     ),
+    # ── Rates ───────────────────────────────────────────────────────────────
+    Check(
+        "rates_single_conserve_deaths",
+        "FAIL",
+        ("crude_rates_single", "deaths_adjusted"),
+        "SELECT COUNT(*) FROM ("
+        " SELECT a.year FROM (SELECT year, SUM(adjusted) AS n FROM deaths_adjusted"
+        "   GROUP BY year) a"
+        " JOIN (SELECT year, SUM(deaths) AS n FROM crude_rates_single GROUP BY year) r"
+        "   ON r.year = a.year"
+        " WHERE ABS(a.n - r.n) > 0.5)",
+        "Single-age rates use every adjusted death (pooling the open age loses none)",
+    ),
+    Check(
+        "rates_grouped_conserve_deaths",
+        "FAIL",
+        ("crude_rates_grouped", "inegi_cube_registered"),
+        "SELECT COUNT(*) FROM ("
+        " SELECT c.reg_year FROM (SELECT reg_year, SUM(deaths) AS n FROM inegi_cube_registered"
+        "   GROUP BY reg_year) c"
+        " JOIN (SELECT year, SUM(deaths) AS n FROM crude_rates_grouped"
+        "   WHERE sex = 'T' AND basis = 'registration' GROUP BY year) r ON r.year = c.reg_year"
+        " WHERE ABS(c.n - r.n) > 0.5)",
+        "Grouped rates before 2020 use every registered death, after allocating unknowns",
+    ),
+    Check(
+        "rates_exposure_matches_conapo",
+        "FAIL",
+        ("crude_rates_single", "conapo_population"),
+        "SELECT COUNT(*) FROM ("
+        " SELECT r.year FROM (SELECT year, SUM(exposure) AS n FROM crude_rates_single"
+        "   GROUP BY year) r"
+        " JOIN (SELECT year, SUM(population) AS n FROM conapo_population WHERE state_code = 0"
+        "   GROUP BY year) p ON p.year = r.year"
+        " WHERE ABS(p.n - r.n) > 1)",
+        "Exposure in the rates equals CONAPO's national population (nobody added or lost)",
+    ),
+    Check(
+        "rates_intervals_bracket_estimate",
+        "FAIL",
+        ("crude_rates_single", "crude_rates_grouped"),
+        "SELECT (SELECT COUNT(*) FROM crude_rates_single"
+        "        WHERE mx < mx_lower - 1e-12 OR mx > mx_upper + 1e-12)"
+        " + (SELECT COUNT(*) FROM crude_rates_grouped"
+        "        WHERE mx < mx_lower - 1e-12 OR mx > mx_upper + 1e-12)",
+        "Every 95% interval contains its own estimate",
+    ),
+    Check(
+        "rates_are_rates",
+        "FAIL",
+        ("crude_rates_single",),
+        "SELECT COUNT(*) FROM crude_rates_single "
+        "WHERE mx < 0 OR mx > 1 OR (qx IS NOT NULL AND (qx < 0 OR qx > 1))",
+        "Central rates and probabilities of death are between 0 and 1",
+    ),
+    Check(
+        "rates_thin_cells_only_at_the_extremes",
+        "WARN",
+        ("crude_rates_single",),
+        "SELECT COUNT(*) FROM crude_rates_single WHERE credible = 0 AND age BETWEEN 1 AND 95",
+        "Single-age cells have at least 30 deaths between ages 1 and 95 (thin cells need grouping)",
+    ),
+    Check(
+        "registration_basis_matches_occurrence",
+        "WARN",
+        ("basis_bridge",),
+        "SELECT COUNT(*) FROM basis_bridge WHERE occurred_adjusted IS NOT NULL "
+        "AND registered IS NOT NULL AND ABS(registered_to_occurred - 1) > 0.03",
+        "Registered and occurred deaths are within 3% in every year where both exist, so "
+        "registration-year rates before 2020 are a fair baseline",
+    ),
+    Check(
+        "state_smr_balances",
+        "FAIL",
+        ("state_smr",),
+        "SELECT CASE WHEN ABS(SUM(observed) - SUM(expected)) < 0.001 * SUM(observed) "
+        "THEN 0 ELSE 1 END FROM state_smr",
+        "State expected deaths add up to the observed total (SMRs are relative to the nation)",
+    ),
 )
 
 
