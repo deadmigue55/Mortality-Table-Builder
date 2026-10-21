@@ -2224,6 +2224,48 @@ def pipeline_diagram(con, out: Path) -> Path:
     return _save(fig, out, "pipeline.png")
 
 
+def social_preview(con, out: Path) -> Path:
+    """The 1280 x 640 card GitHub shows when the repository link is shared."""
+    bg, cyan, text, dim = "#0a0a12", "#22d3ee", "#f1f5f9", "#94a3b8"
+    fig = plt.figure(figsize=(12.8, 6.4), facecolor=bg)
+    ax = fig.add_axes([0.5, 0.17, 0.44, 0.52], facecolor=bg)
+    base = _query(
+        con, "SELECT age, qx FROM cnsf_rates WHERE \"table\" = 'CNSF M 2013' AND variant = 'base'"
+    ).set_index("age")["qx"]
+    men = _query(con, "SELECT age, qx FROM graduated_qx WHERE year = 2023 AND sex = 'M'")
+    women = _query(con, "SELECT age, qx FROM graduated_qx WHERE year = 2023 AND sex = 'F'")
+    ax.plot(base.index, base.values, color=dim, lw=2.2, ls=(0, (4, 3)), label="CNSF 2013")
+    ax.plot(women["age"], women["qx"], color=ORANGE, lw=2.6, label="Women, 2023")
+    ax.plot(men["age"], men["qx"], color=cyan, lw=3.2, label="Men, 2023")
+    ax.set_yscale("log")
+    ax.set_xlim(15, 100)
+    ax.set_ylim(4e-4, 0.5)
+    ax.grid(color="#1e293b", lw=0.8)
+    ax.tick_params(colors=dim, labelsize=10, length=0)
+    for side in ax.spines.values():
+        side.set_visible(False)
+    ax.set_xlabel("Age", color=dim, fontsize=11)
+    ax.set_ylabel("Probability of dying within a year", color=dim, fontsize=11)
+    ax.legend(loc="upper left", frameon=False, labelcolor=text, fontsize=11)
+    fig.text(0.05, 0.84, "Mortality Table Builder", color=text, fontsize=38, fontweight="bold")
+    tagline = "From 3 million Mexican death records to\nprices, reserves and reinsurance"
+    fig.text(0.05, 0.745, tagline, color=dim, fontsize=17, va="top", linespacing=1.4)
+    stats = [("746k", "excess deaths, 2020-22"), ("4.1x", "men at 40 vs the CNSF table"),
+             ("15/15", "planted effects recovered")]  # fmt: skip
+    for i, (value, label) in enumerate(stats):
+        y = 0.45 - i * 0.14
+        fig.text(0.05, y, value, color=cyan, fontsize=26, fontweight="bold", va="center")
+        fig.text(0.19, y, label, color=text, fontsize=14, va="center")
+    fig.text(0.05, 0.075, "Python · R · SQL · Streamlit · Quarto · Excel", color=dim, fontsize=12)
+    fig.text(0.95, 0.075, "github.com/deadmigue55/Mortality-Table-Builder", color=dim,
+             fontsize=12, ha="right")  # fmt: skip
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / "social_preview.png"
+    fig.savefig(path, dpi=100, facecolor=bg)
+    plt.close(fig)
+    return path
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -2269,6 +2311,7 @@ FIGURES = (
     reinsurance_frontier_chart,
     reinsurance_rating_swap,
     pipeline_diagram,
+    social_preview,
 )
 
 
