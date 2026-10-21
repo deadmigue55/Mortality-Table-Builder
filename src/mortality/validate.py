@@ -595,6 +595,102 @@ CHECKS: tuple[Check, ...] = (
         "The model's own 90% band contains the actual e65 in at least 80% of backtests "
         "(it does not: the empirical calibration widens it)",
     ),
+    # ── Experience study ────────────────────────────────────────────────────
+    Check(
+        "experience_dq_finds_the_injected_defects",
+        "FAIL",
+        ("experience_dq_checks", "experience_injected_defects"),
+        "SELECT COUNT(*) FROM experience_injected_defects i JOIN ("
+        " SELECT 'duplicate_record' AS defect, 'duplicate_record' AS chk"
+        " UNION ALL SELECT 'invalid_sex', 'invalid_sex'"
+        " UNION ALL SELECT 'birth_after_issue', 'birth_missing_or_after_issue'"
+        " UNION ALL SELECT 'non_positive_sum_assured', 'non_positive_sum_assured'"
+        " UNION ALL SELECT 'invalid_state', 'invalid_state'"
+        " UNION ALL SELECT 'exit_before_issue', 'exit_before_issue'"
+        " UNION ALL SELECT 'issue_after_extract', 'issue_after_extract'"
+        " UNION ALL SELECT 'death_without_notification', 'death_without_notification'"
+        ") m ON m.defect = i.defect"
+        ' JOIN experience_dq_checks c ON c."check" = m.chk WHERE c.records < i.records',
+        "Validation of the synthetic extract catches every kind of defect injected, in full",
+    ),
+    Check(
+        "experience_reconciliation_balances",
+        "FAIL",
+        ("experience_dq_reconciliation",),
+        "SELECT CASE WHEN"
+        " MAX(CASE WHEN step = 'records in the extract' THEN records END)"
+        " = SUM(CASE WHEN step <> 'records in the extract' THEN records END)"
+        " AND MAX(CASE WHEN step = 'records in the extract' THEN deaths END)"
+        " = SUM(CASE WHEN step <> 'records in the extract' THEN deaths END)"
+        " THEN 0 ELSE 1 END FROM experience_dq_reconciliation",
+        "Records and deaths balance from the extract to the clean file: none lost unaccounted",
+    ),
+    Check(
+        "experience_dimensions_partition_the_portfolio",
+        "FAIL",
+        ("experience_ae",),
+        "SELECT COUNT(*) FROM (SELECT dimension, SUM(deaths) AS d, SUM(expected) AS e,"
+        " SUM(exposure) AS x FROM experience_ae WHERE years = 'all_years' GROUP BY dimension) t"
+        " WHERE ABS(t.d - (SELECT SUM(deaths) FROM experience_ae"
+        "   WHERE years = 'all_years' AND dimension = 'sex')) > 1e-6"
+        " OR ABS(t.e - (SELECT SUM(expected) FROM experience_ae"
+        "   WHERE years = 'all_years' AND dimension = 'sex')) > 1e-6"
+        " OR ABS(t.x - (SELECT SUM(exposure) FROM experience_ae"
+        "   WHERE years = 'all_years' AND dimension = 'sex')) > 1e-6",
+        "Every rating factor splits the same exposure, deaths and expected deaths (no cell lost)",
+    ),
+    Check(
+        "experience_recovers_the_planted_effects",
+        "FAIL",
+        ("experience_recovery",),
+        "SELECT CASE WHEN AVG(inside_interval) >= 0.8 THEN 0 ELSE 1 END FROM experience_recovery",
+        "At least 80% of the planted rating effects fall inside the study's 95% intervals "
+        "(95% expected): the validation of the whole method",
+    ),
+    Check(
+        "experience_select_factors_recovered",
+        "WARN",
+        ("experience_select",),
+        "SELECT CASE WHEN AVG(inside_interval) >= 0.7 THEN 0 ELSE 1 END FROM experience_select"
+        " WHERE planted IS NOT NULL",
+        "At least 70% of the planted select factors fall inside the study's intervals",
+    ),
+    Check(
+        "experience_lag_completion_is_accurate",
+        "FAIL",
+        ("experience_lag_validation",),
+        "SELECT COUNT(*) FROM (SELECT completed_error_pct FROM experience_lag_validation"
+        " ORDER BY year DESC, quarter DESC LIMIT 2) WHERE ABS(completed_error_pct) > 0.12",
+        "After the claims-lag correction the last two quarters' deaths are within 12% of the truth",
+    ),
+    Check(
+        "experience_lag_correction_improves_the_latest_quarter",
+        "FAIL",
+        ("experience_lag_validation",),
+        "SELECT COUNT(*) FROM (SELECT raw_error_pct, completed_error_pct"
+        " FROM experience_lag_validation"
+        " ORDER BY year DESC, quarter DESC LIMIT 1)"
+        " WHERE ABS(completed_error_pct) >= ABS(raw_error_pct)",
+        "The latest quarter is closer to the truth after the claims-lag correction than before",
+    ),
+    Check(
+        "experience_basis_is_a_valid_table",
+        "FAIL",
+        ("experience_basis",),
+        "SELECT COUNT(*) FROM experience_basis WHERE multiplier <= 0 OR q_experience < 0"
+        " OR q_experience > 1 OR multiplier_upper < multiplier"
+        " OR q_experience_prudent < q_experience - 1e-12",
+        "The derived basis has positive multipliers, probabilities in [0, 1] and a prudent margin "
+        "above the best estimate",
+    ),
+    Check(
+        "experience_overall_ae_is_plausible",
+        "WARN",
+        ("experience_ae",),
+        "SELECT COUNT(*) FROM experience_ae WHERE years = 'all_years' AND dimension = 'all'"
+        " AND (ae < 0.3 OR ae > 3)",
+        "The portfolio's overall actual-to-expected ratio lies between 0.3 and 3",
+    ),
 )
 
 

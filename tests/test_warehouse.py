@@ -288,6 +288,14 @@ def test_all_check_sql_is_valid(paths):
         "crude_rates_single": (
             "year, sex, age, exposure, deaths, mx, mx_lower, mx_upper, qx, credible"
         ),
+        "experience_injected_defects": "defect, records",
+        "experience_dq_checks": '"check", records',
+        "experience_dq_reconciliation": "step, records, deaths",
+        "experience_ae": "years, dimension, level, deaths, expected, exposure, ae",
+        "experience_recovery": "inside_interval",
+        "experience_select": "planted, inside_interval",
+        "experience_lag_validation": "year, quarter, raw_error_pct, completed_error_pct",
+        "experience_basis": "multiplier, multiplier_upper, q_experience, q_experience_prudent",
         "projected_qx": "year, sex, age, mx, qx",
         "projection_scenarios": "scenario, sex, year, measure, p05, p25, p50, p75, p95",
         "cohort_tables": "sex, year_at_65, period_e65, cohort_e65, period_a65, cohort_a65",
