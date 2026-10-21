@@ -511,6 +511,90 @@ CHECKS: tuple[Check, ...] = (
         " AND ABS(P_whole_life * a_due - A_whole_life) > 1e-9",
         "The net premium times the annuity-due equals the insurance value (equivalence principle)",
     ),
+    # ── Projection ──────────────────────────────────────────────────────────
+    Check(
+        "projected_qx_complete",
+        "FAIL",
+        ("projected_qx",),
+        "SELECT COUNT(*) FROM (SELECT year, sex FROM projected_qx GROUP BY year, sex"
+        " HAVING COUNT(*) <> 111 OR MIN(qx) < 0 OR MAX(qx) > 1 OR MIN(mx) <= 0"
+        " OR MAX(CASE WHEN age = 110 THEN qx END) <> 1)",
+        "Every projected year and sex has a table for ages 0 to 110 with q in [0, 1] and q = 1 "
+        "at 110",
+    ),
+    Check(
+        "projected_men_at_least_women",
+        "FAIL",
+        ("projected_qx",),
+        "SELECT COUNT(*) FROM projected_qx m JOIN projected_qx f"
+        " ON m.year = f.year AND m.age = f.age"
+        " WHERE m.sex = 'M' AND f.sex = 'F' AND m.mx < f.mx - 1e-12",
+        "Projected male rates are never below female rates at the same age",
+    ),
+    Check(
+        "projection_fan_is_ordered",
+        "FAIL",
+        ("projection_scenarios",),
+        "SELECT COUNT(*) FROM projection_scenarios WHERE p05 IS NOT NULL"
+        " AND NOT (p05 <= p25 AND p25 <= p50 AND p50 <= p75 AND p75 <= p95)",
+        "The 5/25/50/75/95 percentiles of every simulated fan are in order",
+    ),
+    Check(
+        "projection_restarts_at_the_observed_rates",
+        "FAIL",
+        ("projection_scenarios",),
+        "SELECT COUNT(*) FROM projection_scenarios o JOIN projection_scenarios r"
+        " ON r.sex = o.sex AND r.measure = o.measure AND r.scenario = 'rebased_long_run'"
+        " WHERE o.scenario = 'observed' AND o.measure = 'e0'"
+        " AND r.year = o.year + 1 AND o.year = (SELECT MAX(year) FROM projection_scenarios"
+        " WHERE scenario = 'observed') AND ABS(r.p50 - o.p50) > 0.7",
+        "The rebased projection's first year is within 0.7 years of the last observed life "
+        "expectancy (no jump at the join)",
+    ),
+    Check(
+        "projection_mortality_improves",
+        "FAIL",
+        ("projection_scenarios",),
+        "SELECT COUNT(*) FROM (SELECT sex FROM projection_scenarios"
+        " WHERE scenario = 'rebased_long_run' AND measure = 'e0'"
+        " GROUP BY sex HAVING MAX(CASE WHEN year = 2070 THEN p50 END)"
+        " <= MAX(CASE WHEN year = 2030 THEN p50 END))",
+        "In the long-run scenario life expectancy at birth is higher in 2070 than in 2030",
+    ),
+    Check(
+        "cohort_life_expectancy_not_below_period",
+        "FAIL",
+        ("cohort_tables",),
+        "SELECT COUNT(*) FROM cohort_tables WHERE cohort_e65 < period_e65 - 1e-9"
+        " OR cohort_a65 < period_a65 - 1e-9",
+        "While mortality improves, the cohort lives longer than the period table says",
+    ),
+    Check(
+        "projection_python_matches_r",
+        "FAIL",
+        ("projection_r_crosscheck",),
+        "SELECT COUNT(*) FROM projection_r_crosscheck WHERE model = 'lee_carter'"
+        " AND (quantity LIKE 'e0 in %' OR quantity LIKE 'e65 in %') AND ABS(difference) > 0.01",
+        "Lee-Carter projections of life expectancy agree with StMoMo in R to within 0.01 years",
+    ),
+    Check(
+        "projection_cbd_close_to_r",
+        "WARN",
+        ("projection_r_crosscheck",),
+        "SELECT COUNT(*) FROM projection_r_crosscheck WHERE model = 'cbd'"
+        " AND quantity LIKE 'e65 in %' AND ABS(difference) > 0.1",
+        "CBD life expectancy at 65 is within 0.1 years of StMoMo's (least squares against "
+        "binomial likelihood)",
+    ),
+    Check(
+        "projection_fan_covers_the_backtest",
+        "WARN",
+        ("projection_backtest",),
+        "SELECT CASE WHEN AVG(in_90) >= 0.8 THEN 0 ELSE 1 END FROM projection_backtest"
+        " WHERE model = 'lee_carter_jump_off' AND fit_start = 1970",
+        "The model's own 90% band contains the actual e65 in at least 80% of backtests "
+        "(it does not: the empirical calibration widens it)",
+    ),
 )
 
 

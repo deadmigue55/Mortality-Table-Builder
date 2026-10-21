@@ -288,6 +288,11 @@ def test_all_check_sql_is_valid(paths):
         "crude_rates_single": (
             "year, sex, age, exposure, deaths, mx, mx_lower, mx_upper, qx, credible"
         ),
+        "projected_qx": "year, sex, age, mx, qx",
+        "projection_scenarios": "scenario, sex, year, measure, p05, p25, p50, p75, p95",
+        "cohort_tables": "sex, year_at_65, period_e65, cohort_e65, period_a65, cohort_a65",
+        "projection_r_crosscheck": "model, quantity, difference",
+        "projection_backtest": "model, fit_start, in_90",
         "life_tables": "year, sex, age, qx, lx, dx, ex, total_person_years",
         "life_summary": "year, sex, e0, e65",
         "actuarial_values": "interest, A_whole_life, a_due, P_whole_life",
