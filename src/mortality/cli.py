@@ -163,6 +163,17 @@ def cmd_db_check(_: argparse.Namespace) -> int:
     return _print_checks(validate.validate())
 
 
+def cmd_figures(args: argparse.Namespace) -> int:
+    """Draw the README figures from the warehouse."""
+    from pathlib import Path
+
+    from mortality import figures
+
+    for path in figures.build_all(Path(args.out)):
+        print(f"  wrote {path}")
+    return 0
+
+
 def _print_checks(results) -> int:
     print("\ndata checks:")
     for r in results:
@@ -190,6 +201,10 @@ def build_parser() -> argparse.ArgumentParser:
         func=cmd_db_build
     )
     db_sub.add_parser("check", help="re-run the data checks").set_defaults(func=cmd_db_check)
+
+    figs = sub.add_parser("figures", help="draw the README figures from the warehouse")
+    figs.add_argument("--out", default="docs/img", help="output folder (default: docs/img)")
+    figs.set_defaults(func=cmd_figures)
 
     ingest = sub.add_parser("ingest", help="download and prepare source data")
     sources = ingest.add_subparsers(dest="source", required=True)

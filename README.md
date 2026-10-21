@@ -74,15 +74,22 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
-  - [x] SQLite warehouse with 28 automatic data checks
-  - [x] INEGI 2014 to 2019 from the interactive tables (five-year age groups; 2017 still to re-export)
+  - [x] SQLite warehouse with 36 automatic data checks
+  - [x] INEGI 2014 to 2019 from the interactive tables (five-year age groups, all six years verified against INEGI totals)
   - [ ] INEGI before 2014 (optional, for a longer forecasting history)
 - [x] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag ([findings](docs/data-quality.md))
   - Death certificates show no age heaping (Whipple 98 to 101), comparable to the HMD countries
   - Late registrations completed with an actuarial chain-ladder triangle per age band: 2024 gains 2.3%, within 1% of CONAPO's independent projection
   - Unknown sex and age allocated proportionally (0.45% to 0.61% of deaths); unspecified-residence deaths kept in the national count
   - COVID years flagged from cause-of-death codes (2020 to 2022)
-- [ ] **4. Crude rates and exposure:** m<sub>x</sub>, q<sub>x</sub>, confidence intervals, by sex, state and year
+- [x] **4. Crude rates and exposure:** m<sub>x</sub>, q<sub>x</sub>, exact intervals, standardisation, state SMRs, first benchmarks ([findings](docs/crude-rates.md))
+  - Mexican men die **3.0x** as fast as the CNSF 2013 table predicts at ages 25 to 84 (4.1x at 40 to 44); women 1.8x
+  - Age-standardised male mortality rose **51%** in 2020 and was back at the 2019 level by 2023
+  - Chihuahua and Colima run about 19% above their age mix, Sinaloa 19% below
+  - Men aged 25 to 29 die at 6.7x the rate of Spanish men, 1.6x that of US men
+
+![Mortality curve against the CNSF 2013 table](docs/img/mortality_curve.png)
+![Pandemic shock by age](docs/img/covid_shock.png)
 - [ ] **5. Graduation:** Whittaker–Henderson, P-splines, parametric laws, old-age closure, fit tests
 - [ ] **6. Life tables and actuarial functions:** full tables, commutation functions, APVs
 - [ ] **7. Mortality projection:** Lee–Carter and CBD (Python and R), fan charts, cohort tables

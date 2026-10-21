@@ -9,6 +9,7 @@ requires-python = ">=3.12"
 dependencies = [
     "dbfread>=2.0.7",
     "defusedxml>=0.7.1",
+    "matplotlib>=3.11.2",
     "numpy>=2.5.4",
     "openpyxl>=3.1.5",
     "pandas>=3.0.6",
