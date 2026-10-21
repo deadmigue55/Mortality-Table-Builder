@@ -5,6 +5,7 @@ type: software
 authors:
   - family-names: Vilchis
     given-names: Miguel
+url: "https://mortality-table-builder.streamlit.app/"
 repository-code: "https://github.com/deadmigue55/Mortality-Table-Builder"
 license: MIT
 keywords:

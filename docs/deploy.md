@@ -8,7 +8,8 @@ The dashboard reads one small file, `app/data/demo.sqlite` (about 3.5 MB), plus 
 2. Repository: `deadmigue55/Mortality-Table-Builder`, branch `main`, main file path `app/streamlit_app.py`.
 3. Advanced settings: Python **3.12**.
 4. Deploy. The first start installs the dependencies from `pyproject.toml` (about two minutes).
-5. Add the public URL to the README (a line under the badges) and to the portfolio site.
+5. Set sharing to **public** (app menu, Settings, Sharing); a private app sends every visitor to a login page. The deployed app is <https://mortality-table-builder.streamlit.app/>.
+6. Add the public URL to the README (a line under the badges) and to the portfolio site.
 
 The app sleeps after a period of inactivity on the free tier and wakes on the next visit.
 

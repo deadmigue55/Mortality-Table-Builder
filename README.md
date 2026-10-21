@@ -3,6 +3,7 @@
 **From three million Mexican death records to prices, reserves and reinsurance: an end-to-end actuarial pipeline, validated at every step.**
 
 [![CI](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml/badge.svg)](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml)
+[![Live demo](https://img.shields.io/badge/live%20demo-streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://mortality-table-builder.streamlit.app/)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![Tests](https://img.shields.io/badge/tests-320%2B-brightgreen)
 ![Data checks](https://img.shields.io/badge/data%20checks-100-brightgreen)
@@ -16,7 +17,7 @@ Mexico's regulatory mortality table (CNSF 2013) is more than a decade old and mi
 
 | | |
 |---|---|
-| :bar_chart: **Dashboard** | Nine interactive pages, four of them live labs (price a policy, value a pension, design a reinsurance treaty, run an experience study on **your own policy extract**). `uv run mortality app` |
+| :bar_chart: **Dashboard** | **[Open the live demo](https://mortality-table-builder.streamlit.app/)**. Nine interactive pages, four of them live labs (price a policy, value a pension, design a reinsurance treaty, run an experience study on **your own policy extract**). Or locally: `uv run mortality app` |
 | :page_facing_up: **Report** | An 11-page methodology report with a Spanish executive summary, every number computed from the data when it is rendered: [`reports/methodology.pdf`](reports/methodology.pdf) |
 | :clipboard: **Excel workbook** | Life tables with **live commutation formulas** (Dx, Nx, Mx driven by one interest cell) and a premium calculator, checked against the Python code by an independent formula engine: [`reports/Mortality_Table_Builder.xlsx`](reports/Mortality_Table_Builder.xlsx) |
 | :books: **Write-ups** | One document per step with method, results and limits: [`docs/`](docs/) |
