@@ -133,13 +133,15 @@ All data comes from official or academically recognized sources. Raw data is **n
 - [ ] **9. Applications:** pricing, reserves, longevity and pandemic stress, reinsurance, COVID excess mortality
   - [x] **COVID excess mortality** ([analysis](docs/excess-mortality.md)): about **746,000 excess deaths in 2020 to 2022** (range 676,000 to 791,000 over four independent baselines), 1.56 per certified COVID-19 death, 13.0 million years of life lost; men aged 65-69 died at **1.70x** the expected rate in 2021; 64% of the excess was certified as COVID-19, the rest mostly as heart disease, diabetes and respiratory causes; Estado de México, Ciudad de México and Tlaxcala highest (about 48%), Colima lowest (19%). The baselines predict 2023 to within 4%
   - [x] **Pricing, profit testing and reserves** ([analysis](docs/pricing.md)): a level term policy priced for a 10% return (40-year-old, 20 years: 2.32 per 1,000 against a net premium of 1.74); it loses 87% of its first premium on day one and is in profit by year 9; on the CNSF premium the population's mortality would cost a man of 40 171% of premium, while the synthetic company book's women earn 31% to 41%; mortality ±20% moves the margin ±11.6%, a year of doubled mortality costs 6.5 points of IRR; the best-estimate liability is negative (-2,230) where the statutory reserve holds 776
-  - [ ] Pandemic and longevity stress tests
+  - [x] **Pandemic and longevity stress tests** ([analysis](docs/stress-tests.md)): replaying 2021 on the in-force book adds **60% to the next year's claims** (MXN 447 million on 742 million), 71% of it from policyholders aged 50 and over, more than the regulator's own 99.5th percentile table (+51%) if insureds die like the population; for an annuity book one point less interest (+8.1%) matters more than doubling the projected improvement (+2.3%), and the regulatory pensions table holds 16% more than the central projection; an annuity block 1.2 times the size of the life book would offset a repeat of 2021 exactly, while a 20% fall in mortality gains the life book more than it costs the annuities
   - [ ] Reinsurance
 
 ![Excess mortality waves](docs/img/excess_waves.png)
 ![Excess by age](docs/img/excess_age_profile.png)
 ![Profit signature](docs/img/pricing_signature.png)
 ![Pricing adequacy](docs/img/pricing_adequacy.png)
+![Pandemic stress](docs/img/stress_pandemic.png)
+![Longevity stress](docs/img/stress_longevity.png)
 - [ ] **10. Dashboard and report:** Streamlit app and Quarto methodology write-up
 
 ## Getting started

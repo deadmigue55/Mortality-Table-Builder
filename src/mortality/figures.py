@@ -1801,6 +1801,148 @@ def pricing_reserves_chart(con, out: Path) -> Path:
     return _save(fig, out, "pricing_reserves.png")
 
 
+STRESS_SOURCE = (
+    "Synthetic in-force book and illustrative annuity block (not a real insurer) · excess "
+    "mortality from INEGI and CONAPO · Mortality Table Builder"
+)
+
+
+def stress_pandemic(con, out: Path) -> Path:
+    book = _query(con, "SELECT * FROM stress_pandemic_book")
+    age = _query(con, "SELECT * FROM stress_pandemic_age")
+    full = book[(book["kind"] == "replay") & (book["dampening"] == 1.0)].set_index("year")
+    half = book[(book["kind"] == "replay") & (book["dampening"] == 0.5)].set_index("year")
+    reg = book[book["kind"] == "regulatory"].iloc[0]
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(11, 6.0), gridspec_kw={"width_ratios": [1, 1.2]})
+    fig.subplots_adjust(top=0.76, bottom=0.12, left=0.07, right=0.97, wspace=0.22)
+    years = [2020, 2021, 2022]
+    x = range(len(years))
+    ax.bar([i - 0.2 for i in x], [full.loc[y, "extra_pct"] * 100 for y in years], width=0.38,
+           color=ORANGE, label="Same excess as the population")  # fmt: skip
+    ax.bar([i + 0.2 for i in x], [half.loc[y, "extra_pct"] * 100 for y in years], width=0.38,
+           color="#f4a98a", label="Half the excess (healthier insureds)")  # fmt: skip
+    for i, y in enumerate(years):
+        ax.text(i - 0.2, full.loc[y, "extra_pct"] * 100 + 1.2, f"{full.loc[y, 'extra_pct']:+.0%}",
+                ha="center", fontsize=9.5, color=INK_2)  # fmt: skip
+        ax.text(i + 0.2, half.loc[y, "extra_pct"] * 100 + 1.2, f"{half.loc[y, 'extra_pct']:+.0%}",
+                ha="center", fontsize=9.5, color=INK_2)  # fmt: skip
+    ax.axhline(reg["extra_pct"] * 100, color=BLUE, lw=1.8, ls=(0, (4, 3)))
+    ax.text(2.45, reg["extra_pct"] * 100 + 1.5, "Regulator's 99.5th\npercentile table", ha="right",
+            fontsize=9, color=BLUE, va="bottom")  # fmt: skip
+    ax.set_xticks(list(x))
+    ax.set_xticklabels([f"{y} replay" for y in years])
+    ax.set_ylabel("Extra claims in the next 12 months (%)")
+    ax.set_ylim(0, 90)
+    ax.legend(loc="upper right", fontsize=9)
+    a = age[age["sex"].isin(["M", "F"])].pivot_table(
+        index="age_group", columns="sex", values="extra_claims", sort=False
+    )
+    a = a / 1e6
+    pos = range(len(a))
+    bx.bar(pos, a["M"], color=BLUE, width=0.6, label="Men")
+    bx.bar(pos, a["F"], bottom=a["M"], color=ORANGE, width=0.6, label="Women")
+    bx.set_xticks(list(pos))
+    bx.set_xticklabels(a.index)
+    bx.set_ylabel("Extra claims, 2021 replay (MXN million)")
+    bx.set_xlabel("Attained age")
+    bx.legend(loc="upper left", fontsize=9.5)
+    total = float(age["extra_claims"].sum()) / 1e6
+    top = float(age[age["age_group"].isin(["50-59", "60+"])]["extra_claims"].sum()) / 1e6
+    _headline(
+        fig,
+        f"A repeat of 2021 would add {full.loc[2021, 'extra_pct']:.0%} to the next year's claims",
+        f"In-force block of the synthetic portfolio, "
+        f"MXN {full.loc[2021, 'base_claims'] / 1e6:,.0f} million of expected claims. "
+        f"The replay adds MXN {total:,.0f} million, "
+        f"{top / total:.0%} of it from policyholders aged 50 and over. The regulator's own 99.5th "
+        f"percentile table adds {reg['extra_pct']:.0%}: it would not have covered 2020 or 2021 "
+        f"if insureds had died like the population.",
+        STRESS_SOURCE,
+    )
+    return _save(fig, out, "stress_pandemic.png")
+
+
+def stress_longevity(con, out: Path) -> Path:
+    df = _query(con, "SELECT * FROM stress_longevity")
+    df = df[df["scenario"] != "central"].copy()
+    df["pct"] = df["change_vs_central"] * 100
+    order = ["cnsf_pensions", "interest_minus_1", "cnsf_base", "level_minus_20", "improvement_x2",
+             "no_improvement", "population_2023", "interest_plus_1"]  # fmt: skip
+    df = df.set_index("scenario").loc[[s for s in order if s in set(df["scenario"])]].reset_index()
+    df = df.iloc[::-1]
+    short = {
+        "cnsf_pensions": "CNSF 2013 pensions table",
+        "cnsf_base": "CNSF 2013 table",
+        "interest_minus_1": "Interest 1 point lower",
+        "level_minus_20": "Mortality 20% lower for good",
+        "improvement_x2": "Double the improvement",
+        "no_improvement": "No improvement after 2025",
+        "population_2023": "Population table 2023",
+        "interest_plus_1": "Interest 1 point higher",
+    }
+    colors = [ORANGE if v > 0 else BLUE for v in df["pct"]]
+    fig, ax = plt.subplots(figsize=(11, 6.0))
+    fig.subplots_adjust(top=0.78, bottom=0.12, left=0.26, right=0.93)
+    ax.barh(range(len(df)), df["pct"], color=colors, height=0.6)
+    ax.set_yticks(range(len(df)))
+    ax.set_yticklabels([short[s] for s in df["scenario"]])
+    for i, (v, m) in enumerate(zip(df["pct"], df["change_mxn"] / 1e9, strict=True)):
+        ax.text(v + (0.3 if v > 0 else -0.3), i, f"{v:+.1f}%  ({m:+.1f} bn)", va="center",
+                ha="left" if v > 0 else "right", fontsize=9.5, color=INK_2)  # fmt: skip
+    ax.axvline(0, color=INK_2, lw=0.9)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x")
+    ax.set_xlim(-14, 25)
+    ax.set_xlabel("Change in the annuity reserve against the central projection (%)")
+    central = float(_query(con, "SELECT reserve_T FROM stress_longevity WHERE scenario = 'central'")
+                    .iloc[0, 0]) / 1e9  # fmt: skip
+    steps = df.set_index("scenario")["pct"]
+    _headline(
+        fig,
+        "Interest rates move an annuity book more than longevity trend does",
+        f"Annuity-due block of 20,000 pensioners aged 60 to 95, central reserve MXN {central:,.1f} "
+        f"billion. One point less interest adds {steps['interest_minus_1']:.1f}%. Doubling the "
+        f"projected improvement adds {steps['improvement_x2']:.1f}%; a permanent 20% fall in "
+        f"mortality adds {steps['level_minus_20']:.1f}%. The regulatory "
+        f"pensions table holds {steps['cnsf_pensions']:.0f}% more than the central projection, "
+        f"which is the prudence built into the regulatory table.",
+        STRESS_SOURCE,
+    )
+    return _save(fig, out, "stress_longevity.png")
+
+
+def stress_hedge(con, out: Path) -> Path:
+    h = _query(con, "SELECT * FROM stress_hedge")
+    fig, ax = plt.subplots(figsize=(11, 6.0))
+    fig.subplots_adjust(top=0.78, bottom=0.17, left=0.09, right=0.97)
+    n = len(h)
+    width = 0.26
+    x = list(range(n))
+    ax.bar([i - width for i in x], h["life_book_change"] / 1e6, width=width, color=ORANGE,
+           label="Life book")  # fmt: skip
+    ax.bar(x, h["annuity_change"] / 1e6, width=width, color=BLUE, label="Annuity block")
+    ax.bar([i + width for i in x], h["net_change"] / 1e6, width=width, color=INK, label="Net")
+    ax.axhline(0, color=INK_2, lw=0.9)
+    ax.set_xticks(x)
+    ax.set_xticklabels([s.replace(" replay", "\nreplay").replace(" for good", "\nfor good")
+                        for s in h["shock"]], fontsize=9.5)  # fmt: skip
+    ax.set_ylabel("MXN million, positive is a loss")
+    ax.legend(loc="lower left", fontsize=9.5)
+    second = h[h["shock"].str.contains("2021")].iloc[0]
+    ratio = second["annuity_block_to_offset"] / second["annuity_reserve"]
+    _headline(
+        fig,
+        "An annuity book is the natural hedge of a life book, and a partial one",
+        f"Same shocks on both books. A repeat of 2021 costs the life book MXN "
+        f"{second['life_book_change'] / 1e6:,.0f} million and frees MXN "
+        f"{-second['annuity_change'] / 1e6:,.0f} million of annuity reserve; an annuity block "
+        f"{ratio:.1f} times this size would offset it exactly. Longevity works the other way, "
+        f"and the life book gains more than the annuity block loses.",
+        STRESS_SOURCE,
+    )
+    return _save(fig, out, "stress_hedge.png")
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -1838,6 +1980,9 @@ FIGURES = (
     pricing_adequacy,
     pricing_tornado,
     pricing_reserves_chart,
+    stress_pandemic,
+    stress_longevity,
+    stress_hedge,
 )
 
 

@@ -32,6 +32,7 @@
 | `projection_scenarios`, `projection_parameters`, `projection_backtest`, `projection_calibration`, `projection_r_crosscheck`, `cohort_tables`, `source_gap` | 1,798 / 700 / 78 / 6 / 22 / 92 / 70 | Scenario fans (5/25/50/75/95 percentiles), fitted Lee-Carter and CBD parameters, the backtest, its calibration, the R cross-check, cohort versus period at 65, and INEGI against CONAPO by age band |
 | `excess_baselines`, `excess_mortality`, `excess_summary`, `excess_monthly`, `excess_by_cause`, `excess_state` | 760 / 190 / 15 / 60 / 69 / 96 | Excess mortality in the pandemic: four baselines, observed against expected by age band and sex, totals with ranges and years of life lost, monthly waves, by cause chapter, by state. See [excess-mortality.md](excess-mortality.md) |
 | `pricing_premiums`, `pricing_adequacy`, `pricing_profit_test`, `pricing_sensitivity`, `pricing_reserves` | 32 / 80 / 40 / 26 / 40 | Pricing, profit testing and reserves of an illustrative term product: premiums solved for a 10% return, adequacy on five mortality bases, year-by-year cash flows, sensitivities, statutory reserve against best-estimate liability. See [pricing.md](pricing.md) |
+| `stress_pandemic_book`, `stress_pandemic_age`, `stress_longevity`, `stress_hedge` | 10 / 10 / 9 / 4 | Stress tests: the 2020-2022 excess replayed on the synthetic in-force book (with the regulator's 99.5th percentile table for comparison), an illustrative annuity block on eight bases, and the shocks on both books together. See [stress-tests.md](stress-tests.md) |
 | `experience_*` (18 tables) | see [experience-study.md](experience-study.md) | The experience study on the synthetic portfolio: data validation and reconciliation, A/E by count and amount, credibility, GLM relativities and their recovery of the planted truth, select factors, claims lag and quarterly A/E, the derived basis, pricing and in-force impact. The policy-level portfolio itself is kept as Parquet in `data/processed/experience/` |
 | `conapo_population` | 737,660 | Mid-year population by year, state, age and sex (the exposure) |
 | `conapo_deaths` | 737,660 | CONAPO modelled deaths, a cross-check |
@@ -41,8 +42,8 @@
 | `soa_catalog`, `soa_rates` | 29 / 2,869 | SOA tables (13 Mexican) and their rates |
 | `cnsf_rates` | 999 | CNSF 2013: nine tables, ages 0 to 110 |
 | `source_manifest` | 88 | Every downloaded file with URL, date, size and SHA-256 |
-| `validation_results` | 85 | Latest result of every data check |
-| `table_docs` | 80 | One-line description of each table above |
+| `validation_results` | 91 | Latest result of every data check |
+| `table_docs` | 84 | One-line description of each table above |
 
 Row counts are from the October 2026 build and grow as more INEGI years are added.
 
@@ -188,7 +189,18 @@ The pricing tables of [step 9b](pricing.md) add six more:
 | `pricing_reserves_are_sound` | FAIL | Statutory reserve positive after year 1, never negative, zero at expiry |
 | `pricing_sensitivities_point_the_right_way` | FAIL | Heavier mortality and a pandemic year lower the margin; lighter raises it |
 
-**Current state (October 2026):** 81 pass, 4 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it), and the model's own projection fan, which is too narrow for the backtest (an empirical band is added).
+The stress tables of [step 9c](stress-tests.md) add six more:
+
+| Check | Severity | Rule |
+|---|---|---|
+| `stress_replays_add_claims_and_halve_with_dampening` | FAIL | Every replay adds claims; 50% dampening halves the extra claims |
+| `stress_severity_is_proportional` | FAIL | Four times the severity gives four times the extra claims |
+| `stress_age_table_adds_up` | FAIL | The age-band split of the 2021 replay adds up to the scenario total |
+| `stress_longevity_points_the_right_way` | FAIL | Less improvement lowers the annuity reserve; more improvement, lower mortality or lower interest raise it |
+| `stress_hedge_signs` | FAIL | A pandemic costs the life book and releases annuity reserve; longevity does the opposite |
+| `stress_pensions_table_is_prudent` | WARN | The regulatory pensions table holds more than the central projection |
+
+**Current state (October 2026):** 87 pass, 4 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it), and the model's own projection fan, which is too narrow for the backtest (an empirical band is added).
 
 ## What the checks have already caught
 
