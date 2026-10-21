@@ -1609,6 +1609,198 @@ def excess_states(con, out: Path) -> Path:
     return _save(fig, out, "excess_states.png")
 
 
+PRICING_SOURCE = (
+    "Illustrative 20-year level term product (sum assured 1,000,000), assumed expenses and "
+    "lapses · "
+    "CNSF 2013 pricing basis · Mortality Table Builder"
+)
+
+
+def pricing_signature(con, out: Path) -> Path:
+    t = _query(con, "SELECT * FROM pricing_profit_test WHERE sex = 'M' ORDER BY policy_year")
+    prem = _query(
+        con, "SELECT * FROM pricing_premiums WHERE sex = 'M' AND term = 20 AND issue_age = 40"
+    ).iloc[0]
+    cum = t["profit_issued"].cumsum()
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(11, 6.0), gridspec_kw={"width_ratios": [1.5, 1]})
+    fig.subplots_adjust(top=0.76, bottom=0.11, left=0.08, right=0.97, wspace=0.22)
+    colors = [ORANGE if v < 0 else BLUE for v in t["profit_issued"]]
+    ax.bar(
+        t["policy_year"], t["profit_issued"], color=colors, width=0.7, label="Profit in the year"
+    )
+    ax.plot(t["policy_year"], cum, color=INK, lw=2.2, label="Cumulative profit")
+    ax.axhline(0, color=INK_2, lw=0.8)
+    ax.set_xlabel("Policy year")
+    ax.set_ylabel("Per policy issued (MXN)")
+    ax.set_xticks(range(1, 21, 2))
+    ax.legend(loc="upper left", fontsize=9.5)
+    payback = int(prem["payback_year"])
+    ax.annotate(
+        f"Year 1: {t['profit_issued'].iloc[0]:,.0f}\nacquisition cost and\nfirst-year commission",
+        xy=(1, t["profit_issued"].iloc[0]), xytext=(3.2, t["profit_issued"].iloc[0] * 0.95),
+        fontsize=9, color=INK_2, va="center",
+        arrowprops={"arrowstyle": "-", "color": MUTED},
+    )  # fmt: skip
+    break_even = int((cum >= 0).idxmax()) + 1 if (cum >= 0).any() else 0
+    if break_even:
+        ax.annotate(
+            f"Cumulative profit turns positive in year {break_even}",
+            xy=(break_even, 0), xytext=(break_even + 1.5, -1300), fontsize=9.5, color=INK,
+            arrowprops={"arrowstyle": "->", "color": INK_2},
+        )  # fmt: skip
+    # Where a renewal-year premium goes (year 5, per policy in force)
+    r = t.iloc[4]
+    spent = r["claims"] + r["commission"] + r["expenses"] + r["profit_per_policy"]
+    parts = {
+        "Claims": r["claims"], "Commission": r["commission"], "Expenses": r["expenses"],
+        "Added to reserves\n(net of interest)": r["premium"] - spent,
+        "Profit": r["profit_per_policy"],
+    }  # fmt: skip
+    labels = list(parts)
+    vals = [parts[k] / r["premium"] * 100 for k in labels]
+    bx.barh(labels[::-1], vals[::-1], color=[BLUE, MUTED, AQUA, ORANGE, INK_2])
+    for i, v in enumerate(vals[::-1]):
+        bx.text(v + 0.8, i, f"{v:.0f}%", va="center", fontsize=9.5, color=INK_2)
+    bx.set_xlim(0, max(vals) * 1.25)
+    bx.set_xlabel("Share of the year-5 premium (%)")
+    bx.grid(axis="y", visible=False)
+    bx.grid(axis="x")
+    _headline(
+        fig,
+        f"A term policy loses {abs(t['profit_issued'].iloc[0]):,.0f} on day one and "
+        f"is in profit by year {break_even}",
+        f"Man aged 40, 20-year term, sum assured 1,000,000, gross premium "
+        f"{prem['gross_premium']:,.0f} "
+        f"a year ({prem['gross_premium_per_1000']:.2f} per 1,000), solved to earn a "
+        f"{prem['irr']:.0%} return, which takes until year {payback} once profit is discounted at "
+        f"the hurdle. Net premium on the same table is "
+        f"{prem['net_premium_per_1000']:.2f} per 1,000: the loading pays for the expenses.",
+        PRICING_SOURCE,
+    )
+    return _save(fig, out, "pricing_signature.png")
+
+
+def pricing_adequacy(con, out: Path) -> Path:
+    df = _query(con, "SELECT * FROM pricing_adequacy")
+    order = ["cnsf", "improving", "experience", "cnsf_p995", "population"]
+    names = {
+        "cnsf": "CNSF 2013\n(pricing\nbasis)",
+        "improving": "CNSF +\nimprove-\nment",
+        "experience": "Company\nexperience\n(synthetic)",
+        "cnsf_p995": "CNSF\n99.5th\npercentile",
+        "population": "Mexican\npopulation\n2023",
+    }
+    order = [b for b in order if b in set(df["basis"])]
+    ages = (30, 40, 50)
+    fig, axes = plt.subplots(1, 2, figsize=(11, 6.2), sharey=True)
+    fig.subplots_adjust(top=0.76, bottom=0.17, left=0.08, right=0.97, wspace=0.08)
+    width = 0.26
+    shades = {30: "#8db8ec", 40: BLUE, 50: "#1a4c8a"}
+    for ax, (sex, name) in zip(axes, SEX_PANELS, strict=True):
+        sub = df[df["sex"] == sex]
+        for k, age in enumerate(ages):
+            vals = [
+                sub[(sub["basis"] == b) & (sub["issue_age"] == age)]["margin"].iloc[0] * 100
+                for b in order
+            ]
+            vals = [max(v, -60) for v in vals]
+            x = [i + (k - 1) * width for i in range(len(order))]
+            ax.bar(x, vals, width=width, color=shades[age], label=f"Issue age {age}")
+        ax.axhline(0, color=INK_2, lw=0.8)
+        ax.set_xticks(range(len(order)))
+        ax.set_xticklabels([names[b] for b in order], fontsize=8.5)
+        ax.set_title(name, loc="left", fontsize=11, fontweight="bold")
+        ax.set_ylim(-65, 45)
+    axes[0].set_ylabel("NPV margin at the 10% hurdle (% of PV premium)")
+    axes[0].legend(loc="lower left", fontsize=9)
+    axes[1].text(
+        0.98, 0.95, "bars floored at -60%", transform=axes[1].transAxes, ha="right",
+        fontsize=8.5, color=MUTED,
+    )  # fmt: skip
+    pop = df[(df["basis"] == "population") & (df["issue_age"] == 40) & (df["sex"] == "M")]
+    cush = df[(df["basis"] == "cnsf") & (df["sex"] == "M")]["mortality_cushion"]
+    _headline(
+        fig,
+        "The premium is safe on the regulatory table and not on the population's mortality",
+        f"NPV margin when the CNSF-priced premium meets other mortality. Ages 30 to 50, 20-year "
+        f"term. Population mortality would cost a man of 40 {abs(pop['margin'].iloc[0]):.0%} of "
+        f"premium; mortality could run {cush.min() - 1:.0%} to {cush.max() - 1:.0%} "
+        f"above the CNSF table before the policy stops covering its cost.",
+        PRICING_SOURCE,
+    )
+    return _save(fig, out, "pricing_adequacy.png")
+
+
+def pricing_tornado(con, out: Path) -> Path:
+    s = _query(con, "SELECT * FROM pricing_sensitivity WHERE sex = 'M'").set_index("scenario")
+    pairs = [
+        ("Mortality ±20%", "mortality -20%", "mortality +20%"),
+        ("Pandemic year 2 (x2)", None, "pandemic: year 2 mortality x2"),
+        ("Investment return ±1 pt", "investment return +1 pt", "investment return -1 pt"),
+        ("Expenses ±10%", "expenses -10%", "expenses +10%"),
+        ("Lapses ±25%", "lapse +25%", "lapse -25%"),
+    ]
+    rows = []
+    for label, good, bad in pairs:
+        g = s.loc[good, "margin"] * 100 if good else 0.0
+        b = s.loc[bad, "margin"] * 100
+        rows.append((label, g, b))
+    rows.sort(key=lambda r: abs(r[1]) + abs(r[2]))
+    fig, ax = plt.subplots(figsize=(11, 5.6))
+    fig.subplots_adjust(top=0.76, bottom=0.12, left=0.25, right=0.95)
+    for i, (_label, g, b) in enumerate(rows):
+        ax.barh(i, g, color=BLUE, height=0.55)
+        ax.barh(i, b, color=ORANGE, height=0.55)
+        if g:
+            ax.text(g + 0.3, i, f"{g:+.1f}%", va="center", fontsize=9.5, color=INK_2)
+        ax.text(b - 0.3, i, f"{b:+.1f}%", va="center", ha="right", fontsize=9.5, color=INK_2)
+    ax.set_yticks(range(len(rows)))
+    ax.set_yticklabels([r[0] for r in rows])
+    ax.axvline(0, color=INK_2, lw=0.9)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x")
+    ax.set_xlim(-16, 16)
+    ax.set_xlabel("Change in NPV margin (% of PV premium)")
+    top = rows[-1]
+    _headline(
+        fig,
+        "Mortality is the assumption that decides the return",
+        f"One assumption moved at a time on a man of 40, 20-year term, premium held fixed. "
+        f"Blue favourable, orange adverse. A lapse-supported product is almost indifferent to "
+        f"lapses ({rows[0][2]:+.1f}% margin); mortality ±20% moves it by {top[2]:+.1f}%.",
+        PRICING_SOURCE,
+    )
+    return _save(fig, out, "pricing_tornado.png")
+
+
+def pricing_reserves_chart(con, out: Path) -> Path:
+    df = _query(con, "SELECT * FROM pricing_reserves WHERE sex = 'M'")
+    fig, ax = plt.subplots(figsize=(11, 6.0))
+    fig.subplots_adjust(top=0.78, bottom=0.11, left=0.09, right=0.95)
+    ax.plot(df["policy_year"], df["statutory_reserve_end"], color=BLUE, lw=2.4,
+            label="Statutory net premium reserve (CNSF, 4%)")  # fmt: skip
+    ax.plot(df["policy_year"], df["best_estimate_end"], color=ORANGE, lw=2.4,
+            label="Best-estimate liability (real expenses, lapses, 5%)")  # fmt: skip
+    ax.fill_between(df["policy_year"], df["best_estimate_end"], df["statutory_reserve_end"],
+                    color=MUTED, alpha=0.18, lw=0)  # fmt: skip
+    ax.axhline(0, color=INK_2, lw=0.8)
+    ax.set_xlabel("End of policy year")
+    ax.set_ylabel("Reserve per policy in force (MXN)")
+    ax.set_xticks(range(1, 21, 2))
+    ax.legend(loc="upper left", fontsize=9.5)
+    gap = (df["statutory_reserve_end"] - df["best_estimate_end"]).iloc[0]
+    _headline(
+        fig,
+        "The regulator's reserve holds money the best estimate says is not needed",
+        f"Man aged 40, 20-year term. After year 1 the statutory reserve is "
+        f"{df['statutory_reserve_end'].iloc[0]:,.0f} while the best-estimate liability is "
+        f"{df['best_estimate_end'].iloc[0]:,.0f}: future premiums outweigh future claims. "
+        f"The gap, {gap:,.0f}, is margin that releases over the life of the policy.",
+        PRICING_SOURCE,
+    )
+    return _save(fig, out, "pricing_reserves.png")
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -1642,6 +1834,10 @@ FIGURES = (
     excess_age_profile,
     excess_causes,
     excess_states,
+    pricing_signature,
+    pricing_adequacy,
+    pricing_tornado,
+    pricing_reserves_chart,
 )
 
 
