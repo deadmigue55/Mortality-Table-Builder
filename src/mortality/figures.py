@@ -608,6 +608,260 @@ def covid_single_age(con, out: Path) -> Path:
     return _save(fig, out, "covid_single_age.png")
 
 
+# ── Life tables ─────────────────────────────────────────────────────────────
+
+
+def _cnsf_tables(con) -> dict[str, pd.DataFrame]:
+    """CNSF 2013 life tables for the base rates and the two percentile variants."""
+    from mortality import lifetable
+
+    df = _query(
+        con,
+        "SELECT variant, age, qx FROM cnsf_rates WHERE \"table\" = 'CNSF M 2013' ORDER BY age",
+    )
+    return {
+        variant: lifetable._table_from_q(part["age"], part["qx"])
+        for variant, part in df.groupby("variant")
+    }
+
+
+def life_expectancy_trend(con, out: Path) -> Path:
+    ours = _query(con, "SELECT year, sex, e0 FROM life_summary WHERE sex IN ('M', 'F')")
+    conapo = _query(
+        con,
+        "SELECT year, sex, e0 FROM conapo_life_expectancy "
+        "WHERE state_code = 0 AND sex IN ('M', 'F') AND year BETWEEN 2012 AND 2024",
+    )
+    fig, ax = plt.subplots(figsize=(11, 6.4))
+    fig.subplots_adjust(top=0.78, bottom=0.10, left=0.08, right=0.90)
+    ax.axvspan(2019.5, 2022.5, color=GRID, alpha=0.55, lw=0)
+    ax.text(2021, 80.6, "COVID years", ha="center", fontsize=9.5, color=INK_2)
+    for sex in ("M", "F"):
+        c = conapo[conapo["sex"] == sex].sort_values("year")
+        ax.plot(c["year"], c["e0"], color=SEX_COLOR[sex], lw=1.7, ls=(0, (4, 2)), alpha=0.85)
+        o = ours[ours["sex"] == sex].sort_values("year")
+        ax.plot(o["year"], o["e0"], color=SEX_COLOR[sex], lw=2.8, marker="o", ms=6.5,
+                mec=SURFACE, mew=1.3)  # fmt: skip
+        ax.text(2024.15, o["e0"].iloc[-1], f"{SEX_NAME[sex]} {o['e0'].iloc[-1]:.1f}",
+                va="center", fontsize=10.5)  # fmt: skip
+    from matplotlib.lines import Line2D
+
+    ax.legend(
+        handles=[
+            Line2D(
+                [], [], color=INK_2, lw=2.8, marker="o", ms=6, label="This project (INEGI deaths)"
+            ),
+            Line2D([], [], color=INK_2, lw=1.7, ls=(0, (4, 2)), label="CONAPO"),
+        ],
+        loc="lower left",
+        fontsize=9.5,
+    )
+    ax.set_xlim(2012, 2025.4)
+    ax.set_ylim(62, 81.5)
+    ax.set_xticks(range(2012, 2025, 2))
+    ax.set_ylabel("Life expectancy at birth (years)")
+    m_ours = ours[ours["sex"] == "M"].set_index("year")["e0"]
+    m_conapo = conapo[conapo["sex"] == "M"].set_index("year")["e0"]
+    lost_ours = m_ours.loc[2023] - m_ours.loc[2020:2021].min()
+    lost_conapo = m_conapo.loc[2019] - m_conapo.loc[2020:2021].min()
+    _headline(
+        fig,
+        f"COVID cost Mexican men {lost_ours:.1f} to {lost_conapo:.1f} years of life expectancy; "
+        "most was back by 2022",
+        "Life expectancy at birth from the graduated life tables, against CONAPO's. They agree "
+        "within 0.7 years in 2022-2024. In 2020-21 CONAPO models 9% more deaths than INEGI "
+        "registered, which points the same way as the gap between the two lines (the range in "
+        "the headline is the same event seen through the two death counts).",
+    )
+    return _save(fig, out, "life_expectancy_trend.png")
+
+
+def survival_curves(con, out: Path) -> Path:
+    year = _clean_year(con)
+    df = _query(
+        con,
+        f"SELECT sex, age, lx FROM life_tables WHERE year = {year} AND sex IN ('M', 'F')",
+    )
+    cnsf = _cnsf_tables(con)
+    fig, ax = plt.subplots(figsize=(11, 6.4))
+    fig.subplots_adjust(top=0.78, bottom=0.10, left=0.08, right=0.95)
+    heavy, light, base = cnsf["p99.5"], cnsf["p0.05"], cnsf["base"]
+    ax.fill_between(base["age"], heavy["lx"] / 1e5, light["lx"] / 1e5, color=MUTED, alpha=0.22,
+                    lw=0, label="CNSF 2013, 0.05th to 99.5th percentile variants")  # fmt: skip
+    ax.plot(base["age"], base["lx"] / 1e5, color=INK_2, lw=1.8, ls=(0, (4, 3)),
+            label="CNSF 2013 base")  # fmt: skip
+    survive = {}
+    for sex in ("M", "F"):
+        d = df[df["sex"] == sex]
+        ax.plot(d["age"], d["lx"] / 1e5, color=SEX_COLOR[sex], lw=2.8, label=SEX_NAME[sex])
+        survive[sex] = float(d.loc[d["age"] == 65, "lx"].iloc[0] / 1e5)
+    ax.axvline(65, color=INK_2, lw=0.8, ls=(0, (2, 3)))
+    ax.text(65.8, 0.97, "age 65", fontsize=9, color=INK_2, va="top")
+    cnsf65 = float(base.loc[base["age"] == 65, "lx"].iloc[0] / 1e5)
+    heavy65 = float(heavy.loc[heavy["age"] == 65, "lx"].iloc[0] / 1e5)
+    ax.set_xlim(0, 110)
+    ax.set_ylim(0, 1.02)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
+    ax.set_xlabel("Age")
+    ax.set_ylabel("Share of a birth cohort still alive")
+    ax.legend(loc="lower left", fontsize=9.5)
+    _headline(
+        fig,
+        f"{survive['M']:.0%} of Mexican men reach 65; the CNSF 2013 table expects {cnsf65:.0%}",
+        f"Survival curves from the {year} life tables (women: {survive['F']:.0%} reach 65). The "
+        f"regulatory table describes insured lives: at 65 even its higher-mortality 99.5th "
+        f"percentile variant ({heavy65:.0%}) is above both population curves.",
+    )
+    return _save(fig, out, "survival_curves.png")
+
+
+def lifespan_disparity(con, out: Path) -> Path:
+    df = _query(
+        con,
+        'SELECT source, "table" AS name, sex, year, e0, lifespan_disparity AS disparity '
+        "FROM life_table_comparison WHERE sex IN ('M', 'F') AND e0 IS NOT NULL "
+        "AND source IN ('HMD', 'INEGI/CONAPO')",
+    )
+    fig, ax = plt.subplots(figsize=(11, 6.4))
+    fig.subplots_adjust(top=0.78, bottom=0.11, left=0.08, right=0.95)
+    for sex in ("M", "F"):
+        d = df[df["sex"] == sex]
+        h = d[d["source"] == "HMD"]
+        ax.scatter(h["e0"], h["disparity"], s=70, color=SEX_COLOR[sex], alpha=0.55,
+                   edgecolors="none", zorder=2)  # fmt: skip
+        for _, row in h.iterrows():
+            code = COUNTRY_NAMES.get(row["name"].split(" ")[0], row["name"].split(" ")[0])
+            ax.annotate(code, (row["e0"], row["disparity"]), xytext=(6, -3),
+                        textcoords="offset points", fontsize=8.5, color=INK_2)  # fmt: skip
+        mex = d[d["source"] == "INEGI/CONAPO"].iloc[0]
+        ax.scatter([mex["e0"]], [mex["disparity"]], s=190, color=SEX_COLOR[sex], edgecolors=SURFACE,
+                   linewidths=1.8, zorder=4)  # fmt: skip
+        offset, align = ((16, 4), "left") if sex == "M" else ((-14, 10), "right")
+        name = f"Mexico {mex['year']:.0f}, {SEX_NAME[sex].lower()}"
+        ax.annotate(name, (mex["e0"], mex["disparity"]), xytext=offset,
+                    textcoords="offset points", ha=align, fontsize=10,
+                    fontweight="bold", color=INK)  # fmt: skip
+    ax.invert_yaxis()
+    ax.set_xlabel("Life expectancy at birth (years)")
+    ax.set_ylabel("Lifespan disparity, years (axis flipped: more equal at the top)")
+    ax.grid(axis="x", visible=True)
+    mx = df[(df["source"] == "INEGI/CONAPO") & (df["sex"] == "M")].iloc[0]
+    jp = df[(df["name"] == "JPN 2019") & (df["sex"] == "M")].iloc[0]
+    _headline(
+        fig,
+        f"Mexican men live {jp['e0'] - mx['e0']:.0f} years less than Japanese men, "
+        "with less equal lifespans",
+        f"Each dot is a life table. The top right is best: long lives, evenly spread ages at "
+        f"death. Mexican men's years of life lost at death average {mx['disparity']:.1f}, against "
+        f"{jp['disparity']:.1f} in Japan. Mexico is 2023; the HMD countries are 2019, pre-COVID.",
+    )
+    return _save(fig, out, "lifespan_disparity.png")
+
+
+def annuity_values(con, out: Path) -> Path:
+    df = _query(
+        con,
+        'SELECT source, "table" AS name, sex, e65, a_due_65 FROM life_table_comparison '
+        "WHERE source IN ('CNSF', 'SOA', 'INEGI/CONAPO')",
+    )
+    short = {
+        "CNSF M 2013 (non-disabled lives, base)": "CNSF 2013 base",
+        "CNSF M 2013 (p0.05 percentile)": "CNSF 2013, 0.05th pct (pensions)",
+        "CNSF M 2013 (p99.5 percentile)": "CNSF 2013, 99.5th pct",
+        "CNSF 2000-I individual insured lives (1991-1998)": "CNSF 2000-I insured lives",
+        "CNSF 2000-G group life (1991-1998)": "CNSF 2000-G group life",
+        "Experiencia Mexicana individual (1982-1989)": "Experiencia Mexicana 1982-89",
+        "EMSSA 97 pension participants (H)": "EMSSA 97 pensions",
+        "EMSSA 97 pension participants (M)": "EMSSA 97 pensions",
+        "MEX 2000 male": "MEX 2000 (population)",
+        "MEX 2000 female": "MEX 2000 (population)",
+        "Seguro Popular 2008 males": "Seguro Popular 2008",
+        "Seguro Popular 2008 females": "Seguro Popular 2008",
+    }
+    fig, axes = plt.subplots(1, 2, figsize=(11, 6.4), sharex=True)
+    fig.subplots_adjust(top=0.76, bottom=0.10, left=0.25, right=0.97, wspace=0.62)
+    gaps = {}
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        d = df[df["sex"].isin([sex, "T"])].copy()
+        d = d[(d["source"] != "INEGI/CONAPO") | (d["sex"] == sex)]  # one Mexico dot per panel
+        d["label"] = [
+            f"Mexican population {_clean_year(con)}" if s == "INEGI/CONAPO" else short.get(n, n)
+            for s, n in zip(d["source"], d["name"], strict=True)
+        ]
+        d = d.sort_values("a_due_65").reset_index(drop=True)
+        mex = d[d["source"] == "INEGI/CONAPO"].iloc[0]
+        cnsf = d[d["name"].str.contains("2013 \\(non-disabled")].iloc[0]
+        gaps[sex] = cnsf["a_due_65"] / mex["a_due_65"] - 1
+        for i, row in d.iterrows():
+            color = SEX_COLOR[sex] if row["source"] == "INEGI/CONAPO" else MUTED
+            ax.plot(
+                [d["a_due_65"].min() - 0.3, row["a_due_65"]], [i, i], color=GRID, lw=1, zorder=1
+            )
+            ax.plot(row["a_due_65"], i, "o", color=color, ms=9, mec=SURFACE, mew=1.3, zorder=3)
+            ax.text(row["a_due_65"] + 0.12, i, f"{row['a_due_65']:.2f}", va="center", fontsize=8.5,
+                    color=INK_2)  # fmt: skip
+        ax.set_yticks(range(len(d)), d["label"], fontsize=8.8)
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+        ax.grid(axis="y", visible=False)
+        ax.grid(axis="x", visible=True)
+        ax.set_xlabel("Value of 1 a year for life from 65 (4% interest)")
+        ax.set_xlim(10.3, 17.6)
+    _headline(
+        fig,
+        f"CNSF 2013 overstates pension cost by {gaps['M']:.0%} (men) and {gaps['F']:.0%} (women)",
+        "Annuity-due at 65 on each table, same code, 4% interest. Lighter mortality makes lifetime "
+        "payments dearer. Coloured dot = Mexican population; unisex tables appear in both "
+        "panels. The 0.05th pct is CNSF's low-mortality variant for private pensions.",
+    )
+    return _save(fig, out, "annuity_values.png")
+
+
+def term_premiums(con, out: Path) -> Path:
+    from mortality import lifetable
+
+    year = _clean_year(con)
+    mex = _query(
+        con,
+        f"SELECT sex, age, P_term_20 FROM actuarial_values WHERE year = {year} "
+        "AND interest = 0.04 AND sex IN ('M', 'F') AND age BETWEEN 25 AND 60",
+    )
+    cnsf = {
+        k: lifetable.Commutation.from_table(t, lifetable.INTEREST).values()
+        for k, t in _cnsf_tables(con).items()
+    }
+    fig, axes = _two_panels()
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        d = mex[mex["sex"] == sex]
+        ax.plot(d["age"], d["P_term_20"] * 1000, color=SEX_COLOR[sex], lw=2.8,
+                label="Mexican population, 2023")  # fmt: skip
+        for variant, label, ls in (
+            ("base", "CNSF 2013 base", (0, (4, 3))),
+            ("p99.5", "CNSF 2013, 99.5th pct variant", (0, (1, 2))),
+        ):
+            v = cnsf[variant]
+            v = v[v["age"].between(25, 60)]
+            ax.plot(v["age"], v["P_term_20"] * 1000, color=INK_2, lw=1.7, ls=ls, label=label)
+        ax.set_yscale("log")
+        ax.set_yticks([1, 2, 5, 10, 20, 50], ["1", "2", "5", "10", "20", "50"])
+        ax.minorticks_off()
+        ax.set_xlim(25, 60)
+        ax.set_xlabel("Age at issue")
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+    axes[0].set_ylabel("Net annual premium per 1,000 insured (log scale)")
+    axes[0].legend(loc="upper left", fontsize=9)
+    m40 = float(mex[(mex["sex"] == "M") & (mex["age"] == 40)]["P_term_20"].iloc[0]) * 1000
+    c40 = float(cnsf["base"].loc[cnsf["base"]["age"] == 40, "P_term_20"].iloc[0]) * 1000
+    _headline(
+        fig,
+        f"A 20-year term at 40: {m40:.1f} per 1,000 for men on population mortality, "
+        f"{c40:.1f} on CNSF 2013",
+        "Net premium (no expenses or profit), equivalence principle, 4% interest. Women's "
+        "population premium passes CNSF's higher-mortality variant from about age 30; men's is "
+        "above it at every age.",
+    )
+    return _save(fig, out, "term_premiums.png")
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -620,6 +874,11 @@ FIGURES = (
     old_age_closure,
     lambda_selection,
     covid_single_age,
+    life_expectancy_trend,
+    survival_curves,
+    lifespan_disparity,
+    annuity_values,
+    term_premiums,
 )
 
 

@@ -74,7 +74,7 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
-  - [x] SQLite warehouse with 43 automatic data checks
+  - [x] SQLite warehouse with 53 automatic data checks
   - [x] INEGI 2014 to 2019 from the interactive tables (five-year age groups, all six years verified against INEGI totals)
   - [ ] INEGI before 2014 (optional, for a longer forecasting history)
 - [x] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag ([findings](docs/data-quality.md))
@@ -99,7 +99,16 @@ All data comes from official or academically recognized sources. Raw data is **n
 
 ![Graduation fit](docs/img/graduation_fit.png)
 ![Old-age closure](docs/img/old_age_closure.png)
-- [ ] **6. Life tables and actuarial functions:** full tables, commutation functions, APVs
+- [x] **6. Life tables and actuarial functions:** full tables, commutation functions, APVs ([findings](docs/life-tables.md))
+  - Life expectancy at birth 2023: men **72.9**, women **78.9**; within 0.7 years of CONAPO in 2022 to 2024, and the same code reproduces HMD's published life expectancy to 0.007 years
+  - COVID cost men **5.9 to 6.9 years** of life expectancy depending on whether INEGI or CONAPO death counts are used
+  - A pension annuity at 65 costs 14.94 on CNSF 2013 and 12.21 for Mexican men: valuing the population on the regulatory table overstates it by **22%** (13% for women)
+  - A 20-year term at 40 has a net premium of **6.6 per 1,000** for men on population mortality, against 1.7 on CNSF 2013
+  - Mexican men's lifespans are the least equal of any country compared (disparity 14.6 years against 9.9 in Japan)
+  - Full actuarial function library: insurance, annuities, premiums, reserves, at any interest rate
+
+![Annuity values](docs/img/annuity_values.png)
+![Term premiums](docs/img/term_premiums.png)
 - [ ] **7. Mortality projection:** Lee–Carter and CBD (Python and R), fan charts, cohort tables
 - [ ] **8. Benchmarking:** A/E vs CNSF, SOA and HMD
 - [ ] **9. Applications:** pricing, reserves, longevity and pandemic stress, reinsurance, COVID excess mortality

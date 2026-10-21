@@ -26,6 +26,8 @@
 | `crude_rates_single`, `crude_rates_grouped`, `age_standardised_rates`, `basis_bridge`, `state_smr`, `benchmark_ae`, `benchmark_countries` | 1,010 / 627 / 33 / 11 / 32 / 2,574 / 5,358 | Death rates, standardisation and first benchmarks: see [crude-rates.md](crude-rates.md) |
 | `graduated_qx` | 1,110 | **The graduated table:** m and q by year, sex and age 0 to 110, with source and sex-floor flags. Start here for life tables. See [graduation.md](graduation.md) |
 | `graduated_rates`, `graduation_selection`, `graduation_fit_tests`, `graduation_lambda_path`, `graduation_params`, `graduation_digit_preference` | 3,220 / 40 / 40 / 1,220 / 130 / 10 | The four graduations, how each was chosen and tested, fitted parameters, and the digit-preference measure |
+| `life_tables` | 1,665 | **Complete life tables** by year and sex (M, F, T = both sexes), ages 0 to 110: qx, mx, ax, lx, dx, person_years, total_person_years, ex. See [life-tables.md](life-tables.md) |
+| `life_summary`, `commutation_columns`, `actuarial_values`, `life_table_comparison` | 15 / 1,665 / 4,995 / 42 | Life expectancy and other summaries, commutation columns at 4%, insurance, annuity and premium values at 3% to 5%, and the same measures for CNSF, SOA and HMD tables |
 | `conapo_population` | 737,660 | Mid-year population by year, state, age and sex (the exposure) |
 | `conapo_deaths` | 737,660 | CONAPO modelled deaths, a cross-check |
 | `conapo_life_expectancy` | 10,059 | CONAPO life expectancy at birth |
@@ -34,8 +36,8 @@
 | `soa_catalog`, `soa_rates` | 29 / 2,869 | SOA tables (13 Mexican) and their rates |
 | `cnsf_rates` | 999 | CNSF 2013: nine tables, ages 0 to 110 |
 | `source_manifest` | 88 | Every downloaded file with URL, date, size and SHA-256 |
-| `validation_results` | 43 | Latest result of every data check |
-| `table_docs` | 38 | One-line description of each table above |
+| `validation_results` | 53 | Latest result of every data check |
+| `table_docs` | 43 | One-line description of each table above |
 
 Row counts are from the October 2026 build and grow as more INEGI years are added.
 
@@ -112,7 +114,22 @@ The graduated tables of [step 5](graduation.md) add seven more:
 | `graduated_spline_tracks_the_crude` | WARN | Under 15% of P-spline residuals pass 2 |
 | `crude_old_age_sex_order` | WARN | Crude male rates exceed female rates at ages 85 to 99 |
 
-**Current state (October 2026):** 40 pass, 3 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), and the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it).
+The life tables of [step 6](life-tables.md) add ten more:
+
+| Check | Severity | Rule |
+|---|---|---|
+| `life_tables_complete` | FAIL | Every year and sex has ages 0 to 110 and a radix of 100,000 |
+| `life_table_deaths_add_up` | FAIL | Deaths in the table add up to the radix |
+| `life_table_expectancy_identity` | FAIL | e(0) equals T(0) / l(0) |
+| `life_table_reproduces_graduated_q` | FAIL | The male and female tables use exactly the graduated q |
+| `life_expectancy_women_above_men` | FAIL | Women outlive men at birth and at 65 |
+| `life_expectancy_both_sexes_between` | FAIL | The both-sexes e(0) lies between the male and female values |
+| `life_expectancy_close_to_conapo` | WARN | In non-COVID years, within 1 year of CONAPO |
+| `hmd_life_expectancy_reproduced` | FAIL | Tables built from HMD rates reproduce HMD's published e(0) within 0.05 |
+| `actuarial_insurance_annuity_identity` | FAIL | Whole-life insurance equals 1 minus d times the annuity-due |
+| `actuarial_premium_equivalence` | FAIL | Net premium times annuity-due equals the insurance value |
+
+**Current state (October 2026):** 50 pass, 3 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), and the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it).
 
 ## What the checks have already caught
 
