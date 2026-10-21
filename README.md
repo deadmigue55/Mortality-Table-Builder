@@ -74,7 +74,7 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
-  - [x] SQLite warehouse with 36 automatic data checks
+  - [x] SQLite warehouse with 43 automatic data checks
   - [x] INEGI 2014 to 2019 from the interactive tables (five-year age groups, all six years verified against INEGI totals)
   - [ ] INEGI before 2014 (optional, for a longer forecasting history)
 - [x] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag ([findings](docs/data-quality.md))
@@ -90,7 +90,15 @@ All data comes from official or academically recognized sources. Raw data is **n
 
 ![Mortality curve against the CNSF 2013 table](docs/img/mortality_curve.png)
 ![Pandemic shock by age](docs/img/covid_shock.png)
-- [ ] **5. Graduation:** Whittaker–Henderson, P-splines, parametric laws, old-age closure, fit tests
+- [x] **5. Graduation:** Whittaker–Henderson, P-splines, parametric laws, old-age closure, fit tests ([findings](docs/graduation.md))
+  - Four methods compared on every year and sex; smoothing chosen by a quasi-AIC whose dispersion is estimated from the crude rates themselves
+  - Heligman–Pollard fits about 9x worse than the P-spline in 2023: Mexican men's young-adult plateau is not something a parametric law bends to
+  - **Digit preference found in men's death records:** +1.3% to +2.5% excess deaths at ages ending in 0 and 5, every year, invisible to the Whipple index
+  - **Crude old-age data are not credible:** above about 88, women's rates overtake men's (a sign of age exaggeration), so ages 90 to 110 come from a Kannisto logistic fitted on 75 to 89, with men floored at women
+  - Output: `graduated_qx`, a complete 0 to 110 table per year and sex, ready for the life-table step
+
+![Graduation fit](docs/img/graduation_fit.png)
+![Old-age closure](docs/img/old_age_closure.png)
 - [ ] **6. Life tables and actuarial functions:** full tables, commutation functions, APVs
 - [ ] **7. Mortality projection:** Lee–Carter and CBD (Python and R), fan charts, cohort tables
 - [ ] **8. Benchmarking:** A/E vs CNSF, SOA and HMD

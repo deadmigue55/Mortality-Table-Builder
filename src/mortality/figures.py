@@ -7,6 +7,7 @@ aqua, then muted grey) so the same series always has the same color across figur
 
 from __future__ import annotations
 
+import math
 import textwrap
 from pathlib import Path
 
@@ -364,6 +365,249 @@ def country_heatmap(con, out: Path) -> Path:
     return _save(fig, out, "country_ratios.png")
 
 
+# ── Graduation ──────────────────────────────────────────────────────────────
+
+SEX_PANELS = (("M", "Men"), ("F", "Women"))
+
+
+def _two_panels(figsize=(11, 6.4), top=0.76, sharey=True):
+    fig, axes = plt.subplots(1, 2, figsize=figsize, sharey=sharey)
+    fig.subplots_adjust(top=top, bottom=0.12, left=0.07, right=0.97, wspace=0.08)
+    return fig, axes
+
+
+def graduation_fit(con, out: Path) -> Path:
+    year = _clean_year(con)
+    crude = _query(
+        con,
+        f"SELECT sex, age, mx FROM crude_rates_single WHERE year = {year} AND age BETWEEN 1 AND 89",
+    )
+    fits = _query(
+        con,
+        f"SELECT sex, method, age, mx, mx_lower, mx_upper FROM graduated_rates WHERE year = {year}",
+    )
+    tests = _query(
+        con,
+        f"SELECT sex, method, deviance FROM graduation_fit_tests WHERE year = {year}",
+    ).set_index(["sex", "method"])["deviance"]
+    fig, axes = _two_panels()
+    styles = {
+        "pspline": ("Poisson P-spline", BLUE, 2.4, "-"),
+        "whittaker_henderson": ("Whittaker-Henderson", AQUA, 1.5, "-"),
+        "heligman_pollard": ("Heligman-Pollard", ORANGE, 1.8, (0, (5, 3))),
+        "gompertz_makeham": ("Gompertz-Makeham (35+)", INK_2, 1.5, (0, (1.5, 2.5))),
+    }
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        c = crude[crude["sex"] == sex]
+        ax.scatter(c["age"], c["mx"], s=14, facecolors="none", edgecolors=MUTED, lw=0.9,
+                   label="Crude rates", zorder=2)  # fmt: skip
+        for method, (label, color, width, ls) in styles.items():
+            f = fits[(fits["sex"] == sex) & (fits["method"] == method)]
+            if method == "pspline":
+                ax.fill_between(
+                    f["age"], f["mx_lower"], f["mx_upper"], color=color, alpha=0.2, lw=0
+                )
+            ax.plot(f["age"], f["mx"], color=color, lw=width, ls=ls, label=label, zorder=3)
+        ax.set_yscale("log")
+        ax.set_ylim(1.5e-4, 0.6)
+        ax.set_xlim(0, 90)
+        ax.set_xlabel("Age")
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+    axes[0].set_ylabel("Death rate per person-year (log scale)")
+    axes[0].legend(loc="upper left", fontsize=9)
+    ratio = tests[("M", "heligman_pollard")] / tests[("M", "pspline")]
+    _headline(
+        fig,
+        f"Splines follow Mexican mortality; Heligman-Pollard fits {ratio:.0f}x worse",
+        f"Crude {year} rates by single age against four graduations, with the P-spline's 95% band. "
+        "Men's young-adult plateau (ages 15 to 35) is what a parametric law cannot bend to.",
+    )
+    return _save(fig, out, "graduation_fit.png")
+
+
+def graduation_residuals(con, out: Path) -> Path:
+    year = _clean_year(con)
+    df = _query(
+        con,
+        f"SELECT c.sex, c.age, c.deaths, c.exposure, g.method, g.mx AS fit "
+        f"FROM crude_rates_single c JOIN graduated_rates g "
+        f"ON g.year = c.year AND g.sex = c.sex AND g.age = c.age "
+        f"WHERE c.year = {year} AND g.method IN ('pspline', 'whittaker_henderson')",
+    )
+    expected = df["exposure"] * df["fit"]
+    df["z"] = (df["deaths"] - expected) / expected**0.5
+    tests = _query(
+        con,
+        f"SELECT sex, method, share_beyond_2, serial_corr FROM graduation_fit_tests "
+        f"WHERE year = {year}",
+    ).set_index(["sex", "method"])
+    fig, axes = _two_panels(sharey=True)
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        ax.axhspan(-2, 2, color=GRID, alpha=0.6, lw=0)
+        for method, label, color in (
+            ("whittaker_henderson", "Whittaker-Henderson", AQUA),
+            ("pspline", "Poisson P-spline", BLUE),
+        ):
+            d = df[(df["sex"] == sex) & (df["method"] == method)]
+            ax.plot(d["age"], d["z"], color=color, lw=1.4, marker="o", ms=3.2, label=label)
+        ax.axhline(0, color=INK_2, lw=0.8)
+        ax.set_xlim(0, 90)
+        ax.set_xlabel("Age")
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+    axes[0].set_ylabel("Standardised residual (actual - fitted) / sqrt(fitted)")
+    axes[0].legend(loc="upper right", fontsize=9)
+    corr = tests.loc[("M", "pspline"), "serial_corr"]
+    heaping = _query(
+        con,
+        f"SELECT excess_at_0_5 FROM graduation_digit_preference WHERE year = {year} AND sex = 'M'",
+    )["excess_at_0_5"].iloc[0]
+    _headline(
+        fig,
+        f"Biggest misses sit on ages ending in 0 and 5: men's deaths run {heaping:.1%} high there",
+        f"Grey band = plus or minus 2. The {year} spikes at 35, 40, 50 and 55 are digit "
+        f"preference in the male death records, which a smooth curve rightly ignores "
+        f"(serial correlation of residuals {corr:.2f}).",
+    )
+    return _save(fig, out, "graduation_residuals.png")
+
+
+def old_age_closure(con, out: Path) -> Path:
+    year = _clean_year(con)
+    crude = _query(
+        con,
+        f"SELECT sex, age, mx FROM crude_rates_single "
+        f"WHERE year = {year} AND age BETWEEN 60 AND 99",
+    )
+    final = _query(
+        con,
+        f"SELECT sex, age, mx, source, sex_floor FROM graduated_qx "
+        f"WHERE year = {year} AND age >= 60",
+    )
+    hmd = _query(
+        con,
+        "SELECT country, sex, age, mx FROM hmd_life_tables WHERE year = 2019 "
+        "AND country IN ('USA', 'JPN') AND age BETWEEN 60 AND 110",
+    )
+    ratio = crude[crude["age"] == 99]
+    fig, axes = _two_panels()
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        for country, label, ls in (("USA", "USA 2019", (0, (4, 2))), ("JPN", "Japan 2019", ":")):
+            h = hmd[(hmd["country"] == country) & (hmd["sex"] == sex)]
+            ax.plot(h["age"], h["mx"], color=MUTED, lw=1.5, ls=ls, label=label, zorder=1)
+        c = crude[crude["sex"] == sex]
+        used, held = c[c["age"] <= 89], c[c["age"] > 89]
+        ax.scatter(
+            used["age"], used["mx"], s=16, color=SEX_COLOR[sex], label="Crude, used", zorder=3
+        )
+        ax.scatter(held["age"], held["mx"], s=16, facecolors="none", edgecolors=SEX_COLOR[sex],
+                   lw=1.1, label="Crude, held out", zorder=3)  # fmt: skip
+        f = final[final["sex"] == sex].sort_values("age")
+        ax.plot(f["age"], f["mx"], color=SEX_COLOR[sex], lw=2.4, label="Graduated table", zorder=4)
+        floor = f[f["sex_floor"] == 1]
+        if len(floor):
+            ax.plot(floor["age"], floor["mx"], color=INK, lw=2.4, ls=(0, (1, 1.5)),
+                    label="Raised to the female rate", zorder=5)  # fmt: skip
+        ax.axvline(90, color=INK_2, lw=0.8, ls=(0, (2, 3)))
+        ax.text(90.6, 0.006, "closure\nstarts", fontsize=8.5, color=INK_2, va="bottom")
+        ax.set_yscale("log")
+        ax.set_ylim(0.005, 1.3)
+        ax.set_xlim(60, 110)
+        ax.set_xlabel("Age")
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+    axes[0].set_ylabel("Death rate per person-year (log scale)")
+    axes[0].legend(loc="upper left", fontsize=8.5)
+    f_over_m = float(
+        ratio[ratio["sex"] == "F"]["mx"].iloc[0] / ratio[ratio["sex"] == "M"]["mx"].iloc[0]
+    )
+    _headline(
+        fig,
+        f"At 99 the crude data say women die {f_over_m:.1f}x as fast as men; the closure does not "
+        "believe it",
+        "Above about 88 the crude rates for men flatten while women's keep rising, the signature "
+        "of overstated age. The smooth fit stops at 89; a Kannisto logistic fitted to ages 75-89 "
+        "carries the table to 110, and men are never allowed below women.",
+    )
+    return _save(fig, out, "old_age_closure.png")
+
+
+def lambda_selection(con, out: Path) -> Path:
+    year = _clean_year(con)
+    path = _query(
+        con,
+        f"SELECT sex, method, log10_lambda, edf, qaic FROM graduation_lambda_path "
+        f"WHERE year = {year} AND method = 'pspline'",
+    )
+    chosen = _query(
+        con,
+        f'SELECT sex, "lambda" AS lam, edf FROM graduation_selection '
+        f"WHERE year = {year} AND method = 'pspline'",
+    ).set_index("sex")
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.6))
+    fig.subplots_adjust(top=0.76, bottom=0.13, left=0.07, right=0.97, wspace=0.18)
+    for sex, title in SEX_PANELS:
+        p = path[path["sex"] == sex]
+        color = SEX_COLOR[sex]
+        axes[0].plot(
+            p["log10_lambda"], p["qaic"] - p["qaic"].min(), color=color, lw=2.2, label=title
+        )
+        axes[1].plot(p["log10_lambda"], p["edf"], color=color, lw=2.2, label=title)
+        pick = math.log10(float(chosen.loc[sex, "lam"]))
+        for ax, y in ((axes[0], 0.0), (axes[1], float(chosen.loc[sex, "edf"]))):
+            ax.plot([pick], [y], "o", color=color, ms=9, mec=SURFACE, mew=1.5, zorder=5)
+    axes[0].set_ylim(-5, 120)
+    axes[0].set_xlabel("log10 of the smoothing parameter (more smoothing to the right)")
+    axes[0].set_ylabel("QAIC above its minimum")
+    axes[0].set_title("Selection criterion", loc="left", fontweight="bold")
+    axes[1].set_xlabel("log10 of the smoothing parameter (more smoothing to the right)")
+    axes[1].set_ylabel("Effective parameters")
+    axes[1].set_title("Flexibility of the curve", loc="left", fontweight="bold")
+    axes[1].set_yscale("log")
+    axes[1].set_yticks([2, 5, 10, 20, 40], ["2", "5", "10", "20", "40"])
+    axes[1].minorticks_off()
+    axes[0].legend(loc="upper left", fontsize=9.5)
+    _headline(
+        fig,
+        f"Smoothing is chosen by data, not by eye: about {chosen['edf'].mean():.0f} effective "
+        "parameters for 89 ages",
+        "Quasi-AIC over a grid of 61 smoothing parameters. Dots mark the choice. The crude rates' "
+        "own scatter (estimated from their high-order differences, not from any fit) sets how "
+        "much deviance one extra parameter must buy.",
+    )
+    return _save(fig, out, "lambda_selection.png")
+
+
+def covid_single_age(con, out: Path) -> Path:
+    df = _query(
+        con,
+        "SELECT year, sex, age, mx FROM graduated_qx WHERE age BETWEEN 15 AND 89 "
+        "AND year IN (2020, 2021, 2022, 2023)",
+    )
+    base = df[df["year"] == 2023].set_index(["sex", "age"])["mx"]
+    df["ratio"] = df["mx"] / df.set_index(["sex", "age"]).index.map(base).to_numpy()
+    fig, axes = _two_panels()
+    shades = {2020: "#9ec5f0", 2021: BLUE, 2022: "#1c4f94"}
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        for year, color in shades.items():
+            d = df[(df["sex"] == sex) & (df["year"] == year)]
+            ax.plot(d["age"], d["ratio"], color=color, lw=2.3, label=str(year))
+        ax.axhline(1, color=INK_2, lw=1)
+        ax.set_xlim(15, 89)
+        ax.set_xlabel("Age")
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+    axes[0].set_ylabel("Graduated death rate relative to 2023")
+    axes[0].legend(loc="upper right", fontsize=9.5)
+    peak = df[(df["sex"] == "M") & (df["year"] <= 2021)].sort_values("ratio").iloc[-1]
+    _headline(
+        fig,
+        f"Men aged {int(peak['age'])} died at {peak['ratio']:.1f}x their 2023 rate in "
+        f"{int(peak['year'])}",
+        "Graduated death rates in each COVID year divided by 2023, the latest clean year. "
+        "Smoothing makes the age profile readable at single-year resolution without hiding "
+        "its shape.",
+    )
+    return _save(fig, out, "covid_single_age.png")
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -371,6 +615,11 @@ FIGURES = (
     state_forest,
     population_vs_tables,
     country_heatmap,
+    graduation_fit,
+    graduation_residuals,
+    old_age_closure,
+    lambda_selection,
+    covid_single_age,
 )
 
 

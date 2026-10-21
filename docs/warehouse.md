@@ -24,6 +24,8 @@
 | `deaths_unallocated` | 83 | Deaths with unknown sex, age or residence, by year |
 | `inegi_completeness` | 83 | Per year of occurrence: own file loaded, next file loaded (late registrations), and so whether the year is complete |
 | `crude_rates_single`, `crude_rates_grouped`, `age_standardised_rates`, `basis_bridge`, `state_smr`, `benchmark_ae`, `benchmark_countries` | 1,010 / 627 / 33 / 11 / 32 / 2,574 / 5,358 | Death rates, standardisation and first benchmarks: see [crude-rates.md](crude-rates.md) |
+| `graduated_qx` | 1,110 | **The graduated table:** m and q by year, sex and age 0 to 110, with source and sex-floor flags. Start here for life tables. See [graduation.md](graduation.md) |
+| `graduated_rates`, `graduation_selection`, `graduation_fit_tests`, `graduation_lambda_path`, `graduation_params`, `graduation_digit_preference` | 3,220 / 40 / 40 / 1,220 / 130 / 10 | The four graduations, how each was chosen and tested, fitted parameters, and the digit-preference measure |
 | `conapo_population` | 737,660 | Mid-year population by year, state, age and sex (the exposure) |
 | `conapo_deaths` | 737,660 | CONAPO modelled deaths, a cross-check |
 | `conapo_life_expectancy` | 10,059 | CONAPO life expectancy at birth |
@@ -32,8 +34,8 @@
 | `soa_catalog`, `soa_rates` | 29 / 2,869 | SOA tables (13 Mexican) and their rates |
 | `cnsf_rates` | 999 | CNSF 2013: nine tables, ages 0 to 110 |
 | `source_manifest` | 88 | Every downloaded file with URL, date, size and SHA-256 |
-| `validation_results` | 36 | Latest result of every data check |
-| `table_docs` | 31 | One-line description of each table above |
+| `validation_results` | 43 | Latest result of every data check |
+| `table_docs` | 38 | One-line description of each table above |
 
 Row counts are from the October 2026 build and grow as more INEGI years are added.
 
@@ -98,7 +100,19 @@ The rate tables of [step 4](crude-rates.md) add eight more checks:
 | `registration_basis_matches_occurrence` | WARN | Registered and occurred deaths within 3% where both exist |
 | `state_smr_balances` | FAIL | State expected deaths add up to the observed total |
 
-**Current state (October 2026):** 34 pass, 2 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, and 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them).
+The graduated tables of [step 5](graduation.md) add seven more:
+
+| Check | Severity | Rule |
+|---|---|---|
+| `graduated_table_complete` | FAIL | Every year and sex has ages 0 to 110, closing with q = 1 |
+| `graduated_rates_are_probabilities` | FAIL | q is between 0 and 1, m is positive |
+| `graduated_q_increases_from_35` | FAIL | q rises with age from 35 to 110 (the young-adult hump may dip) |
+| `graduated_men_at_least_women` | FAIL | Male rates are never below female rates |
+| `graduated_spline_conserves_deaths` | FAIL | The P-spline reproduces total deaths at ages 1 to 89 within 0.1% |
+| `graduated_spline_tracks_the_crude` | WARN | Under 15% of P-spline residuals pass 2 |
+| `crude_old_age_sex_order` | WARN | Crude male rates exceed female rates at ages 85 to 99 |
+
+**Current state (October 2026):** 40 pass, 3 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), and the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it).
 
 ## What the checks have already caught
 
