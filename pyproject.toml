@@ -60,6 +60,7 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011"]
 "app/**" = ["E501"]  # dashboard prose and chart specs read better on long lines
+"src/mortality/export.py" = ["E501"]  # prose written into the workbook
 
 # ── Tests ──
 [tool.pytest.ini_options]
@@ -72,6 +73,7 @@ markers = [
 
 [dependency-groups]
 dev = [
+    "formulas>=1.3.4",
     "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",

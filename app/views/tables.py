@@ -7,6 +7,8 @@ import plotly.graph_objects as go
 import streamlit as st
 import ui
 
+from mortality import export
+
 ui.header(
     "Mexico's mortality",
     "The tables rebuilt from registered deaths and the population, against the official ones.",
@@ -82,6 +84,14 @@ with tab_table:
     with st.expander("The table itself"):
         st.dataframe(lt[cols].round(5), hide_index=True, height=300)
         ui.download(lt[cols], f"life_table_{sex}_{year}.csv")
+    st.download_button(
+        "Download the Excel workbook with live commutation formulas",
+        export.workbook_bytes(ui.connection()),
+        file_name="Mortality_Table_Builder.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        icon=":material/table_view:",
+        help="Dx, Nx, Mx as Excel formulas driven by one interest cell, and a premium calculator.",
+    )
     ui.source_note(["life_tables", "graduated_qx", "cnsf_rates", "life_summary"], "life-tables.md")
 
 # ── Benchmarks ──────────────────────────────────────────────────────────────

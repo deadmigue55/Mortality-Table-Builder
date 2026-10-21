@@ -74,6 +74,20 @@ def concentration(inforce: pd.DataFrame, q: np.ndarray) -> pd.DataFrame:
     return out.reset_index()
 
 
+def pandemic_q(
+    inforce: pd.DataFrame, q: np.ndarray, scores: dict[str, np.ndarray], dampening: float
+) -> np.ndarray:
+    """Each policy's probability of dying in a pandemic year: ``q`` raised by the P-score of its
+    age and sex (``scores``, from ``stress.pscore_by_age``), scaled by ``dampening``."""
+    age = np.clip(inforce["attained_age"].to_numpy(int), 0, stress.MAX_AGE)
+    p = np.zeros(len(age))
+    sex = inforce["sex"].to_numpy()
+    for s, arr in scores.items():
+        sel = sex == s
+        p[sel] = arr[age[sel]]
+    return np.minimum(q * (1.0 + dampening * p), 1.0)
+
+
 # ── Aggregate claims ────────────────────────────────────────────────────────
 
 
@@ -524,12 +538,7 @@ def build_tables(con, terms: Terms = DEFAULT_TERMS) -> list[tuple[str, str]]:
     year = 2021
     scores = stress.pscore_by_age(excess, year)
     sa = inforce["sum_assured"].to_numpy(float)
-    age = np.clip(inforce["attained_age"].to_numpy(int), 0, stress.MAX_AGE)
-    p = np.zeros(len(age))
-    for s, arr in scores.items():
-        sel = inforce["sex"].to_numpy() == s
-        p[sel] = arr[age[sel]]
-    q_pandemic = np.minimum(q * (1.0 + terms.pandemic_dampening * p), 1.0)
+    q_pandemic = pandemic_q(inforce, q, scores, terms.pandemic_dampening)
 
     sim = simulate_claims(sa, q, q_pandemic, terms)
     ae = pd.read_sql(

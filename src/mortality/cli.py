@@ -191,6 +191,26 @@ def cmd_app_data(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export_excel(args: argparse.Namespace) -> int:
+    """Write the actuarial Excel workbook (live commutation formulas, rate card, results)."""
+    import sqlite3
+    from pathlib import Path
+
+    from mortality import export
+    from mortality.config import PROJECT_ROOT, get_paths
+
+    source = get_paths().database
+    if not source.exists():
+        source = PROJECT_ROOT / "app" / "data" / "demo.sqlite"
+    con = sqlite3.connect(source)
+    try:
+        path = export.write_workbook(con, Path(args.out))
+    finally:
+        con.close()
+    print(f"wrote {path} (from {source.name})")
+    return 0
+
+
 def cmd_app(args: argparse.Namespace) -> int:
     """Launch the dashboard."""
     import subprocess
@@ -320,6 +340,10 @@ def build_parser() -> argparse.ArgumentParser:
     data = sub.add_parser("app-data", help="build the shareable demo bundle for the dashboard")
     data.add_argument("--out", default="app/data", help="output folder (default: app/data)")
     data.set_defaults(func=cmd_app_data)
+
+    xl = sub.add_parser("export-excel", help="write the actuarial Excel workbook")
+    xl.add_argument("--out", default="reports/Mortality_Table_Builder.xlsx")
+    xl.set_defaults(func=cmd_export_excel)
 
     app = sub.add_parser("app", help="launch the Streamlit dashboard")
     app.add_argument("--port", type=int, default=8501)
