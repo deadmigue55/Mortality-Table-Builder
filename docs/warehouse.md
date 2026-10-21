@@ -30,6 +30,7 @@
 | `life_summary`, `commutation_columns`, `actuarial_values`, `life_table_comparison` | 15 / 1,665 / 4,995 / 42 | Life expectancy and other summaries, commutation columns at 4%, insurance, annuity and premium values at 3% to 5%, and the same measures for CNSF, SOA and HMD tables |
 | `projected_qx` | 10,212 | **The projected table:** central m and q by year (2025 to 2070), sex and age 0 to 110. See [projection.md](projection.md) |
 | `projection_scenarios`, `projection_parameters`, `projection_backtest`, `projection_calibration`, `projection_r_crosscheck`, `cohort_tables`, `source_gap` | 1,798 / 700 / 78 / 6 / 22 / 92 / 70 | Scenario fans (5/25/50/75/95 percentiles), fitted Lee-Carter and CBD parameters, the backtest, its calibration, the R cross-check, cohort versus period at 65, and INEGI against CONAPO by age band |
+| `excess_baselines`, `excess_mortality`, `excess_summary`, `excess_monthly`, `excess_by_cause`, `excess_state` | 760 / 190 / 15 / 60 / 69 / 96 | Excess mortality in the pandemic: four baselines, observed against expected by age band and sex, totals with ranges and years of life lost, monthly waves, by cause chapter, by state. See [excess-mortality.md](excess-mortality.md) |
 | `experience_*` (18 tables) | see [experience-study.md](experience-study.md) | The experience study on the synthetic portfolio: data validation and reconciliation, A/E by count and amount, credibility, GLM relativities and their recovery of the planted truth, select factors, claims lag and quarterly A/E, the derived basis, pricing and in-force impact. The policy-level portfolio itself is kept as Parquet in `data/processed/experience/` |
 | `conapo_population` | 737,660 | Mid-year population by year, state, age and sex (the exposure) |
 | `conapo_deaths` | 737,660 | CONAPO modelled deaths, a cross-check |
@@ -39,8 +40,8 @@
 | `soa_catalog`, `soa_rates` | 29 / 2,869 | SOA tables (13 Mexican) and their rates |
 | `cnsf_rates` | 999 | CNSF 2013: nine tables, ages 0 to 110 |
 | `source_manifest` | 88 | Every downloaded file with URL, date, size and SHA-256 |
-| `validation_results` | 71 | Latest result of every data check |
-| `table_docs` | 69 | One-line description of each table above |
+| `validation_results` | 79 | Latest result of every data check |
+| `table_docs` | 75 | One-line description of each table above |
 
 Row counts are from the October 2026 build and grow as more INEGI years are added.
 
@@ -162,7 +163,20 @@ The experience study of [step 8](experience-study.md) adds nine more:
 | `experience_basis_is_a_valid_table` | FAIL | Positive multipliers, q in [0, 1], prudent above best estimate |
 | `experience_overall_ae_is_plausible` | WARN | Overall A/E between 0.3 and 3 |
 
-**Current state (October 2026):** 67 pass, 4 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it), and the model's own projection fan, which is too narrow for the backtest (an empirical band is added).
+The excess-mortality tables of [step 9a](excess-mortality.md) add eight more:
+
+| Check | Severity | Rule |
+|---|---|---|
+| `excess_observed_deaths_match_the_rates` | FAIL | Observed deaths equal those of the rates tables, year by year |
+| `excess_sexes_add_up` | FAIL | Men and women add up to the total |
+| `excess_summary_matches_the_bands` | FAIL | Total excess equals the sum of the age-band excess |
+| `excess_pandemic_is_clearly_positive` | FAIL | In 2020 and 2021 even the lowest baseline gives positive excess, above the certified count |
+| `excess_baselines_agree` | WARN | The four baselines lie within 15% of each other in the pandemic years |
+| `excess_baselines_predict_2023` | WARN | The baselines predict 2023 within 5% |
+| `excess_causes_cover_the_deaths` | WARN | Deaths by cause chapter within 2% of the completed total |
+| `excess_states_cover_the_nation` | WARN | State excess adds up to within 15% of the national excess |
+
+**Current state (October 2026):** 75 pass, 4 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it), and the model's own projection fan, which is too narrow for the backtest (an empirical band is added).
 
 ## What the checks have already caught
 

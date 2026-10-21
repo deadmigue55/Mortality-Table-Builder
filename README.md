@@ -74,7 +74,7 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
-  - [x] SQLite warehouse with 71 automatic data checks
+  - [x] SQLite warehouse with 79 automatic data checks
   - [x] INEGI 2014 to 2019 from the interactive tables (five-year age groups, all six years verified against INEGI totals)
   - [ ] INEGI before 2014 (optional, for a longer forecasting history)
 - [x] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag ([findings](docs/data-quality.md))
@@ -131,6 +131,13 @@ All data comes from official or academically recognized sources. Raw data is **n
 ![A/E overview](docs/img/experience_overview.png)
 ![Impact](docs/img/experience_impact.png)
 - [ ] **9. Applications:** pricing, reserves, longevity and pandemic stress, reinsurance, COVID excess mortality
+  - [x] **COVID excess mortality** ([analysis](docs/excess-mortality.md)): about **746,000 excess deaths in 2020 to 2022** (range 676,000 to 791,000 over four independent baselines), 1.56 per certified COVID-19 death, 13.0 million years of life lost; men aged 65-69 died at **1.70x** the expected rate in 2021; 64% of the excess was certified as COVID-19, the rest mostly as heart disease, diabetes and respiratory causes; Estado de México, Ciudad de México and Tlaxcala highest (about 48%), Colima lowest (19%). The baselines predict 2023 to within 4%
+  - [ ] Pricing, profit testing and reserves
+  - [ ] Pandemic and longevity stress tests
+  - [ ] Reinsurance
+
+![Excess mortality waves](docs/img/excess_waves.png)
+![Excess by age](docs/img/excess_age_profile.png)
 - [ ] **10. Dashboard and report:** Streamlit app and Quarto methodology write-up
 
 ## Getting started

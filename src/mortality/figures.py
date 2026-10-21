@@ -1446,6 +1446,169 @@ def experience_impact_chart(con, out: Path) -> Path:
     return _save(fig, out, "experience_impact.png")
 
 
+# ── Excess mortality ────────────────────────────────────────────────────────
+
+
+def excess_waves(con, out: Path) -> Path:
+    m = _query(con, "SELECT * FROM excess_monthly ORDER BY year, month")
+    summary = _query(
+        con, "SELECT * FROM excess_summary WHERE sex = 'T' AND year BETWEEN 2020 AND 2022"
+    )
+    x = m["year"] + (m["month"] - 0.5) / 12
+    fig, ax = plt.subplots(figsize=(11, 6.4))
+    fig.subplots_adjust(top=0.78, bottom=0.10, left=0.09, right=0.95)
+    ax.fill_between(x, m["baseline"] / 1000, m["deaths"] / 1000, where=m["deaths"] > m["baseline"],
+                    color=ORANGE, alpha=0.30, lw=0, label="Excess deaths")  # fmt: skip
+    ax.fill_between(x, 0, m["covid_deaths"] / 1000, color=BLUE, alpha=0.30, lw=0,
+                    label="Certified as COVID-19")  # fmt: skip
+    ax.plot(x, m["deaths"] / 1000, color=INK, lw=2.2, label="All deaths")
+    ax.plot(
+        x, m["baseline"] / 1000, color=INK_2, lw=1.6, ls=(0, (4, 3)), label="Expected (baseline)"
+    )
+    ax.set_xlim(2020, 2025)
+    ax.set_ylim(0, 185)
+    ax.set_xticks(range(2020, 2025))
+    ax.set_ylabel("Deaths per month (thousands)")
+    total = summary["excess"].sum()
+    coded = summary["covid_coded"].sum()
+    low, high = summary["excess_low"].sum(), summary["excess_high"].sum()
+    ax.legend(loc="upper right", fontsize=9.5)
+    _headline(
+        fig,
+        f"About {total / 1000:,.0f},000 excess deaths in 2020-2022: "
+        f"{total / coded:.1f} per certified COVID-19 death",
+        f"Monthly deaths against a baseline that keeps the normal seasonal shape. The central "
+        f"estimate comes from four baselines (range {low / 1000:,.0f},000 to "
+        f"{high / 1000:,.0f},000). Certified COVID-19 deaths: {coded / 1000:,.0f},000. Waves peak "
+        f"in July 2020, January 2021 "
+        "and August 2021.",
+    )
+    return _save(fig, out, "excess_waves.png")
+
+
+def excess_age_profile(con, out: Path) -> Path:
+    df = _query(con, "SELECT * FROM excess_mortality WHERE year IN (2020, 2021, 2022)")
+    labels = list(rates.BAND_LABELS)
+    shades = {2020: "#9ec5f0", 2021: BLUE, 2022: "#1c4f94"}
+    fig, axes = _two_panels()
+    peak = None
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        for year, color in shades.items():
+            d = df[(df["sex"] == sex) & (df["year"] == year)].sort_values("band")
+            if year == 2021:
+                low = (d["observed"] / d["expected_high"] - 1) * 100
+                high = (d["observed"] / d["expected_low"] - 1) * 100
+                ax.fill_between(d["band"], low, high, color=color, alpha=0.18, lw=0)
+            ax.plot(d["band"], d["p_score"] * 100, color=color, lw=2.3, label=str(year))
+            if sex == "M" and year == 2021:
+                peak = d.sort_values("p_score").iloc[-1]
+        ax.axhline(0, color=INK_2, lw=1)
+        ax.set_xticks(range(0, len(labels), 2), labels[::2], rotation=60, fontsize=9)
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+        ax.set_xlim(0, len(labels) - 1)
+    for ax in axes:
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0f}%"))
+    axes[0].set_ylabel("Excess deaths as a share of expected (P-score)")
+    axes[0].legend(loc="upper left", fontsize=9.5)
+    _headline(
+        fig,
+        f"Men aged {peak['age_group']} died at {1 + peak['p_score']:.2f}x the expected rate "
+        "in 2021",
+        "P-score by age: excess over the central baseline. The shaded band for 2021 spans the "
+        "four baselines. Excess rises steeply from the 20s, plateaus between about 45 and 75 at "
+        "roughly two thirds above normal, and is smaller at the oldest ages and at young ages, "
+        "where infant and child deaths fell below baseline.",
+    )
+    return _save(fig, out, "excess_age_profile.png")
+
+
+def excess_causes(con, out: Path) -> Path:
+    import numpy as np
+
+    c = _query(con, "SELECT * FROM excess_by_cause")
+    s = _query(con, "SELECT year, excess FROM excess_summary WHERE sex = 'T' AND year <= 2022")
+    groups = [
+        ("U", "Certified COVID-19", BLUE), ("I", "Heart disease and stroke", ORANGE),
+        ("E", "Diabetes and endocrine", AQUA), ("J", "Respiratory", "#9085e9"),
+    ]  # fmt: skip
+    fig, ax = plt.subplots(figsize=(10, 6.6))
+    fig.subplots_adjust(top=0.78, bottom=0.10, left=0.10, right=0.95)
+    years = [2020, 2021, 2022]
+    bottom = np.zeros(3)
+    totals = s.set_index("year")["excess"].reindex(years).to_numpy()
+    for chapter, label, color in groups:
+        vals = np.array(
+            [
+                float(c[(c["year"] == y) & (c["chapter"] == chapter)]["excess"].iloc[0])
+                for y in years
+            ]
+        )
+        vals = np.maximum(vals, 0)
+        ax.bar(years, vals / 1000, bottom=bottom / 1000, color=color, width=0.62, label=label)
+        bottom += vals
+    other = np.maximum(totals - bottom, 0)
+    ax.bar(
+        years, other / 1000, bottom=bottom / 1000, color=MUTED, width=0.62, label="All other causes"
+    )
+    for y, t in zip(years, totals, strict=True):
+        ax.text(
+            y, t / 1000 + 6, f"{t / 1000:,.0f},000", ha="center", fontsize=10.5, fontweight="bold"
+        )
+    ax.set_xticks(years)
+    ax.set_ylabel("Excess deaths (thousands)")
+    ax.set_ylim(0, 420)
+    ax.legend(loc="upper right", fontsize=9.5)
+    covid = c[(c["chapter"] == "U") & (c["year"] <= 2022)]["excess"].sum()
+    rest = totals.sum() - covid
+    _headline(
+        fig,
+        f"{covid / totals.sum():.0%} of excess deaths were certified as COVID-19; "
+        "the rest are in other causes",
+        f"Excess by cause chapter against the 2023 level scaled by population. "
+        f"{rest / 1000:,.0f},000 "
+        "excess deaths carry another certificate: COVID-related deaths certified under other "
+        "causes, deaths of people who could not reach care, and causes already rising before 2020. "
+        "The baseline for causes is 2023 only, so rising causes are a lower bound.",
+    )
+    return _save(fig, out, "excess_causes.png")
+
+
+def excess_states(con, out: Path) -> Path:
+    df = _query(con, "SELECT year, state_name, observed, expected, excess FROM excess_state")
+    tot = df.groupby("state_name", as_index=False)[["observed", "expected", "excess"]].sum()
+    tot["p"] = tot["excess"] / tot["expected"]
+    tot["state_name"] = tot["state_name"].replace({"México": "Estado de México"})
+    tot = tot.sort_values("p").reset_index(drop=True)
+    fig, ax = plt.subplots(figsize=(10.5, 8.6))
+    fig.subplots_adjust(top=0.80, bottom=0.08, left=0.22, right=0.95)
+    national = tot["excess"].sum() / tot["expected"].sum()
+    for i, r in tot.iterrows():
+        color = (
+            ORANGE if r["p"] > national + 0.05 else (BLUE if r["p"] < national - 0.05 else MUTED)
+        )
+        ax.barh(i, r["p"] * 100, color=color, height=0.68)
+        ax.text(52, i, f"{r['p']:.0%}  ({r['excess'] / 1000:,.1f}k deaths)", va="center",
+                fontsize=8.3, color=INK_2)  # fmt: skip
+    ax.axvline(national * 100, color=INK, lw=1.2, ls=(0, (4, 3)))
+    ax.set_yticks(range(len(tot)), tot["state_name"], fontsize=8.8)
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0f}%"))
+    ax.set_xlim(0, 70)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x", visible=True)
+    ax.set_xlabel("Excess deaths 2020-2022 as a share of expected (state's own 2023 rates)")
+    hi, lo = tot.iloc[-1], tot.iloc[0]
+    _headline(
+        fig,
+        f"{hi['state_name']} lost {hi['p']:.0%} more people than expected; "
+        f"{lo['state_name']} {lo['p']:.0%}",
+        f"Excess 2020-2022 by state of residence (national {national:.0%}, dashed), against each "
+        "state's own age-and-sex death rates of 2023, so age structure and population growth are "
+        "removed. Orange: more than 5 points above the nation; blue: more than 5 below. The "
+        "baseline is 2023, not a pre-pandemic trend, which the project does not have by state.",
+    )
+    return _save(fig, out, "excess_states.png")
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -1475,6 +1638,10 @@ FIGURES = (
     experience_quarterly_chart,
     experience_credibility_chart,
     experience_impact_chart,
+    excess_waves,
+    excess_age_profile,
+    excess_causes,
+    excess_states,
 )
 
 
