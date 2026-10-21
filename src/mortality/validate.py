@@ -359,6 +359,69 @@ CHECKS: tuple[Check, ...] = (
         "THEN 0 ELSE 1 END FROM state_smr",
         "State expected deaths add up to the observed total (SMRs are relative to the nation)",
     ),
+    # ── Graduation ──────────────────────────────────────────────────────────
+    Check(
+        "graduated_table_complete",
+        "FAIL",
+        ("graduated_qx",),
+        "SELECT COUNT(*) FROM (SELECT year, sex FROM graduated_qx GROUP BY year, sex"
+        " HAVING COUNT(*) <> 111 OR MIN(age) <> 0 OR MAX(age) <> 110"
+        " OR MAX(CASE WHEN age = 110 THEN qx END) <> 1)",
+        "Every year and sex has a table for ages 0 to 110 that closes with q = 1 at 110",
+    ),
+    Check(
+        "graduated_rates_are_probabilities",
+        "FAIL",
+        ("graduated_qx",),
+        "SELECT COUNT(*) FROM graduated_qx WHERE qx < 0 OR qx > 1 OR mx <= 0",
+        "Graduated q is a probability and m is positive",
+    ),
+    Check(
+        "graduated_q_increases_from_35",
+        "FAIL",
+        ("graduated_qx",),
+        "SELECT COUNT(*) FROM graduated_qx a JOIN graduated_qx b"
+        " ON a.year = b.year AND a.sex = b.sex AND a.age = b.age + 1"
+        " WHERE a.age BETWEEN 36 AND 110 AND a.qx <= b.qx",
+        "q rises with every year of age from 35 to 110 (the young-adult hump is allowed to dip)",
+    ),
+    Check(
+        "graduated_men_at_least_women",
+        "FAIL",
+        ("graduated_qx",),
+        "SELECT COUNT(*) FROM graduated_qx m JOIN graduated_qx f"
+        " ON m.year = f.year AND m.age = f.age"
+        " WHERE m.sex = 'M' AND f.sex = 'F' AND m.mx < f.mx - 1e-12",
+        "Graduated male rates are never below female rates at the same age",
+    ),
+    Check(
+        "graduated_spline_conserves_deaths",
+        "FAIL",
+        ("graduated_rates", "crude_rates_single"),
+        "SELECT COUNT(*) FROM (SELECT g.year, g.sex FROM graduated_rates g"
+        " JOIN crude_rates_single c ON c.year = g.year AND c.sex = g.sex AND c.age = g.age"
+        " WHERE g.method = 'pspline' GROUP BY g.year, g.sex"
+        " HAVING ABS(SUM(c.exposure * g.mx) - SUM(c.deaths)) > 0.001 * SUM(c.deaths))",
+        "The P-spline fit reproduces total deaths at ages 1 to 89 to within 0.1%",
+    ),
+    Check(
+        "graduated_spline_tracks_the_crude",
+        "WARN",
+        ("graduation_fit_tests",),
+        "SELECT COUNT(*) FROM graduation_fit_tests"
+        " WHERE method = 'pspline' AND share_beyond_2 > 0.15",
+        "Fewer than 15% of P-spline standardised residuals fall beyond 2 (4.6% for a perfect fit)",
+    ),
+    Check(
+        "crude_old_age_sex_order",
+        "WARN",
+        ("crude_rates_single",),
+        "SELECT COUNT(*) FROM crude_rates_single f JOIN crude_rates_single m"
+        " ON m.year = f.year AND m.age = f.age"
+        " WHERE f.sex = 'F' AND m.sex = 'M' AND f.age BETWEEN 85 AND 99 AND f.mx > m.mx",
+        "Crude male rates exceed female rates at ages 85 to 99 (women overtaking men points to "
+        "overstated age among the oldest men; the graduated table corrects it)",
+    ),
 )
 
 

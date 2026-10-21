@@ -19,7 +19,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from mortality import quality, rates
+from mortality import graduation, quality, rates
 from mortality.config import Paths, get_paths
 
 
@@ -267,6 +267,7 @@ def build(*, paths: Paths | None = None) -> dict[str, int]:
         docs += quality.build_tables(con)
         docs += quality.cause_tables(con, inegi_files)
         docs += rates.build_tables(con)
+        docs += graduation.build_tables(con)
 
         if _load_manifest(con, paths):
             docs.append(("source_manifest", "Every downloaded file: URL, date, size and SHA-256"))
