@@ -98,7 +98,9 @@ with tab_bases:
     ]
     fig = go.Figure(go.Bar(x=[v / 1000 for v in vals], y=names, orientation="h", marker_color=colors,
                            text=[f"{v / central - 1:+.1%}" for v in vals], textposition="outside"))  # fmt: skip
-    fig.update_xaxes(title="Present value of the pension (MXN thousands)")
+    fig.update_xaxes(
+        title="Present value of the pension (MXN thousands)", range=[0, max(vals) / 1000 * 1.18]
+    )
     fig.update_yaxes(autorange="reversed")
     ui.show(ui.style(fig, 400, False), key="apv")
     lo, hi = (
