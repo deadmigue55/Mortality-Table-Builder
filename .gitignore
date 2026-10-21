@@ -49,3 +49,12 @@ reports/_output/
 .DS_Store
 Thumbs.db
 ~$*.xlsx
+
+**/*.quarto_ipynb
+
+# ── Quarto build artifacts (the PDF is committed, the rest is regenerated) ──
+.quarto/
+reports/.quarto/
+reports/*_files/
+reports/*.html
+reports/*.typ

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software or its results, please cite it as below."
+title: "Mortality Table Builder: an end-to-end actuarial mortality pipeline for Mexico"
+type: software
+authors:
+  - family-names: Vilchis
+    given-names: Miguel
+repository-code: "https://github.com/deadmigue55/Mortality-Table-Builder"
+license: MIT
+keywords:
+  - actuarial science
+  - mortality
+  - life tables
+  - Mexico
+  - reinsurance
+  - longevity
+abstract: >-
+  Mexico's mortality tables rebuilt from INEGI registered deaths and CONAPO population,
+  graduated, projected and used for experience studies, pricing, reserving, stress testing and
+  reinsurance, with a dashboard, an Excel workbook and a methodology report.

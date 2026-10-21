@@ -2150,6 +2150,80 @@ def reinsurance_rating_swap(con, out: Path) -> Path:
     return _save(fig, out, "reinsurance_rating_swap.png")
 
 
+def pipeline_diagram(con, out: Path) -> Path:
+    from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+
+    fig, ax = plt.subplots(figsize=(11, 6.4))
+    fig.subplots_adjust(top=0.80, bottom=0.07, left=0.02, right=0.98)
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 59)
+    ax.axis("off")
+    ax.grid(False)
+
+    def box(x, y, w, h, title, sub, color, text="white"):
+        ax.add_patch(
+            FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.25,rounding_size=1.2",
+                           fc=color, ec="none", zorder=2)
+        )  # fmt: skip
+        ax.text(x + w / 2, y + h * 0.62, title, ha="center", va="center", fontsize=9.6,
+                fontweight="bold", color=text, zorder=3)  # fmt: skip
+        ax.text(x + w / 2, y + h * 0.27, sub, ha="center", va="center", fontsize=7.6,
+                color=text, alpha=0.92, zorder=3)  # fmt: skip
+
+    def arrow(x1, y1, x2, y2):
+        ax.add_patch(FancyArrowPatch((x1, y1), (x2, y2), arrowstyle="-|>", mutation_scale=11,
+                                     color=INK_2, lw=1.3, zorder=1))  # fmt: skip
+
+    # row 1: sources
+    sources = [("INEGI", "registered deaths"), ("CONAPO", "population 1950-2070"),
+               ("CNSF · SOA · HMD", "benchmark tables")]  # fmt: skip
+    for i, (t, s) in enumerate(sources):
+        box(6 + i * 30, 50, 26, 8, t, s, MUTED)
+    # row 2: the core
+    core = [("Data quality", "late registration, checks"), ("Rates", "crude, standardised, A/E"),
+            ("Graduation", "P-spline, Kannisto"), ("Life tables", "commutation functions"),
+            ("Projection", "Lee-Carter, CBD, R check")]  # fmt: skip
+    for i, (t, s) in enumerate(core):
+        box(1.5 + i * 19.6, 33, 17.2, 9.5, t, s, BLUE)
+        if i:
+            arrow(1.5 + i * 19.6 - 2.2, 37.7, 1.5 + i * 19.6 - 0.1, 37.7)
+    ax.add_patch(
+        FancyBboxPatch((1.5, 44.3), 96.9, 2.7, boxstyle="round,pad=0.2,rounding_size=0.8",
+                       fc="#f1f0ec", ec=GRID, zorder=1)
+    )  # fmt: skip
+    ax.text(50, 45.65, "SQLite warehouse · SHA-256 manifest of every input · 100 data checks",
+            ha="center", va="center", fontsize=8.4, color=INK_2, zorder=3)  # fmt: skip
+    for i in range(3):
+        arrow(19 + i * 30, 49.6, 19 + i * 30, 47.5)
+    arrow(10.1, 44.0, 10.1, 43.0)
+    # row 3: applications
+    apps = [
+        ("Experience study", "A/E, GLM, claims lag", AQUA),
+        ("Excess mortality", "four baselines", ORANGE),
+        ("Pricing", "profit test, reserves", ORANGE),
+        ("Stress tests", "pandemic, longevity", ORANGE),
+        ("Reinsurance", "treaties, swap, YRT", ORANGE),
+    ]
+    for i, (t, s, c) in enumerate(apps):
+        box(1.5 + i * 19.6, 15.5, 17.2, 9.5, t, s, c)
+        arrow(10.1 + i * 19.6, 32.6, 10.1 + i * 19.6, 25.8)
+    # row 4: outputs
+    outs = [("Dashboard", "Streamlit, 9 pages"), ("Excel workbook", "live commutation formulas"),
+            ("Report", "Quarto, PDF and HTML")]  # fmt: skip
+    for i, (t, s_) in enumerate(outs):
+        box(6 + i * 30, 2.5, 26, 8, t, s_, INK)
+        arrow(19 + i * 30, 15.0, 19 + i * 30, 11.3)
+    _headline(
+        fig,
+        "One pipeline, from registered deaths to treaties",
+        "Mexico's mortality rebuilt from INEGI and CONAPO data, then used the way an insurer or a "
+        "reinsurer uses it. Blue is the mortality core, orange the applications; every box is a "
+        "tested module and every arrow a table in the warehouse.",
+        "Mortality Table Builder · github.com/deadmigue55/Mortality-Table-Builder",
+    )
+    return _save(fig, out, "pipeline.png")
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -2194,6 +2268,7 @@ FIGURES = (
     reinsurance_structures_chart,
     reinsurance_frontier_chart,
     reinsurance_rating_swap,
+    pipeline_diagram,
 )
 
 

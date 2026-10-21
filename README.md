@@ -1,12 +1,79 @@
 # Mortality Table Builder
 
-**An end-to-end actuarial mortality pipeline for Mexico, from raw death certificates to priced insurance products.**
-
-This project builds complete, graduated and projected mortality tables for the Mexican population from official government microdata. It benchmarks them against Mexico's regulatory tables (CNSF), US industry tables (SOA) and international data (Human Mortality Database), and uses them for real pricing, reserving and longevity-risk work, the kind of analysis a life reinsurer runs every day.
-
-> **Status:** 🚧 In active development. See the [roadmap](#roadmap) for what's built and what's next.
+**From three million Mexican death records to prices, reserves and reinsurance: an end-to-end actuarial pipeline, validated at every step.**
 
 [![CI](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml/badge.svg)](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![Tests](https://img.shields.io/badge/tests-320%2B-brightgreen)
+![Data checks](https://img.shields.io/badge/data%20checks-100-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
+
+![The pipeline](docs/img/pipeline.png)
+
+Mexico's regulatory mortality table (CNSF 2013) is more than a decade old and mixes both sexes. This project **rebuilds the table from the raw data** (INEGI registered deaths, CONAPO population) and then does with it what an insurer or a reinsurer does: graduates and projects it, runs an experience study, prices a policy, reserves it, stresses it with the pandemic and with longevity, structures a reinsurance treaty and prices a longevity swap.
+
+## Explore it
+
+| | |
+|---|---|
+| :bar_chart: **Dashboard** | Nine interactive pages, four of them live labs (price a policy, value a pension, design a reinsurance treaty, run an experience study on **your own policy extract**). `uv run mortality app` |
+| :page_facing_up: **Report** | An 11-page methodology report with a Spanish executive summary, every number computed from the data when it is rendered: [`reports/methodology.pdf`](reports/methodology.pdf) |
+| :clipboard: **Excel workbook** | Life tables with **live commutation formulas** (Dx, Nx, Mx driven by one interest cell) and a premium calculator, checked against the Python code by an independent formula engine: [`reports/Mortality_Table_Builder.xlsx`](reports/Mortality_Table_Builder.xlsx) |
+| :books: **Write-ups** | One document per step with method, results and limits: [`docs/`](docs/) |
+
+<table>
+<tr>
+<td><img src="docs/img/app_overview.png" alt="Dashboard overview"></td>
+<td><img src="docs/img/app_reinsurance.png" alt="Reinsurance lab"></td>
+</tr>
+<tr>
+<td><img src="docs/img/app_pandemic.png" alt="Pandemic page"></td>
+<td><img src="docs/img/app_price.png" alt="Pricing lab"></td>
+</tr>
+</table>
+
+## What it found
+
+| | |
+|---|---|
+| **Life expectancy at birth, 2023** | 78.9 years for women, 72.9 for men |
+| **Against the regulatory table** | Mexican men aged 40 die at **4.1 times** the CNSF 2013 rate, women at 1.5 times |
+| **The pandemic** | About **746,000 excess deaths** in 2020 to 2022 (range 676,000 to 791,000 over four baselines), 1.56 per certified COVID-19 death |
+| **A repeat of 2021 on an insured book** | **+60%** claims in a year; the regulator's own 99.5th percentile table adds only 51% |
+| **An annuity book** | One point of interest (+8.1% reserve) matters more than doubling mortality improvement (+2.3%) |
+| **Reinsurance** | The pandemic is **41%** of the claims capital; a stop loss relieves 60% of it at a price of 6% per peso, a quota share costs 20% |
+| **Method validation** | The experience study recovers **15 of 15** effects planted in a synthetic portfolio |
+
+## What this project demonstrates
+
+- **Actuarial depth, end to end.** Graduation (P-spline, Whittaker-Henderson, Heligman-Pollard, Kannisto), life tables and commutation functions, Lee-Carter and CBD projection, an insurer-style experience study (A/E, credibility, GLM relativities, claims-lag completion), profit testing, reserves, excess mortality, stress testing, reinsurance structures and a longevity swap.
+- **Validation instead of assertion.** Every method is checked against something independent: HMD's published life expectancy (to 0.007 years), an R implementation (StMoMo, to 0.00002 years), a **planted truth** in a synthetic portfolio, a backtest of past forecasts, and an Excel recomputation. The 100 data checks and 320+ tests run on every commit.
+- **Honesty about limits.** The books are synthetic and every market assumption is labelled illustrative; the four warnings in the data checks are documented, not hidden; the stress tests say which conclusions depend on which assumption.
+- **Engineering.** A reproducible pipeline with a SHA-256 manifest of every input, a SQLite warehouse with 92 documented tables, a CLI, CI, pre-commit hooks, and a public demo bundle built from an **allow-list** so licensed data (the Human Mortality Database) can never leak into the repository.
+- **Communication.** A dashboard for recruiters and managers, an Excel workbook for actuaries, a report for reviewers, a Spanish summary for Mexican readers.
+
+<details>
+<summary><b>Resumen en español</b></summary>
+
+**Mortality Table Builder** reconstruye las tablas de mortalidad de México a partir de los microdatos de defunciones del INEGI y de la población de CONAPO, y las utiliza como lo haría una aseguradora o una reaseguradora: graduación y proyección, estudio de experiencia, precio de un seguro temporal, reservas, pruebas de estrés de pandemia y longevidad, reaseguro y un swap de longevidad.
+
+Los hombres de 40 años mueren a 4.1 veces la tasa de la tabla regulatoria CNSF 2013. Entre 2020 y 2022 murieron unas 746,000 personas más de lo esperado. Una repetición de 2021 elevaría los siniestros de una cartera asegurada en 60%, más que el escenario de estrés de la propia CNSF (51%). La cartera de pólizas es sintética y los supuestos de mercado son ilustrativos; la mortalidad es real o se deriva de datos reales. El informe completo en español e inglés está en [`reports/methodology.pdf`](reports/methodology.pdf).
+
+</details>
+
+## Quick start
+
+No data download is needed to explore: the repository carries a small demo bundle of derived tables (no raw data, no licensed data).
+
+```sh
+git clone https://github.com/deadmigue55/Mortality-Table-Builder.git
+cd Mortality-Table-Builder
+uv sync --all-extras        # Python 3.12 and every dependency (uv installs Python for you)
+uv run mortality app        # the dashboard at http://localhost:8501
+uv run mortality export-excel   # the actuarial workbook
+```
+
+To rebuild everything from the sources (about 10 minutes), see [Getting started](#getting-started) below.
 
 ---
 
@@ -53,7 +120,7 @@ All data comes from official or academically recognized sources. Raw data is **n
 6. **Actuarial present values:** insurances, annuities and premiums, connecting life contingencies to interest theory (SOA Exam FM).
 7. **Projection:** Lee–Carter and CBD models, bootstrap uncertainty, improvement scales, cohort tables.
 8. **Benchmarking and applications:** A/E studies, pricing, reserves, risk capital, reinsurance structures, COVID excess mortality.
-9. **Interactive dashboard:** explore tables, compare benchmarks and price products live.
+9. **Interactive dashboard, workbook and report:** explore the tables, price products live, run the experience study on your own data; an Excel workbook with live commutation formulas; a Quarto methodology report.
 
 ## Tech stack
 
@@ -144,7 +211,12 @@ All data comes from official or academically recognized sources. Raw data is **n
 ![Longevity stress](docs/img/stress_longevity.png)
 ![Reinsurance risk](docs/img/reinsurance_risk.png)
 ![Reinsurance structures](docs/img/reinsurance_structures.png)
-- [ ] **10. Dashboard and report:** Streamlit app and Quarto methodology write-up
+- [x] **10. Dashboard, workbook and report**
+  - **Streamlit dashboard** (`uv run mortality app`): nine pages over a shareable demo bundle built from an allow-list of derived tables; four live labs call the same engines the tests check (pricing, annuities, reinsurance, experience study with file upload); a Trust page lists all 100 data checks, the sources with checksums and the limits; the app is tested headlessly in CI
+  - **Excel workbook** (`uv run mortality export-excel`): lx, dx, Dx, Nx, Cx and Mx as live formulas driven by one interest cell, a premium calculator, a rate card and the stress results; recomputed by an independent formula engine in the tests and matched to the Python functions to 1e-9
+  - **Methodology report** ([PDF](reports/methodology.pdf), Quarto + Typst): 11 pages with a Spanish executive summary; every number in the text is computed from the data bundle when the report is rendered
+
+![Pipeline](docs/img/pipeline.png)
 
 ## Getting started
 
@@ -173,6 +245,16 @@ uv run mortality ingest cnsf                      # CNSF 2013 regulatory tables
 uv run mortality db build                         # SQLite warehouse + data checks
 ```
 
+Dashboard, workbook and report:
+
+```sh
+uv sync --all-extras                 # adds Streamlit
+uv run mortality app-data            # rebuild the demo bundle from the warehouse
+uv run mortality app                 # launch the dashboard
+uv run mortality export-excel        # the actuarial workbook
+quarto render reports/methodology.qmd   # the report (needs Quarto)
+```
+
 Development:
 
 ```sh
@@ -181,19 +263,20 @@ uv run ruff check . && uv run ruff format .   # lint and format
 uv run pre-commit install       # run these checks automatically before each commit
 ```
 
-## Project structure (planned)
+## Project structure
 
 ```
 Mortality-Table-Builder/
-├── data/            # raw/ and processed/ (git-ignored, filled by download scripts)
-├── docs/            # data sources, methodology notes
-├── sql/             # SQL queries
-├── src/mortality/   # Python package: ingest, quality, rates, graduation, tables, projection, pricing
+├── app/             # Streamlit dashboard: pages in views/, shared helpers in ui.py,
+│   └── data/        #   the shareable demo bundle (derived tables only; no HMD, no raw data)
+├── data/            # raw/ and processed/ (git-ignored, filled by the download scripts)
+├── docs/            # one write-up per step, data sources, warehouse catalog, figures
+├── reports/         # Quarto methodology report (PDF) and the Excel workbook
 ├── r/               # R scripts: StMoMo projections and cross-checks
-├── notebooks/       # exploratory analysis
-├── app/             # Streamlit dashboard
-├── reports/         # Quarto report, exported Excel workbooks
-└── tests/
+├── src/mortality/   # the package: ingest, quality, rates, graduation, lifetable, projection,
+│                    #   lexis/portfolio/experience, excess, pricing, stress, reinsurance,
+│                    #   export, demo, validate, warehouse, figures, cli
+└── tests/           # 320+ tests, including headless tests of every dashboard page
 ```
 
 ## Author
