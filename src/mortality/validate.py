@@ -691,6 +691,79 @@ CHECKS: tuple[Check, ...] = (
         " AND (ae < 0.3 OR ae > 3)",
         "The portfolio's overall actual-to-expected ratio lies between 0.3 and 3",
     ),
+    # ── Excess mortality ────────────────────────────────────────────────────
+    Check(
+        "excess_observed_deaths_match_the_rates",
+        "FAIL",
+        ("excess_mortality", "crude_rates_grouped"),
+        "SELECT COUNT(*) FROM (SELECT e.year, SUM(e.observed) AS a FROM excess_mortality e"
+        " GROUP BY e.year) x JOIN (SELECT year, SUM(deaths) AS b FROM crude_rates_grouped"
+        " WHERE sex IN ('M', 'F') GROUP BY year) y ON y.year = x.year WHERE ABS(x.a - y.b) > 0.5",
+        "Observed deaths in the excess tables equal the deaths in the rates tables, year by year",
+    ),
+    Check(
+        "excess_sexes_add_up",
+        "FAIL",
+        ("excess_summary",),
+        "SELECT COUNT(*) FROM excess_summary t JOIN excess_summary m ON m.year = t.year"
+        " AND m.sex = 'M' JOIN excess_summary f ON f.year = t.year AND f.sex = 'F'"
+        " WHERE t.sex = 'T' AND (ABS(t.excess - m.excess - f.excess) > 1e-6"
+        " OR ABS(t.observed - m.observed - f.observed) > 1e-6)",
+        "Excess deaths and observed deaths of men and women add up to the total",
+    ),
+    Check(
+        "excess_summary_matches_the_bands",
+        "FAIL",
+        ("excess_summary", "excess_mortality"),
+        "SELECT COUNT(*) FROM excess_summary s JOIN (SELECT year, SUM(excess) AS x"
+        " FROM excess_mortality GROUP BY year) b ON b.year = s.year"
+        " WHERE s.sex = 'T' AND ABS(s.excess - b.x) > 1e-6",
+        "The total excess equals the sum of the age-band excess",
+    ),
+    Check(
+        "excess_pandemic_is_clearly_positive",
+        "FAIL",
+        ("excess_summary",),
+        "SELECT COUNT(*) FROM excess_summary WHERE sex = 'T' AND year IN (2020, 2021)"
+        " AND (excess_low <= 0 OR excess_per_covid_coded < 1)",
+        "In 2020 and 2021 even the lowest baseline gives positive excess, above the certified "
+        "COVID-19 deaths",
+    ),
+    Check(
+        "excess_baselines_agree",
+        "WARN",
+        ("excess_summary",),
+        "SELECT COUNT(*) FROM excess_summary WHERE sex = 'T' AND year IN (2020, 2021, 2022)"
+        " AND (expected_high - expected_low) > 0.15 * expected_central",
+        "The four baselines for the pandemic years lie within 15% of each other",
+    ),
+    Check(
+        "excess_baselines_predict_2023",
+        "WARN",
+        ("excess_summary",),
+        "SELECT COUNT(*) FROM excess_summary WHERE sex = 'T' AND year = 2023"
+        " AND ABS(p_score) > 0.05",
+        "The baselines predict 2023, after the pandemic, to within 5%: mortality returned to trend",
+    ),
+    Check(
+        "excess_causes_cover_the_deaths",
+        "WARN",
+        ("excess_by_cause", "excess_summary"),
+        "SELECT COUNT(*) FROM (SELECT year, SUM(observed) AS o FROM excess_by_cause"
+        " GROUP BY year) c"
+        " JOIN excess_summary s ON s.year = c.year AND s.sex = 'T'"
+        " WHERE ABS(c.o - s.observed) > 0.02 * s.observed",
+        "Deaths by cause chapter are within 2% of the completed total (late registrations)",
+    ),
+    Check(
+        "excess_states_cover_the_nation",
+        "WARN",
+        ("excess_state", "excess_summary"),
+        "SELECT COUNT(*) FROM (SELECT year, SUM(excess) AS x FROM excess_state GROUP BY year) e"
+        " JOIN excess_summary s ON s.year = e.year AND s.sex = 'T'"
+        " WHERE s.year IN (2020, 2021) AND (e.x < 0.85 * s.excess OR e.x > 1.15 * s.excess)",
+        "State excess against 2023 rates adds up to within 15% of the national excess",
+    ),
 )
 
 

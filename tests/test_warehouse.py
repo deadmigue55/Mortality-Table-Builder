@@ -288,6 +288,13 @@ def test_all_check_sql_is_valid(paths):
         "crude_rates_single": (
             "year, sex, age, exposure, deaths, mx, mx_lower, mx_upper, qx, credible"
         ),
+        "excess_mortality": "year, observed, excess",
+        "excess_summary": (
+            "year, sex, observed, excess, excess_low, excess_per_covid_coded, expected_low, "
+            "expected_high, expected_central, p_score"
+        ),
+        "excess_by_cause": "year, observed",
+        "excess_state": "year, excess",
         "experience_injected_defects": "defect, records",
         "experience_dq_checks": '"check", records',
         "experience_dq_reconciliation": "step, records, deaths",
