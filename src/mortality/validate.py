@@ -422,6 +422,95 @@ CHECKS: tuple[Check, ...] = (
         "Crude male rates exceed female rates at ages 85 to 99 (women overtaking men points to "
         "overstated age among the oldest men; the graduated table corrects it)",
     ),
+    # ── Life tables and actuarial functions ─────────────────────────────────
+    Check(
+        "life_tables_complete",
+        "FAIL",
+        ("life_tables",),
+        "SELECT COUNT(*) FROM (SELECT year, sex FROM life_tables GROUP BY year, sex"
+        " HAVING COUNT(*) <> 111 OR MAX(CASE WHEN age = 0 THEN lx END) <> 100000"
+        " OR MAX(CASE WHEN age = 110 THEN qx END) <> 1)",
+        "Every year and sex (M, F, T) has a table for ages 0 to 110 with a radix of 100,000",
+    ),
+    Check(
+        "life_table_deaths_add_up",
+        "FAIL",
+        ("life_tables",),
+        "SELECT COUNT(*) FROM (SELECT year, sex FROM life_tables GROUP BY year, sex"
+        " HAVING ABS(SUM(dx) - 100000) > 0.001)",
+        "Deaths in the table add up to the radix (everyone dies by age 110)",
+    ),
+    Check(
+        "life_table_expectancy_identity",
+        "FAIL",
+        ("life_tables",),
+        "SELECT COUNT(*) FROM life_tables WHERE age = 0"
+        " AND ABS(ex - total_person_years / lx) > 1e-9",
+        "Life expectancy at birth equals T(0) / l(0)",
+    ),
+    Check(
+        "life_table_reproduces_graduated_q",
+        "FAIL",
+        ("life_tables", "graduated_qx"),
+        "SELECT COUNT(*) FROM life_tables t JOIN graduated_qx g"
+        " ON g.year = t.year AND g.sex = t.sex AND g.age = t.age"
+        " WHERE ABS(t.qx - g.qx) > 1e-12",
+        "The male and female life tables use exactly the graduated probabilities of death",
+    ),
+    Check(
+        "life_expectancy_women_above_men",
+        "FAIL",
+        ("life_summary",),
+        "SELECT COUNT(*) FROM life_summary m JOIN life_summary f ON f.year = m.year"
+        " WHERE m.sex = 'M' AND f.sex = 'F' AND (f.e0 <= m.e0 OR f.e65 <= m.e65)",
+        "Women outlive men at birth and at 65 in every year",
+    ),
+    Check(
+        "life_expectancy_both_sexes_between",
+        "FAIL",
+        ("life_summary",),
+        "SELECT COUNT(*) FROM life_summary t JOIN life_summary m"
+        " ON m.year = t.year AND m.sex = 'M' JOIN life_summary f ON f.year = t.year AND f.sex = 'F'"
+        " WHERE t.sex = 'T' AND (t.e0 <= m.e0 OR t.e0 >= f.e0)",
+        "The both-sexes life expectancy lies between the male and the female one",
+    ),
+    Check(
+        "life_expectancy_close_to_conapo",
+        "WARN",
+        ("life_summary", "conapo_life_expectancy", "year_flags"),
+        "SELECT COUNT(*) FROM life_summary s"
+        " JOIN conapo_life_expectancy c ON c.year = s.year AND c.sex = s.sex AND c.state_code = 0"
+        " JOIN year_flags f ON f.year = s.year"
+        " WHERE f.covid_year = 0 AND ABS(s.e0 - c.e0) > 1.0",
+        "In non-COVID years our life expectancy at birth is within 1 year of CONAPO's",
+    ),
+    Check(
+        "hmd_life_expectancy_reproduced",
+        "FAIL",
+        ("life_table_comparison", "hmd_life_tables"),
+        "SELECT COUNT(*) FROM life_table_comparison c JOIN hmd_life_tables h"
+        ' ON h.country = SUBSTR(c."table", 1, LENGTH(c."table") - 5)'
+        " AND h.year = c.year AND h.sex = c.sex AND h.age = 0"
+        " WHERE c.source = 'HMD' AND ABS(c.e0 - h.ex) > 0.05",
+        "Life tables built here from HMD rates reproduce HMD's published life expectancy "
+        "(an end-to-end test of the life-table code)",
+    ),
+    Check(
+        "actuarial_insurance_annuity_identity",
+        "FAIL",
+        ("actuarial_values",),
+        "SELECT COUNT(*) FROM actuarial_values WHERE a_due IS NOT NULL"
+        " AND ABS(A_whole_life - (1 - interest / (1 + interest) * a_due)) > 1e-9",
+        "Whole-life insurance equals 1 minus d times the annuity-due, at every age and rate",
+    ),
+    Check(
+        "actuarial_premium_equivalence",
+        "FAIL",
+        ("actuarial_values",),
+        "SELECT COUNT(*) FROM actuarial_values WHERE a_due IS NOT NULL"
+        " AND ABS(P_whole_life * a_due - A_whole_life) > 1e-9",
+        "The net premium times the annuity-due equals the insurance value (equivalence principle)",
+    ),
 )
 
 
