@@ -28,6 +28,8 @@
 | `graduated_rates`, `graduation_selection`, `graduation_fit_tests`, `graduation_lambda_path`, `graduation_params`, `graduation_digit_preference` | 3,220 / 40 / 40 / 1,220 / 130 / 10 | The four graduations, how each was chosen and tested, fitted parameters, and the digit-preference measure |
 | `life_tables` | 1,665 | **Complete life tables** by year and sex (M, F, T = both sexes), ages 0 to 110: qx, mx, ax, lx, dx, person_years, total_person_years, ex. See [life-tables.md](life-tables.md) |
 | `life_summary`, `commutation_columns`, `actuarial_values`, `life_table_comparison` | 15 / 1,665 / 4,995 / 42 | Life expectancy and other summaries, commutation columns at 4%, insurance, annuity and premium values at 3% to 5%, and the same measures for CNSF, SOA and HMD tables |
+| `projected_qx` | 10,212 | **The projected table:** central m and q by year (2025 to 2070), sex and age 0 to 110. See [projection.md](projection.md) |
+| `projection_scenarios`, `projection_parameters`, `projection_backtest`, `projection_calibration`, `projection_r_crosscheck`, `cohort_tables`, `source_gap` | 1,798 / 700 / 78 / 6 / 22 / 92 / 70 | Scenario fans (5/25/50/75/95 percentiles), fitted Lee-Carter and CBD parameters, the backtest, its calibration, the R cross-check, cohort versus period at 65, and INEGI against CONAPO by age band |
 | `conapo_population` | 737,660 | Mid-year population by year, state, age and sex (the exposure) |
 | `conapo_deaths` | 737,660 | CONAPO modelled deaths, a cross-check |
 | `conapo_life_expectancy` | 10,059 | CONAPO life expectancy at birth |
@@ -36,8 +38,8 @@
 | `soa_catalog`, `soa_rates` | 29 / 2,869 | SOA tables (13 Mexican) and their rates |
 | `cnsf_rates` | 999 | CNSF 2013: nine tables, ages 0 to 110 |
 | `source_manifest` | 88 | Every downloaded file with URL, date, size and SHA-256 |
-| `validation_results` | 53 | Latest result of every data check |
-| `table_docs` | 43 | One-line description of each table above |
+| `validation_results` | 62 | Latest result of every data check |
+| `table_docs` | 51 | One-line description of each table above |
 
 Row counts are from the October 2026 build and grow as more INEGI years are added.
 
@@ -129,7 +131,23 @@ The life tables of [step 6](life-tables.md) add ten more:
 | `actuarial_insurance_annuity_identity` | FAIL | Whole-life insurance equals 1 minus d times the annuity-due |
 | `actuarial_premium_equivalence` | FAIL | Net premium times annuity-due equals the insurance value |
 
-**Current state (October 2026):** 50 pass, 3 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), and the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it).
+The projection tables of [step 7](projection.md) add nine more:
+
+| Check | Severity | Rule |
+|---|---|---|
+| `projected_qx_complete` | FAIL | Every projected year and sex has ages 0 to 110, q in [0, 1], q = 1 at 110 |
+| `projected_men_at_least_women` | FAIL | Projected male rates are never below female ones |
+| `projection_fan_is_ordered` | FAIL | The 5/25/50/75/95 percentiles are in order |
+| `projection_restarts_at_the_observed_rates` | FAIL | The first projected year is within 0.7 years of the last observed life expectancy |
+| `projection_mortality_improves` | FAIL | Long-run life expectancy is higher in 2070 than in 2030 |
+| `cohort_life_expectancy_not_below_period` | FAIL | Cohort e65 and annuity value are not below the period ones |
+| `projection_python_matches_r` | FAIL | Lee-Carter life expectancy agrees with StMoMo to 0.01 years |
+| `projection_cbd_close_to_r` | WARN | CBD e65 within 0.1 years of StMoMo's |
+| `projection_fan_covers_the_backtest` | WARN | The model's own 90% band holds the actual e65 in at least 80% of backtests (it does not) |
+
+The R checks are skipped when R or StMoMo is not installed.
+
+**Current state (October 2026):** 58 pass, 4 warnings, 0 failures. The warnings are known gaps: no row-level (single-age) data before 2020, 2024 still awaiting the 2025 file's late registrations (the quality tables estimate and add them), the crude old-age sex order, where women's rates overtake men's from about age 88 (the graduated table corrects it), and the model's own projection fan, which is too narrow for the backtest (an empirical band is added).
 
 ## What the checks have already caught
 

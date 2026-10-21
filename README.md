@@ -74,7 +74,7 @@ All data comes from official or academically recognized sources. Raw data is **n
   - [x] Human Mortality Database (9 comparison countries)
   - [x] SOA tables (29 tables, including 13 Mexican ones)
   - [x] CNSF 2013 (all nine tables, cross-checked against the PDF)
-  - [x] SQLite warehouse with 53 automatic data checks
+  - [x] SQLite warehouse with 62 automatic data checks
   - [x] INEGI 2014 to 2019 from the interactive tables (five-year age groups, all six years verified against INEGI totals)
   - [ ] INEGI before 2014 (optional, for a longer forecasting history)
 - [x] **3. Data quality:** age-heaping indices, unknown-age redistribution, registration lag ([findings](docs/data-quality.md))
@@ -109,7 +109,17 @@ All data comes from official or academically recognized sources. Raw data is **n
 
 ![Annuity values](docs/img/annuity_values.png)
 ![Term premiums](docs/img/term_premiums.png)
-- [ ] **7. Mortality projection:** Lee–Carter and CBD (Python and R), fan charts, cohort tables
+- [x] **7. Mortality projection:** Lee–Carter and CBD (Python and R), fan charts, cohort tables ([findings](docs/projection.md))
+  - Lee–Carter and CBD fitted to CONAPO 1970 to 2019, with process and drift uncertainty, back-tested over four origins and **cross-checked against StMoMo in R** (agreement to 0.00002 years)
+  - A forecast made in 1999 would have overshot men's 2019 life expectancy by **4.0 years**: men's improvement slowed to 15% of its earlier pace
+  - Men's life expectancy reaches 77 by 2050 on the long trend, **74 if the last 20 years repeat**; CONAPO's official projection says 77
+  - A pension annuity at 65 costs 6% more by 2050 on the long trend, 2% on the recent one: the longevity-risk spread
+  - Pricing an annuity on a period table understates its cost by about **2.6%** against the cohort
+  - Found that INEGI and CONAPO disagree on who dies: INEGI shows **34% fewer deaths for men aged 15 to 39**, 10% to 16% more above 60
+  - The model's own fan is too narrow (it covered 40% to 60% of backtests); the projection carries an empirical band calibrated on the backtest errors
+
+![Projection fan](docs/img/projection_fan_e0.png)
+![Longevity risk](docs/img/longevity_risk.png)
 - [ ] **8. Benchmarking:** A/E vs CNSF, SOA and HMD
 - [ ] **9. Applications:** pricing, reserves, longevity and pandemic stress, reinsurance, COVID excess mortality
 - [ ] **10. Dashboard and report:** Streamlit app and Quarto methodology write-up

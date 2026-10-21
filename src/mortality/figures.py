@@ -862,6 +862,262 @@ def term_premiums(con, out: Path) -> Path:
     return _save(fig, out, "term_premiums.png")
 
 
+# ── Projection ──────────────────────────────────────────────────────────────
+
+
+def projection_backtest_chart(con, out: Path) -> Path:
+    import numpy as np
+
+    from mortality import projection as proj
+
+    history = proj.load_history(con)
+    fig, axes = _two_panels()
+    fig.subplots_adjust(wspace=0.14)
+    errors = {}
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        d, e, years = proj.history_arrays(history, sex)
+        actual = proj.period_measures((d / e).T, 0, sex)["e0"]
+        keep = (years >= 1970) & (years <= 1999)
+        fit = proj.fit_lee_carter(d[:, keep], e[:, keep], years[keep])
+        jump_off = d[:, keep][:, -1] / e[:, keep][:, -1]
+        paths = proj.forecast_lee_carter(fit, 20, 1000, 0, jump_off=jump_off)
+        band = proj.quantiles(proj.period_measures(paths, 0, sex)["e0"])
+        future = np.arange(2000, 2020)
+        color = SEX_COLOR[sex]
+        ax.fill_between(
+            future, band[0], band[4], color=color, alpha=0.2, lw=0, label="Forecast, 90% band"
+        )
+        ax.plot(future, band[2], color=color, lw=2.2, ls=(0, (4, 2)), label="Forecast made in 1999")
+        shown = years >= 1970
+        ax.plot(years[shown], actual[shown], color=INK, lw=2.6, label="What happened (CONAPO)")
+        ax.axvline(1999.5, color=INK_2, lw=0.8, ls=(0, (2, 3)))
+        errors[sex] = float(band[2][-1] - actual[years == 2019][0])
+        ax.text(2019, band[2][-1] + 0.5, f"+{errors[sex]:.1f} yrs", ha="right", fontsize=10,
+                color=INK, fontweight="bold")  # fmt: skip
+        ax.set_xlim(1970, 2020)
+        ax.set_ylim(55, 84)
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+        ax.set_xlabel("Year")
+    axes[0].set_ylabel("Life expectancy at birth (years)")
+    axes[0].legend(loc="lower right", fontsize=9)
+    _headline(
+        fig,
+        f"A forecast made in 1999 overshot men's 2019 life expectancy by {errors['M']:.1f} years",
+        "Lee-Carter fitted to 1970-1999 and restarted at the 1999 rates, against CONAPO's series. "
+        "Men's improvement stalled after 1999; the model's 90% band, which covers only the random "
+        f"walk, missed it (women: +{errors['F']:.1f} years).",
+    )
+    return _save(fig, out, "projection_backtest.png")
+
+
+def period_index(con, out: Path) -> Path:
+    import numpy as np
+
+    df = _query(
+        con,
+        'SELECT sex, "index" AS year, value FROM projection_parameters '
+        "WHERE model = 'lee_carter' AND parameter = 'kt'",
+    )
+    fig, axes = _two_panels(sharey=False)
+    slopes = {}
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        d = df[df["sex"] == sex].sort_values("year")
+        y, k = d["year"].to_numpy(), d["value"].to_numpy()
+        early, late = (y <= 1999), (y >= 2000)
+        s_early = np.polyfit(y[early], k[early], 1)
+        s_late = np.polyfit(y[late], k[late], 1)
+        slopes[sex] = (s_early[0], s_late[0])
+        ax.plot(y, k, color=SEX_COLOR[sex], lw=2.6)
+        ax.plot(y[early], np.polyval(s_early, y[early]), color=INK_2, lw=1.4, ls=(0, (4, 3)))
+        ax.plot(y[late], np.polyval(s_late, y[late]), color=INK, lw=1.8, ls=(0, (4, 3)))
+        ax.plot(
+            y[late], np.polyval(s_early, y[late]), color=INK_2, lw=1.1, ls=(0, (1, 2)), alpha=0.8
+        )
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+        ax.set_xlabel("Year")
+        ax.text(1972, k.min() + 0.04 * (k.max() - k.min()), f"1970-99: {s_early[0]:.2f} a year",
+                fontsize=9.5, color=INK_2)  # fmt: skip
+        ax.text(1972, k.min() + 0.14 * (k.max() - k.min()), f"2000-19: {s_late[0]:.2f} a year",
+                fontsize=9.5, color=INK)  # fmt: skip
+    axes[0].set_ylabel("Lee-Carter period index k(t): lower = lower mortality")
+    m_early, m_late = slopes["M"]
+    _headline(
+        fig,
+        f"Men's mortality improvement slowed to {m_late / m_early:.0%} of its earlier pace after "
+        "1999",
+        "The Lee-Carter index k(t) (fitted to CONAPO 1970-2019) with straight-line trends for each "
+        "period. The dotted line is the 1970-99 trend carried on: women kept to it more closely "
+        f"(2000-19 pace {slopes['F'][1] / slopes['F'][0]:.0%} of the earlier one).",
+    )
+    return _save(fig, out, "period_index.png")
+
+
+def _fan_panels(con, measure: str, ylabel: str, relative: bool):
+    import numpy as np
+
+    sc = _query(
+        con,
+        f"SELECT scenario, sex, year, p05, p25, p50, p75, p95 FROM projection_scenarios "
+        f"WHERE measure = '{measure}'",
+    )
+    cal = _query(
+        con,
+        f"SELECT sex, c FROM projection_calibration WHERE measure = '{measure}'",
+    ).set_index("sex")["c"]
+    fig, axes = _two_panels(sharey=False)
+    fig.subplots_adjust(wspace=0.16)
+    summary = {}
+    last_year = int(sc.loc[sc["scenario"] == "observed", "year"].max())
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        s = sc[sc["sex"] == sex]
+        color = SEX_COLOR[sex]
+        obs = s[(s["scenario"] == "observed") & (s["year"] >= 1990)]
+        ax.plot(obs["year"], obs["p50"], color=INK, lw=2.4, label="Observed")
+        ax.axvline(2019.5, color=INK_2, lw=0.8, ls=(0, (2, 3)))
+        fan = s[s["scenario"] == "rebased_long_run"].sort_values("year")
+        h = (fan["year"] - last_year).to_numpy()
+        half = 1.645 * cal[sex] * np.sqrt(h)
+        if relative:
+            lo, hi = fan["p50"] * (1 - half), fan["p50"] * (1 + half)
+        else:
+            lo, hi = fan["p50"] - half, fan["p50"] + half
+        ax.fill_between(fan["year"], lo, hi, color=color, alpha=0.10, lw=0,
+                        label="90%, calibrated on the backtest")  # fmt: skip
+        ax.fill_between(fan["year"], fan["p05"], fan["p95"], color=color, alpha=0.28, lw=0,
+                        label="90%, the model's own")  # fmt: skip
+        ax.plot(fan["year"], fan["p50"], color=color, lw=2.4, label="Long-run trend (1970-2019)")
+        rec = s[s["scenario"] == "rebased_recent"].sort_values("year")
+        ax.plot(rec["year"], rec["p50"], color=color, lw=1.9, ls=(0, (4, 2)),
+                label="Recent trend (last 20 years)")  # fmt: skip
+        off = s[s["scenario"] == "conapo_official"].sort_values("year")
+        ax.plot(
+            off["year"], off["p50"], color=INK_2, lw=1.5, ls=(0, (1, 2)), label="CONAPO official"
+        )
+        if measure == "a65":
+            cbd = s[s["scenario"] == "cbd_rebased"].sort_values("year")
+            ax.plot(cbd["year"], cbd["p50"], color=AQUA, lw=1.8, label="CBD, restarted at 2024")
+        ax.set_xlim(1990, 2070)
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+        ax.set_xlabel("Year")
+        at = lambda frame, year: float(frame.loc[frame["year"] == year, "p50"].iloc[0])  # noqa: E731
+        summary[sex] = (at(fan, 2050), at(rec, 2050), at(off, 2050), float(obs["p50"].iloc[-1]))
+    axes[0].set_ylabel(ylabel)
+    axes[0].legend(loc="upper left", fontsize=8.5)
+    return fig, summary
+
+
+def projection_fan_e0(con, out: Path) -> Path:
+    fig, s = _fan_panels(con, "e0", "Life expectancy at birth (years)", False)
+    long_run, recent, official, _ = s["M"]
+    _headline(
+        fig,
+        f"Men's life expectancy reaches {long_run:.0f} by 2050 on the long trend, "
+        f"{recent:.0f} on the recent one",
+        f"Medians of the rebased projections (women: {s['F'][0]:.0f} or {s['F'][1]:.0f}); CONAPO's "
+        f"official projection says {official:.0f} for men. The darker band is the model's own "
+        "uncertainty, the lighter one the width the backtest says is realistic. The jump at 2020 "
+        "is the change from CONAPO's reconstruction to INEGI-based rates.",
+    )
+    return _save(fig, out, "projection_fan_e0.png")
+
+
+def longevity_risk(con, out: Path) -> Path:
+    fig, s = _fan_panels(con, "a65", "Value of 1 a year for life from 65 (4%)", True)
+    now = {sex: s[sex][3] for sex in s}
+    long_m, recent_m = s["M"][0], s["M"][1]
+    _headline(
+        fig,
+        f"By 2050 a pension at 65 costs {long_m / now['M'] - 1:.0%} more (long trend) or "
+        f"{recent_m / now['M'] - 1:.0%} more (recent)",
+        f"Annuity-due at 65 against 2024 ({now['M']:.2f} for men): {long_m:.2f} or {recent_m:.2f} "
+        f"in 2050 (women: {s['F'][0] / now['F'] - 1:.0%} or {s['F'][1] / now['F'] - 1:.0%} more). "
+        "The spread between trends is longevity risk. CONAPO's line starts higher because its "
+        "older-age mortality is lower than INEGI's (see the source gap).",
+    )
+    return _save(fig, out, "longevity_risk.png")
+
+
+def cohort_vs_period(con, out: Path) -> Path:
+    import numpy as np
+
+    df = _query(
+        con,
+        "SELECT sex, year_at_65, period_e65, cohort_e65, annuity_understated_pct "
+        "FROM cohort_tables WHERE year_at_65 IN (2025, 2035, 2045, 2055, 2070)",
+    )
+    fig, axes = _two_panels()
+    gains = {}
+    for ax, (sex, title) in zip(axes, SEX_PANELS, strict=True):
+        d = df[df["sex"] == sex].sort_values("year_at_65")
+        x = np.arange(len(d))
+        ax.bar(
+            x - 0.19,
+            d["period_e65"],
+            width=0.36,
+            color=MUTED,
+            label="Period table (that year's rates)",
+        )
+        ax.bar(
+            x + 0.19,
+            d["cohort_e65"],
+            width=0.36,
+            color=SEX_COLOR[sex],
+            label="Cohort (rates improve as they age)",
+        )
+        for xi, (_, row) in zip(x, d.iterrows(), strict=True):
+            extra = f"+{row['cohort_e65'] - row['period_e65']:.1f}y"
+            ax.text(xi + 0.19, row["cohort_e65"] + 0.15, extra, ha="center", fontsize=9, color=INK)
+        ax.set_xticks(x, [str(int(v)) for v in d["year_at_65"]])
+        ax.set_xlabel("Year the cohort turns 65")
+        ax.set_ylim(14, 27)
+        ax.set_title(title, loc="left", fontweight="bold", color=INK)
+        gains[sex] = float(d["annuity_understated_pct"].mean())
+    axes[0].set_ylabel("Life expectancy at 65 (years)")
+    axes[0].legend(loc="upper left", fontsize=9)
+    _headline(
+        fig,
+        f"Pricing an annuity on a period table understates its cost by about {gains['M']:.1%}",
+        "People turning 65 in each year, on that year's rates (period) and on the rates they "
+        "will actually live through (cohort), long-run scenario. Labels: extra years of life.",
+    )
+    return _save(fig, out, "cohort_vs_period.png")
+
+
+def source_gap_chart(con, out: Path) -> Path:
+    import numpy as np
+
+    year = _clean_year(con)
+    df = _query(
+        con,
+        f"SELECT sex, age_band, ratio FROM source_gap WHERE year = {year}",
+    )
+    bands = ["0", "1-14", "15-39", "40-59", "60-74", "75-89", "90-99"]
+    fig, ax = plt.subplots(figsize=(11, 6.2))
+    fig.subplots_adjust(top=0.78, bottom=0.12, left=0.08, right=0.97)
+    x = np.arange(len(bands))
+    for offset, (sex, label) in zip((-0.19, 0.19), SEX_PANELS, strict=True):
+        d = df[df["sex"] == sex].set_index("age_band").reindex(bands)
+        ax.bar(x + offset, d["ratio"], width=0.36, color=SEX_COLOR[sex], label=label)
+        for xi, v in zip(x + offset, d["ratio"], strict=True):
+            ax.text(xi, v + 0.015, f"{v:.2f}", ha="center", fontsize=8.5, color=INK_2)
+    ax.axhline(1, color=INK, lw=1)
+    ax.set_xticks(x, bands)
+    ax.set_xlabel("Age band")
+    ax.set_ylabel("Deaths implied by INEGI rates / deaths CONAPO models")
+    ax.set_ylim(0, 1.4)
+    ax.legend(loc="upper left", fontsize=10)
+    young = float(df[(df["sex"] == "M") & (df["age_band"] == "15-39")]["ratio"].iloc[0])
+    old = float(df[(df["sex"] == "M") & (df["age_band"] == "90-99")]["ratio"].iloc[0])
+    _headline(
+        fig,
+        f"For men aged 15 to 39, INEGI shows {1 - young:.0%} fewer deaths than CONAPO models",
+        f"{year}, same population in both. Above age 60 the gap reverses (men 90-99: "
+        f"{old - 1:+.0%}). The two sources agree on the total but not on who dies: this is why "
+        "life expectancy at 65 falls across the 2019/2020 join while that at birth rises.",
+    )
+    return _save(fig, out, "source_gap.png")
+
+
 FIGURES = (
     mortality_curve,
     covid_shock,
@@ -879,6 +1135,12 @@ FIGURES = (
     lifespan_disparity,
     annuity_values,
     term_premiums,
+    projection_backtest_chart,
+    period_index,
+    projection_fan_e0,
+    longevity_risk,
+    cohort_vs_period,
+    source_gap_chart,
 )
 
 
