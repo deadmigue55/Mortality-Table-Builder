@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from mortality import __version__
 from mortality.config import MissingCredentialsError, find_rscript, get_paths, hmd_credentials
@@ -126,6 +127,26 @@ def cmd_ingest_cnsf(args: argparse.Namespace) -> int:
     diff = cnsf.cross_check(rates, cnsf.parse_pdf_base_tables(pdf))
     print(f"  cross-check against the PDF, largest difference: {diff:g}")
     return 0 if diff < 1e-9 else 1
+
+
+def cmd_ingest_cnsf_vi(args: argparse.Namespace) -> int:
+    """Import the CNSF individual life statistics (Excel 2021+, Access 2018 to 2020)."""
+    from mortality.ingest import cnsf_vi
+
+    folder = Path(args.folder)
+    if not folder.is_dir():
+        print(f"not a folder: {folder}")
+        return 1
+    found = cnsf_vi.find_files(folder)
+    if not found:
+        print("no '<year> Vida Individual Bases.xlsx' or 'Vida_Ind_<year>.zip' files found")
+        return 1
+    print(f"importing {len(found)} yearly files ({min(found)} to {max(found)}) into data/raw...")
+    cnsf_vi.import_folder(folder)
+    print("parsing (the Excel files take a few minutes each; results are cached)...")
+    for path in cnsf_vi.process(force=args.force, legacy=not args.skip_legacy):
+        print(f"  {path}")
+    return 0
 
 
 def cmd_ingest_inegi_cube(args: argparse.Namespace) -> int:
@@ -412,6 +433,17 @@ def build_parser() -> argparse.ArgumentParser:
     cnsf = sources.add_parser("cnsf", help="CNSF 2013 regulatory tables (CUSF Annex 5.3.3-a)")
     cnsf.add_argument("--force", action="store_true", help="download again")
     cnsf.set_defaults(func=cmd_ingest_cnsf)
+
+    cnsf_vi = sources.add_parser(
+        "cnsf-vi",
+        help="CNSF individual life statistics: a folder of yearly Excel / Access downloads",
+    )
+    cnsf_vi.add_argument("folder", help="folder with the yearly files downloaded from the CNSF")
+    cnsf_vi.add_argument("--force", action="store_true", help="parse again, ignoring the cache")
+    cnsf_vi.add_argument(
+        "--skip-legacy", action="store_true", help="skip the 2018 to 2020 Access databases"
+    )
+    cnsf_vi.set_defaults(func=cmd_ingest_cnsf_vi)
 
     return parser
 

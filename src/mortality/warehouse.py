@@ -23,6 +23,7 @@ from mortality import (
     excess,
     experience,
     graduation,
+    insured,
     lifetable,
     pricing,
     projection,
@@ -100,6 +101,54 @@ SOURCES: tuple[Source, ...] = (
         "cnsf/rates.parquet",
         "CNSF 2013 regulatory rates by table, variant and age",
         ("table", "variant", "age"),
+    ),
+    Source(
+        "cnsf_vi_exposure",
+        "cnsf_vi/exposure.parquet",
+        "CNSF individual life statistics 2021 to 2025, sheet Comisiones: insured lives exposed "
+        "during the year by age, sex, plan, modality, state and channel (the exposure)",
+        ("year", "age", "sex"),
+    ),
+    Source(
+        "cnsf_vi_issued",
+        "cnsf_vi/issued.parquet",
+        "CNSF individual life statistics 2021 to 2025, sheet Emision: insured lives, premium and "
+        "sum assured by coverage, age, sex, plan, modality and state",
+        ("year", "age", "sex"),
+    ),
+    Source(
+        "cnsf_vi_claims",
+        "cnsf_vi/claims.parquet",
+        "CNSF individual life statistics 2021 to 2025, sheet Siniestros: claims by coverage, age, "
+        "sex, plan, modality, state and cause of the claim (text)",
+        ("year", "age", "sex"),
+    ),
+    Source(
+        "cnsf_vi_control",
+        "cnsf_vi/control.parquet",
+        "Control totals of every CNSF individual life sheet summed from the raw cells while "
+        "reading, to prove the warehouse tables are complete, plus counts of unexpected labels",
+        ("year", "sheet"),
+    ),
+    Source(
+        "cnsf_vi_legacy_issued",
+        "cnsf_vi/legacy_issued.parquet",
+        "CNSF individual life statistics 2018 to 2020 (older Access format), issue table: "
+        "insured lives, sums assured and premiums by benefit, with decoded plan, state and channel",
+        ("year", "age", "sex"),
+    ),
+    Source(
+        "cnsf_vi_legacy_claims",
+        "cnsf_vi/legacy_claims.parquet",
+        "CNSF individual life statistics 2018 to 2020 (older Access format), claims table: claim "
+        "counts and amounts by benefit and claim status; no cause of death",
+        ("year", "age", "sex"),
+    ),
+    Source(
+        "cnsf_vi_legacy_catalog",
+        "cnsf_vi/legacy_catalog.parquet",
+        "Code lists of the 2018 to 2020 CNSF databases (plan, policy status, claim status, "
+        "state, channel, product subtype)",
     ),
 )
 
@@ -279,6 +328,7 @@ def build(*, paths: Paths | None = None) -> dict[str, int]:
         docs += quality.cause_tables(con, inegi_files)
         docs += rates.build_tables(con)
         docs += graduation.build_tables(con)
+        docs += insured.build_tables(con)
         docs += lifetable.build_tables(con)
         docs += projection.build_tables(con)
         docs += experience.build_tables(con)

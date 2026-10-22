@@ -29,6 +29,26 @@ class Check:
     what: str  # plain-language description of the rule
 
 
+def _cnsf_vi_control_sql() -> str:
+    """Count the (year, sheet, column) totals that differ from the raw control totals."""
+    from mortality.ingest.cnsf_vi import SHEETS
+
+    parts = [
+        f"SELECT year, '{s.sheet}' AS sheet, '{col}' AS col, COUNT(*) AS n,"
+        f" COALESCE(SUM({col}), 0) AS total FROM cnsf_vi_{s.table} GROUP BY year"
+        for s in SHEETS
+        for col in (*s.counts, *s.amounts)
+    ]
+    return (
+        "SELECT COUNT(*) FROM cnsf_vi_control c LEFT JOIN ("
+        + " UNION ALL ".join(parts)
+        + ') w ON w.year = c.year AND w.sheet = c.sheet AND w.col = c."column"'
+        " WHERE c.format = 'xlsx' AND substr(c.\"column\", 1, 1) <> '_'"
+        " AND (w.total IS NULL OR w.n <> c.rows"
+        "      OR ABS(w.total - c.total) > 1e-7 * MAX(1, ABS(c.total)))"
+    )
+
+
 # Plain GLOB patterns keep these queries portable (SQLite has no SIMILAR TO)
 _VALID_STATE = (
     "state GLOB '[0-9][0-9]' AND (CAST(state AS INTEGER) BETWEEN 1 AND 35 OR state = '99')"
@@ -264,6 +284,104 @@ CHECKS: tuple[Check, ...] = (
         ' ON hi."table" = b."table" AND hi.age = b.age AND hi.variant = \'p99.5\''
         " WHERE b.variant = 'base' AND hi.qx < b.qx",
         "The 99.5th percentile rates are never below the base rates",
+    ),
+    # ── CNSF individual life statistics ─────────────────────────────────────
+    Check(
+        "cnsf_vi_years_complete",
+        "FAIL",
+        ("cnsf_vi_exposure", "cnsf_vi_issued", "cnsf_vi_claims"),
+        "SELECT 15"
+        " - (SELECT COUNT(DISTINCT year) FROM cnsf_vi_exposure WHERE year BETWEEN 2021 AND 2025)"
+        " - (SELECT COUNT(DISTINCT year) FROM cnsf_vi_issued WHERE year BETWEEN 2021 AND 2025)"
+        " - (SELECT COUNT(DISTINCT year) FROM cnsf_vi_claims WHERE year BETWEEN 2021 AND 2025)",
+        "Exposure, issue and claim sheets exist for every year 2021 to 2025",
+    ),
+    Check(
+        "cnsf_vi_control_reconciles",
+        "FAIL",
+        ("cnsf_vi_exposure", "cnsf_vi_issued", "cnsf_vi_claims", "cnsf_vi_control"),
+        _cnsf_vi_control_sql(),
+        "Row counts and column totals in the warehouse equal the totals summed from the raw cells",
+    ),
+    Check(
+        "cnsf_vi_numbers_parse",
+        "FAIL",
+        ("cnsf_vi_control",),
+        "SELECT COALESCE(SUM(non_numeric), 0) FROM cnsf_vi_control",
+        "Every count and amount cell in the CNSF workbooks is a number",
+    ),
+    Check(
+        "cnsf_vi_labels_recognised",
+        "WARN",
+        ("cnsf_vi_control",),
+        "SELECT COALESCE(SUM(total), 0) FROM cnsf_vi_control"
+        " WHERE \"column\" IN ('_unexpected_sex', '_unexpected_age')",
+        "Sex and age cells hold a known label, a whole age or 'No disponible'",
+    ),
+    Check(
+        "cnsf_vi_age_range",
+        "FAIL",
+        ("cnsf_vi_exposure", "cnsf_vi_claims"),
+        "SELECT (SELECT COUNT(*) FROM cnsf_vi_exposure WHERE age < 0 OR age > 125)"
+        " + (SELECT COUNT(*) FROM cnsf_vi_claims WHERE age < 0 OR age > 125)",
+        "Ages of insured lives and claims are between 0 and 125",
+    ),
+    Check(
+        "cnsf_vi_exposure_positive",
+        "FAIL",
+        ("cnsf_vi_exposure",),
+        "SELECT COUNT(*) FROM cnsf_vi_exposure WHERE insured < 0",
+        "The number of insured lives is never negative",
+    ),
+    Check(
+        "cnsf_vi_exposure_matches_issue",
+        "WARN",
+        ("cnsf_vi_exposure", "cnsf_vi_issued"),
+        "SELECT COUNT(*) FROM ("
+        " SELECT e.year FROM (SELECT year, SUM(insured) AS n FROM cnsf_vi_exposure GROUP BY year) e"
+        " JOIN (SELECT year, SUM(insured) AS n FROM cnsf_vi_issued"
+        "       WHERE coverage = 'Fallecimiento' GROUP BY year) i ON i.year = e.year"
+        " WHERE e.n / i.n < 0.8 OR e.n / i.n > 1.3)",
+        "Insured lives in the exposure sheet are within 20% to 30% of those with a death cover",
+    ),
+    Check(
+        "cnsf_vi_deaths_below_exposure",
+        "FAIL",
+        ("cnsf_vi_exposure", "cnsf_vi_claims"),
+        "SELECT COUNT(*) FROM ("
+        " SELECT c.year, c.age, c.sex, SUM(c.claims) AS d FROM cnsf_vi_claims c"
+        " WHERE c.coverage = 'Fallecimiento' AND c.age IS NOT NULL AND c.sex IS NOT NULL"
+        " GROUP BY c.year, c.age, c.sex) d"
+        " LEFT JOIN (SELECT year, age, sex, SUM(insured) AS n FROM cnsf_vi_exposure"
+        "            GROUP BY year, age, sex) e"
+        " ON e.year = d.year AND e.age = d.age AND e.sex = d.sex"
+        " WHERE e.n IS NULL OR d.d > e.n",
+        "In every year, age and sex there are no more death claims than insured lives",
+    ),
+    Check(
+        "cnsf_vi_no_detail_rows_are_a_ledger",
+        "WARN",
+        ("cnsf_vi_claims",),
+        "SELECT COUNT(*) FROM ("
+        " SELECT year FROM cnsf_vi_claims WHERE coverage = 'Fallecimiento' GROUP BY year"
+        " HAVING SUM(CASE WHEN (age IS NULL OR sex IS NULL) AND amount_claimed > 0 THEN claims"
+        "                 WHEN (age IS NULL OR sex IS NULL) AND amount_claimed < 0 THEN -claims"
+        "                 ELSE 0 END)"
+        "        > 0.1 * SUM(CASE WHEN age IS NOT NULL AND sex IS NOT NULL"
+        "                              AND amount_claimed > 0 THEN claims ELSE 0 END))",
+        "Death-claim rows without age or sex net to almost no new claims (new minus cancelled "
+        "is under 10% of the known claims), so they are excluded as an adjustment ledger",
+    ),
+    Check(
+        "cnsf_vi_reversals_are_small",
+        "WARN",
+        ("cnsf_vi_claims",),
+        "SELECT COUNT(*) FROM ("
+        " SELECT year FROM cnsf_vi_claims WHERE coverage = 'Fallecimiento'"
+        "  AND age IS NOT NULL AND sex IS NOT NULL GROUP BY year"
+        " HAVING SUM(CASE WHEN amount_claimed < 0 THEN claims ELSE 0 END)"
+        "        > 0.1 * SUM(CASE WHEN amount_claimed > 0 THEN claims ELSE 0 END))",
+        "Cancelled death claims (negative claimed amount) are under 10% of the known claims",
     ),
     # ── Across sources ──────────────────────────────────────────────────────
     Check(
