@@ -22,7 +22,7 @@ import requests
 from mortality.config import Paths, get_paths
 
 MANIFEST_FIELDS = ["source", "file", "url", "downloaded_at", "bytes", "sha256"]
-USER_AGENT = "mortality-table-builder/0.1 (research project; contact via GitHub deadmigue55)"
+USER_AGENT = "mortality-table-builder/1.0 (research project; contact via GitHub deadmigue55)"
 CHUNK = 1024 * 256
 TIMEOUT = (15, 120)  # connect, read (seconds)
 
