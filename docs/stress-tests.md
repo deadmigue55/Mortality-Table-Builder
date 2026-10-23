@@ -2,6 +2,8 @@
 
 Two risks that look like opposites, and the question an insurer's risk committee asks about them: **how much would a repeat of 2021 cost our life book, how much would an unexpected rise in longevity cost our annuity book, and does one book protect the other?** Each is measured on its own book, and then the two are put together.
 
+**The mathematics (the replay, the annuity reserve along a cohort, the release of reserve and the hedge) is derived in [handbook chapter 9](handbook/09-excess-stress.md); this page is the results.**
+
 Code: `src/mortality/stress.py` (11 unit tests in `tests/test_stress.py`), six data checks in `validate.py`. Charts: `uv run mortality figures`. Tables: `stress_pandemic_book`, `stress_pandemic_age`, `stress_longevity`, `stress_hedge`.
 
 > **What is real and what is assumed.** The *shocks* are real: the pandemic profile is Mexico's own 2020 to 2022 excess mortality by age and sex ([step 9a](excess-mortality.md)); the improvement scenarios come from the projection of [step 7](projection.md). The *books* are illustrative: the in-force block is the synthetic 573,000-policy portfolio of [step 8](experience-study.md) (392,274 policies in force, sum assured MXN 414 billion, mean age 46), and the annuity block is a made-up one (20,000 pensioners aged 60 to 95, pension 120,000 a year, 60% men). Nothing here describes a real company; the method runs on a real one by pointing it at a real extract.
@@ -31,7 +33,7 @@ On the 392,274 policies in force, expected claims for the next twelve months are
 - **The cost is not in the young.** The replay adds MXN 447 million, and 71% of it comes from policyholders aged 50 and over (`stress_pandemic_age`): the pandemic's excess was steep in age, and the book's sums at risk are large in the same ages. Men account for 65% of it (62% of the population's excess deaths).
 - **It is a one-year shock.** By 2022 the replay is +6%, and by 2023 mortality was back on trend (step 9a): a pandemic is a liquidity and earnings event for a life insurer, not a permanent change of the basis. Pricing a pandemic into a premium would be wrong; reinsuring it is what step 9d looks at.
 
-## Longevity: an annuity block on eight bases
+## Longevity: an annuity block on nine bases
 
 ![Longevity stress](img/stress_longevity.png)
 

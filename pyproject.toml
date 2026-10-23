@@ -59,6 +59,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011"]
+"tests/test_handbook_*.py" = ["E501"]  # docstrings quote equations; SQL for the database checks
 "app/**" = ["E501"]  # dashboard prose and chart specs read better on long lines
 "src/mortality/export.py" = ["E501"]  # prose written into the workbook
 "src/mortality/figures_insured.py" = ["E501"]  # figure titles and source lines are text

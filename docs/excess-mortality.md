@@ -2,6 +2,8 @@
 
 How many more people died in Mexico in 2020 to 2022 than would have without the pandemic, who they were, what their death certificates said, and where they lived. This is the project's analysis of record for the pandemic shock that the stress tests (step 9c) replay on insurance books.
 
+**The mathematics (the four baselines, the central estimate and its range, years of life lost, the cause, month and state formulas) is derived in [handbook chapter 9](handbook/09-excess-stress.md); this page is the results.**
+
 Code: `src/mortality/excess.py` (9 unit tests in `tests/test_excess.py`). Charts: `uv run mortality figures`. Everything here is built from real data: INEGI deaths, CONAPO population, and the project's own completed and graduated series.
 
 ## The problem is the baseline

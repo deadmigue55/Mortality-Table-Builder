@@ -130,7 +130,7 @@ $$
 \mathrm{covid\ share}_y = \frac{\text{COVID-coded deaths in } y}{\text{all deaths in } y}, \qquad \text{COVID year} \iff \mathrm{share}_y \ge 0.01. \tag{2.12}
 $$
 
-Coded deaths undercount the pandemic's total toll (many were never tested), which is why chapter 9 measures the rest by excess mortality against a baseline.
+Coded deaths undercount the pandemic's total toll (many were never tested), which is why [chapter 9](09-excess-stress.md) measures the rest by excess mortality against a baseline.
 
 ## 2.6 Exposure from dates: the Lexis split
 
