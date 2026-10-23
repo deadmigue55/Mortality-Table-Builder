@@ -1,11 +1,11 @@
 """Figures for the insured-lives table (version 2).
 
 They follow the project's figure style (see ``figures.py``): the title states the finding, one
-muted line explains how to read it, series are labelled directly or in a legend, one axis per
-chart. Colours have a role that never changes: the insured table is green, the population
-near-black, the CNSF 2013 regulatory table grey and dashed, the US insured table violet. Where a
+muted line explains how to read it, series are labeled directly or in a legend, one axis per
+chart. Colors have a role that never changes: the insured table is green, the population
+near-black, the CNSF 2013 regulatory table gray and dashed, the US insured table violet. Where a
 figure is split by sex it uses one panel per sex, so the colours are free for the sources. The
-palette was checked with the dataviz validator (contrast, colour-blind separation).
+palette was checked with the dataviz validator (contrast, color-blind separation).
 """
 
 from __future__ import annotations
@@ -139,7 +139,7 @@ def insured_hero(con, out: Path) -> Path:
         fig,
         "Mexicans who buy life insurance die at a seventh to a quarter of the population's rate",
         "Probability of dying within a year by age. Green: the insured-lives table built from the "
-        "CNSF industry statistics 2023-25 (dots are the raw rates it was fitted to). Grey band: "
+        "CNSF industry statistics 2023-25 (dots are the raw rates it was fitted to). Gray band: "
         "ages where the data stop being a safe guide and the table follows the population's shape.",
         SOURCE,
     )
@@ -586,7 +586,7 @@ def insured_tornado(con, out: Path) -> Path:
     )
     _headline(
         fig,
-        "Which table you quote on matters more than any modelling choice behind it",
+        "Which table you quote on matters more than any modeling choice behind it",
         "Each choice between the CNSF statistics and a table, changed one at a time while the "
         "rest stay as in the base table (traditional term, 2023-25, direct P-spline). Quoting a "
         f"traditional-term policy on the market-wide table would overcharge by {blend:.0%}.",
@@ -738,7 +738,7 @@ def insured_old_ages(con, out: Path) -> Path:
         "Dots: raw insured rate as a share of the population's, by age. Where it is steady the line "
         "follows the data. Past the last credible age (a term runs out; few, unrepresentative lives "
         "remain) the raw rates imply insured men dying at a third of Sweden's rate, which no group "
-        "of Mexicans plausibly does, so the gap to the population is closed gradually (a judgement).",
+        "of Mexicans plausibly does, so the gap to the population is closed gradually (a judgment).",
         SOURCE,
     )
     return _save(fig, out, "insured_old_ages.png")

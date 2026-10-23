@@ -2,7 +2,7 @@
 
 Run with ``uv run mortality figures``. Each function reads the tables built by
 ``mortality db build`` and writes one PNG. Colors follow one small palette (blue, orange,
-aqua, then muted grey) so the same series always has the same color across figures.
+aqua, then muted gray) so the same series always has the same color across figures.
 """
 
 from __future__ import annotations
@@ -212,7 +212,7 @@ def standardised_trend(con, out: Path) -> Path:
     ax.set_xlim(2013.6, 2024.9)
     ax.set_ylim(250, 1050)
     ax.set_xticks(range(2014, 2025))
-    ax.set_ylabel("Deaths per 100,000, age-standardised (Segi)")
+    ax.set_ylabel("Deaths per 100,000, age-standardized (Segi)")
     ax.text(2016.3, 280, "registration-year basis", fontsize=9, color=INK_2, ha="center")
     ax.text(2022.2, 280, "occurrence-year basis", fontsize=9, color=INK_2, ha="center")
     t = df[df["sex"] == "M"].set_index("year")["asr"]
@@ -220,7 +220,7 @@ def standardised_trend(con, out: Path) -> Path:
         fig,
         f"COVID lifted male mortality {t.loc[2020:2021].max() / t[2019] - 1:.0%} above 2019 at "
         f"its peak; by 2024 it was {1 - t[2024] / t[2019]:.0%} below",
-        "Age-standardised death rate (Segi world standard) removes the effect of an ageing "
+        "Age-standardized death rate (Segi world standard) removes the effect of an aging "
         "population. From 2020 the denominator is CONAPO's projected population, so the "
         "post-2019 level depends on that projection; the pandemic spike does not.",
     )
@@ -248,15 +248,15 @@ def state_forest(con, out: Path) -> Path:
     ax.grid(axis="y", visible=False)
     ax.grid(axis="x", visible=True)
     ax.set_xlabel(
-        "Standardised mortality ratio (1.00 = national mortality for the same ages and sexes)"
+        "Standardized mortality ratio (1.00 = national mortality for the same ages and sexes)"
     )
     hi, lo = df.iloc[-1], df.iloc[0]
     _headline(
         fig,
         f"{hi['state_name']} dies {hi['smr'] - 1:.0%} faster than its age mix predicts; "
         f"{lo['state_name']} {1 - lo['smr']:.0%} slower",
-        f"Standardised mortality ratio by state, {year}, with 95% intervals. Orange = "
-        "significantly higher than national, blue = significantly lower, grey = not "
+        f"Standardized mortality ratio by state, {year}, with 95% intervals. Orange = "
+        "significantly higher than national, blue = significantly lower, gray = not "
         "distinguishable. This compares registered deaths with CONAPO's projected "
         "population, so registration coverage and migration move it as well as true risk.",
     )
@@ -459,7 +459,7 @@ def graduation_residuals(con, out: Path) -> Path:
         ax.set_xlim(0, 90)
         ax.set_xlabel("Age")
         ax.set_title(title, loc="left", fontweight="bold", color=INK)
-    axes[0].set_ylabel("Standardised residual (actual - fitted) / sqrt(fitted)")
+    axes[0].set_ylabel("Standardized residual (actual - fitted) / sqrt(fitted)")
     axes[0].legend(loc="upper right", fontsize=9)
     corr = tests.loc[("M", "pspline"), "serial_corr"]
     heaping = _query(
@@ -469,7 +469,7 @@ def graduation_residuals(con, out: Path) -> Path:
     _headline(
         fig,
         f"Biggest misses sit on ages ending in 0 and 5: men's deaths run {heaping:.1%} high there",
-        f"Grey band = plus or minus 2. The {year} spikes at 35, 40, 50 and 55 are digit "
+        f"Gray band = plus or minus 2. The {year} spikes at 35, 40, 50 and 55 are digit "
         f"preference in the male death records, which a smooth curve rightly ignores "
         f"(serial correlation of residuals {corr:.2f}).",
     )
@@ -815,7 +815,7 @@ def annuity_values(con, out: Path) -> Path:
         fig,
         f"CNSF 2013 overstates pension cost by {gaps['M']:.0%} (men) and {gaps['F']:.0%} (women)",
         "Annuity-due at 65 on each table, same code, 4% interest. Lighter mortality makes lifetime "
-        "payments dearer. Coloured dot = Mexican population; unisex tables appear in both "
+        "payments dearer. Colored dot = Mexican population; unisex tables appear in both "
         "panels. The 0.05th pct is CNSF's low-mortality variant for private pensions.",
     )
     return _save(fig, out, "annuity_values.png")
@@ -2151,6 +2151,10 @@ def reinsurance_rating_swap(con, out: Path) -> Path:
 
 
 def pipeline_diagram(con, out: Path) -> Path:
+    from mortality.validate import N_CHECKS
+
+    n_checks = N_CHECKS  # never hard-code: the diagram must track the real number
+    n_pages = len(list((Path(__file__).parents[2] / "app" / "views").glob("*.py")))
     from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
     fig, ax = plt.subplots(figsize=(11, 6.4))
@@ -2180,7 +2184,7 @@ def pipeline_diagram(con, out: Path) -> Path:
     for i, (t, s) in enumerate(sources):
         box(6 + i * 30, 50, 26, 8, t, s, MUTED)
     # row 2: the core
-    core = [("Data quality", "late registration, checks"), ("Rates", "crude, standardised, A/E"),
+    core = [("Data quality", "late registration, checks"), ("Rates", "crude, standardized, A/E"),
             ("Graduation", "P-spline, Kannisto"), ("Life tables", "commutation functions"),
             ("Projection", "Lee-Carter, CBD, R check")]  # fmt: skip
     for i, (t, s) in enumerate(core):
@@ -2191,8 +2195,8 @@ def pipeline_diagram(con, out: Path) -> Path:
         FancyBboxPatch((1.5, 44.3), 96.9, 2.7, boxstyle="round,pad=0.2,rounding_size=0.8",
                        fc="#f1f0ec", ec=GRID, zorder=1)
     )  # fmt: skip
-    ax.text(50, 45.65, "SQLite warehouse · SHA-256 manifest of every input · 100 data checks",
-            ha="center", va="center", fontsize=8.4, color=INK_2, zorder=3)  # fmt: skip
+    note = f"SQLite warehouse · SHA-256 manifest of every input · {n_checks} data checks"
+    ax.text(50, 45.65, note, ha="center", va="center", fontsize=8.4, color=INK_2, zorder=3)
     for i in range(3):
         arrow(19 + i * 30, 49.6, 19 + i * 30, 47.5)
     arrow(10.1, 44.0, 10.1, 43.0)
@@ -2208,8 +2212,11 @@ def pipeline_diagram(con, out: Path) -> Path:
         box(1.5 + i * 19.6, 15.5, 17.2, 9.5, t, s, c)
         arrow(10.1 + i * 19.6, 32.6, 10.1 + i * 19.6, 25.8)
     # row 4: outputs
-    outs = [("Dashboard", "Streamlit, 9 pages"), ("Excel workbook", "live commutation formulas"),
-            ("Report", "Quarto, PDF and HTML")]  # fmt: skip
+    outs = [
+        ("Dashboard", f"Streamlit, {n_pages} pages"),
+        ("Excel workbook", "live commutation formulas"),
+        ("Report", "Quarto, PDF and HTML"),
+    ]
     for i, (t, s_) in enumerate(outs):
         box(6 + i * 30, 2.5, 26, 8, t, s_, INK)
         arrow(19 + i * 30, 15.0, 19 + i * 30, 11.3)
@@ -2225,37 +2232,60 @@ def pipeline_diagram(con, out: Path) -> Path:
 
 
 def social_preview(con, out: Path) -> Path:
-    """The 1280 x 640 card GitHub shows when the repository link is shared."""
-    bg, cyan, text, dim = "#0a0a12", "#22d3ee", "#f1f5f9", "#94a3b8"
+    """The 1280 x 640 card GitHub shows when the repository link is shared.
+
+    Brand: midnight navy and apricot, shared with the portfolio. Color roles match the analysis
+    figures (insured lives green, the population warm white, the regulator's table dashed).
+    """
+
+    bg, text, dim, apricot = "#07162B", "#FFF4EA", "#8FA3BF", "#FF8A3D"
+    green, grid = "#34D399", "#16294A"
     fig = plt.figure(figsize=(12.8, 6.4), facecolor=bg)
-    ax = fig.add_axes([0.5, 0.17, 0.44, 0.52], facecolor=bg)
+    ax = fig.add_axes([0.595, 0.17, 0.355, 0.52], facecolor=bg)
     base = _query(
         con, "SELECT age, qx FROM cnsf_rates WHERE \"table\" = 'CNSF M 2013' AND variant = 'base'"
     ).set_index("age")["qx"]
-    men = _query(con, "SELECT age, qx FROM graduated_qx WHERE year = 2023 AND sex = 'M'")
-    women = _query(con, "SELECT age, qx FROM graduated_qx WHERE year = 2023 AND sex = 'F'")
-    ax.plot(base.index, base.values, color=dim, lw=2.2, ls=(0, (4, 3)), label="CNSF 2013")
-    ax.plot(women["age"], women["qx"], color=ORANGE, lw=2.6, label="Women, 2023")
-    ax.plot(men["age"], men["qx"], color=cyan, lw=3.2, label="Men, 2023")
+    pop = _query(con, "SELECT age, qx FROM graduated_qx WHERE year = 2023 AND sex = 'M'")
+    ins = _query(
+        con,
+        "SELECT age, qx FROM insured_table WHERE segment = 'term_traditional' AND sex = 'M' "
+        "AND age BETWEEN 18 AND 60",
+    )
+
+    def glow(x, y, color, lw, **kw):
+        """A line with a soft neon halo (three wider, fainter strokes underneath)."""
+        for extra, alpha in ((9, 0.06), (5, 0.12), (2.5, 0.22)):
+            ax.plot(x, y, color=color, lw=lw + extra, alpha=alpha, solid_capstyle="round")
+        ax.plot(x, y, color=color, lw=lw, solid_capstyle="round", **kw)
+
+    glow(base.index, base.values, dim, 2.0, ls=(0, (4, 3)), label="CNSF 2013 (regulator)")
+    glow(pop["age"], pop["qx"], text, 2.8, label="Population, men")
+    glow(ins["age"], ins["qx"], green, 3.4, label="Insured lives, men")
     ax.set_yscale("log")
-    ax.set_xlim(15, 100)
-    ax.set_ylim(4e-4, 0.5)
-    ax.grid(color="#1e293b", lw=0.8)
+    ax.set_xlim(18, 100)
+    ax.set_ylim(1.5e-4, 0.5)
+    ax.grid(color=grid, lw=0.9)
     ax.tick_params(colors=dim, labelsize=10, length=0)
     for side in ax.spines.values():
         side.set_visible(False)
     ax.set_xlabel("Age", color=dim, fontsize=11)
     ax.set_ylabel("Probability of dying within a year", color=dim, fontsize=11)
     ax.legend(loc="upper left", frameon=False, labelcolor=text, fontsize=11)
-    fig.text(0.05, 0.84, "Mortality Table Builder", color=text, fontsize=38, fontweight="bold")
-    tagline = "From 3 million Mexican death records to\nprices, reserves and reinsurance"
+    fig.text(0.05, 0.835, "Mortality Table Builder", color=text, fontsize=38, fontweight="bold")
+    fig.add_artist(
+        plt.Line2D([0.052, 0.20], [0.79, 0.79], color=apricot, lw=3, transform=fig.transFigure)
+    )
+    tagline = (
+        "From 3 million Mexican death records to\nthe table a life insurance quote is priced on"
+    )
     fig.text(0.05, 0.745, tagline, color=dim, fontsize=17, va="top", linespacing=1.4)
-    stats = [("746k", "excess deaths, 2020-22"), ("4.1x", "men at 40 vs the CNSF table"),
-             ("15/15", "planted effects recovered")]  # fmt: skip
+    stats = [("746k", "excess deaths, Mexico 2020-22"),
+             ("14-25%", "insured vs population death rate"),
+             ("15 / 15", "planted effects recovered")]  # fmt: skip
     for i, (value, label) in enumerate(stats):
         y = 0.45 - i * 0.14
-        fig.text(0.05, y, value, color=cyan, fontsize=26, fontweight="bold", va="center")
-        fig.text(0.19, y, label, color=text, fontsize=14, va="center")
+        fig.text(0.05, y, value, color=apricot, fontsize=26, fontweight="bold", va="center")
+        fig.text(0.21, y, label, color=text, fontsize=13, va="center")
     fig.text(0.05, 0.075, "Python · R · SQL · Streamlit · Quarto · Excel", color=dim, fontsize=12)
     fig.text(0.95, 0.075, "github.com/deadmigue55/Mortality-Table-Builder", color=dim,
              fontsize=12, ha="right")  # fmt: skip

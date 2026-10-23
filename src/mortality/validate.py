@@ -1211,6 +1211,10 @@ CHECKS: tuple[Check, ...] = (
     ),
 )
 
+# Every check a full build reports: the registered ones plus the manifest-integrity check, which
+# reads files on disk rather than the warehouse. Documentation quotes this number.
+N_CHECKS = len(CHECKS) + 1
+
 
 @dataclass(frozen=True)
 class Result:
