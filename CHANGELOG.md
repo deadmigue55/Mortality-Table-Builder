@@ -4,6 +4,17 @@ All notable changes to this project are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- The pricing lab now defaults to the insured-lives basis with its margin (the version 2 pricing
+  basis), keeping the statutory reserve on CNSF 2013, so it reproduces the stored premium table.
+- Dashboard screenshots retaken, with the Insured lives page added.
+
+### Fixed
+- Cut-off metric values on the overview and Insured lives pages, and the "one fifth to one
+  seventh" wording, which did not match the 14% to 25% found.
+
 ## [2.0.0] - 2026-10-22
 
 **The insured-lives table**: a mortality table for pricing quotes, built from the CNSF's own

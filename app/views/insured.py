@@ -22,8 +22,8 @@ ui.header(
     "Insured lives",
     "A mortality table for pricing quotes, built from what insurers actually experienced.",
     "The population table tells you how long Mexicans live. A quote is for someone who buys life "
-    "insurance: wealthier, underwritten, mostly urban. In Mexico that group dies at one fifth to "
-    "one seventh the population's rate, so the right table is not the population's, and not the "
+    "insurance: wealthier, underwritten, mostly urban. In Mexico that group dies at a seventh to "
+    "a quarter of the population's rate, so the right table is not the population's, and not the "
     "regulator's either.",
 )
 
@@ -62,9 +62,9 @@ with t_table:
     last = int(t.loc[t["source"] != "extended", "age"].max())
     ui.metric_row(
         [
-            ("Death rate at 40", f"{r40['qx'] * 1000:.2f} per 1,000", None),
-            ("Population", f"{r40['q_population'] * 1000:.2f} per 1,000", None),
-            ("CNSF 2013", f"{r40['q_cnsf2013'] * 1000:.2f} per 1,000", None),
+            ("Death rate at 40", f"{r40['qx'] * 1000:.2f}", "per 1,000 a year"),
+            ("Population", f"{r40['q_population'] * 1000:.2f}", "per 1,000 a year"),
+            ("CNSF 2013", f"{r40['q_cnsf2013'] * 1000:.2f}", "per 1,000 a year"),
             ("Share of the population's rate", f"{r40['ratio_population']:.0%}", None),
             ("Data support the table up to", f"age {last}", None),
         ]

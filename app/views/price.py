@@ -39,7 +39,15 @@ with st.container(border=True):
     )  # fmt: skip
     c5, c6, c7 = st.columns(3)
     labels = {k: v for k, v in pricing.BASES.items() if k in available}
-    price_basis = c5.selectbox("Priced on", list(labels), format_func=labels.get, index=0)
+    # version 2 prices quotes on the insured table; the regulator's table stays as the reference
+    if "cnsf" in labels:
+        labels["cnsf"] = "CNSF 2013 (the regulator's table, the version 1 basis)"
+    if "insured_prudent" in labels:
+        labels["insured_prudent"] = "Insured lives + margin (version 2 basis)"
+    default = list(labels).index("insured_prudent") if "insured_prudent" in labels else 0
+    price_basis = c5.selectbox("Priced on", list(labels), format_func=labels.get, index=default)
+    if price_basis.startswith("insured"):
+        c5.caption("The statutory reserve stays on CNSF 2013, as the regulator requires.")
     hurdle = c6.slider("Target return (IRR, %)", 5.0, 20.0, 10.0, 0.5) / 100
     invest = c7.slider("Investment return (%)", 2.0, 9.0, 5.0, 0.5) / 100
     with st.expander("Expense, commission and lapse assumptions (illustrative)"):
@@ -54,8 +62,13 @@ a = pricing.Assumptions(
     acquisition_pct=acq, commission_first=com, maintenance=float(maint),
 )  # fmt: skip
 q = available[price_basis](sex, age, term)
-premium = pricing.solve_premium(q, a)
-test = pricing.profit_test(q, premium, a, lapse_scale=lapse_scale)
+valuation = q  # the reserve is held on the pricing table, as in version 1
+if price_basis.startswith("insured") and "cnsf" in available:
+    valuation = available["cnsf"](
+        sex, age, term
+    )  # ...except the regulator's reserve stays on CNSF 2013
+premium = pricing.solve_premium(q, a, q_valuation=valuation)
+test = pricing.profit_test(q, premium, a, q_valuation=valuation, lapse_scale=lapse_scale)
 summ = pricing.summarise(test, hurdle)
 net = pricing.net_premium(q, a.valuation_interest, a.sum_assured)
 
@@ -135,14 +148,14 @@ with tab_adequacy:
     rows = []
     for key, label in labels.items():
         qb = available[key](sex, age, term)
-        t = pricing.profit_test(qb, premium, a, q_valuation=q, lapse_scale=lapse_scale)
+        t = pricing.profit_test(qb, premium, a, q_valuation=valuation, lapse_scale=lapse_scale)
         s = pricing.summarise(t, hurdle)
         rows.append(
             {
                 "basis": label,
                 "margin": s["margin"],
                 "irr": s["irr"],
-                "cushion": pricing.mortality_cushion(qb, premium, a, q_valuation=q),
+                "cushion": pricing.mortality_cushion(qb, premium, a, q_valuation=valuation),
             }
         )
     ad = np.array([r["margin"] for r in rows])

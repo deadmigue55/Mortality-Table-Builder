@@ -76,18 +76,22 @@ Mexico's regulatory mortality table (CNSF 2013) is more than a decade old and mi
 | | |
 |---|---|
 | **Dashboard** | **[Open the live demo](https://mortality-table-builder.streamlit.app/)**. Ten pages, including **Insured lives**; four are live labs: price a policy, value a pension, design a reinsurance treaty, and run the experience study on **your own policy extract**. Locally: `uv run mortality app` |
-| **Report** | An 11-page methodology report with a Spanish executive summary. Every number in the text is computed from the data when it is rendered: [`reports/methodology.pdf`](reports/methodology.pdf) |
+| **Report** | A 13-page methodology report with a Spanish executive summary. Every number in the text is computed from the data when it is rendered: [`reports/methodology.pdf`](reports/methodology.pdf) |
 | **Excel workbook** | Life tables with **live commutation formulas** (Dx, Nx, Mx driven by one interest cell) and a premium calculator, checked against the Python code by an independent formula engine: [`reports/Mortality_Table_Builder.xlsx`](reports/Mortality_Table_Builder.xlsx) |
 | **Write-ups** | One document per step with method, results and limits: [`docs/`](docs/) |
 
 <table>
 <tr>
 <td width="50%"><img src="docs/img/app_overview.png" alt="Dashboard overview"></td>
-<td width="50%"><img src="docs/img/app_reinsurance.png" alt="Reinsurance lab"></td>
+<td width="50%"><img src="docs/img/app_insured.png" alt="Insured lives page"></td>
 </tr>
 <tr>
 <td width="50%"><img src="docs/img/app_pandemic.png" alt="The pandemic page"></td>
 <td width="50%"><img src="docs/img/app_price.png" alt="Pricing lab"></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/app_reinsurance.png" alt="Reinsurance lab"></td>
+<td width="50%"><img src="docs/img/app_experience.png" alt="Experience study"></td>
 </tr>
 </table>
 
@@ -350,7 +354,7 @@ Each step has its own write-up; these are the findings that matter most. Expand 
 
 - **Streamlit dashboard** (`uv run mortality app`): ten pages (the newest is **Insured lives**) over a shareable demo bundle built from an allow-list of derived tables; four live labs call the same engines the tests check; a Trust page lists all 122 data checks, the sources with checksums and the limits; the app is tested headlessly in CI.
 - **Excel workbook** (`uv run mortality export-excel`): lx, dx, Dx, Nx, Cx and Mx as live formulas driven by one interest cell, a premium calculator, a rate card and the stress results; recomputed by an independent formula engine in the tests and matched to the Python functions to 1e-9.
-- **Methodology report** ([PDF](reports/methodology.pdf), Quarto and Typst): 11 pages with a Spanish executive summary; every number in the text is computed from the data bundle when the report is rendered.
+- **Methodology report** ([PDF](reports/methodology.pdf), Quarto and Typst): 13 pages with a Spanish executive summary; every number in the text is computed from the data bundle when the report is rendered.
 
 [Deployment guide](docs/deploy.md)
 </details>

@@ -48,8 +48,8 @@ ui.metric_row(
         ),
         (
             "Automated data checks",
-            f"{int((checks['status'] == 'PASS').sum())} of {len(checks)} pass",
-            "4 known warnings, documented",
+            f"{int((checks['status'] == 'PASS').sum())} of {len(checks)}",
+            "pass; 4 known warnings, documented",
         ),
         ("Warehouse tables", f"{len(docs)}", "each with a written description"),
     ]
