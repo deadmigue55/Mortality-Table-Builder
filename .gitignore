@@ -58,3 +58,6 @@ reports/.quarto/
 reports/*_files/
 reports/*.html
 reports/*.typ
+
+# Local tools
+scripts/mathcheck/node_modules/

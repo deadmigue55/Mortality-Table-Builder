@@ -1,0 +1,9 @@
+{
+  "name": "mathcheck",
+  "private": true,
+  "type": "module",
+  "description": "Checks every LaTeX formula of the handbook with KaTeX before it is published",
+  "dependencies": {
+    "katex": "^0.16.22"
+  }
+}

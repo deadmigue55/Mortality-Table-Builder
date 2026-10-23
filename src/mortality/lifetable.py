@@ -160,8 +160,9 @@ class Commutation:
 
     ``D(x) = v^x l(x)``, ``C(x) = v^(x+1) d(x)``, and ``N``, ``S``, ``M``, ``R`` are their
     running sums from the oldest age down. Every value is a ratio of these, so any value is a
-    handful of array lookups. Ages outside the table: below it is undefined (NaN), above it
-    nothing is left to pay (0).
+    handful of array lookups. Ages outside the table: below it every value is undefined (NaN).
+    Above it the columns are 0, so a benefit payable beyond the last age is worth 0, while a value
+    for a life already older than the last age is 0/0 and returned as NaN.
     """
 
     age: np.ndarray
