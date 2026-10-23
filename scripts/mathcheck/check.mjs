@@ -69,8 +69,8 @@ export function extract(text) {
     }
     // 0) a code span written with two or more backticks may *show* the formula syntax: skip it
     const shown = line.replace(/(`{2,}).+?\1/g, (m) => " ".repeat(m.length));
-    // 1) the allowed inline form: $`...`$
-    let rest = shown.replace(/\$`([^`]+)`\$/g, (_, tex) => {
+    // 1) the allowed inline form: $`...`$ (the opening $ never follows another $, a backtick or a word)
+    let rest = shown.replace(/(?<![\w$`])\$`([^`]+)`\$/g, (_, tex) => {
       formulas.push({ tex, display: false, line: lineNo });
       return " ".repeat(tex.length + 4);
     });

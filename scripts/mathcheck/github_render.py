@@ -43,7 +43,7 @@ def expected_formulas(text: str) -> int:
             count += 1
             continue
         shown = re.sub(r"(`{2,}).+?\1", " ", line)  # a code span may show the syntax: not a formula
-        count += len(re.findall(r"\$`[^`]+`\$", shown))
+        count += len(re.findall(r"(?<![\w$`])\$`[^`]+`\$", shown))
     return count
 
 
