@@ -2276,7 +2276,7 @@ def social_preview(con, out: Path) -> Path:
         plt.Line2D([0.052, 0.20], [0.79, 0.79], color=apricot, lw=3, transform=fig.transFigure)
     )
     tagline = (
-        "From 3 million Mexican death records to\nthe table a life insurance quote is priced on"
+        "From 4.7 million Mexican death records to\nthe table a life insurance quote is priced on"
     )
     fig.text(0.05, 0.745, tagline, color=dim, fontsize=17, va="top", linespacing=1.4)
     stats = [("746k", "excess deaths, Mexico 2020-22"),

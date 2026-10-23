@@ -26,7 +26,7 @@ quote = ui.sql(
 
 st.title("Mortality Table Builder")
 st.markdown(
-    "##### From three million Mexican death records to prices, reserves and reinsurance: "
+    "##### From 4.7 million Mexican death records to prices, reserves and reinsurance: "
     "an end-to-end actuarial pipeline, validated at every step."
 )
 st.caption(

@@ -3,7 +3,7 @@
 > [!NOTE]
 > **In one minute.** A life table follows an imaginary group of 100,000 newborns through the mortality rates of one year and sex, and records how many are alive at each age. Everything an insurer prices comes out of that single column of survivors: how long people live, what a promise to pay at death is worth today, what a pension costs. The only mathematics needed is a recursion ($\ell_{x+1} = \ell_x p_x$), a discount factor ($v = 1/(1+i)$) and sums.
 >
-> **What this chapter does:** it turns the graduated rates of [chapter 4](04-graduation.md) into complete life tables, derives every actuarial function from them, and shows how each formula is checked against the code.
+> **What this chapter does:** it turns the graduated rates of [chapter 4](../graduation.md) into complete life tables, derives every actuarial function from them, and shows how each formula is checked against the code.
 >
 > **The number to remember.** In 2023 a Mexican man could expect to live $\mathring{e}_0 = 72.9$ years and a woman 78.9. A life annuity of 1 a year at 65 costs 12.21 for men on this table and 14.94 on the regulator's CNSF 2013 table.
 
