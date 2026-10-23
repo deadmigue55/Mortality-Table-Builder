@@ -73,7 +73,7 @@ One section per step of the pipeline, with the findings that matter most. Each s
 <summary><b>7. Projection</b>: cross-checked in R, backtested, honest about uncertainty</summary>
 
 - Lee-Carter and CBD are fitted to CONAPO 1970 to 2019 with process and drift uncertainty, back-tested over four origins and **cross-checked against StMoMo in R** (agreement to 0.00002 years).
-- A forecast made in 1999 would have overshot men's 2019 life expectancy by **4.0 years**: men's improvement slowed to 15% of its earlier pace.
+- A forecast made in 1999 would have overshot men's 2019 life expectancy by **3.9 years**: men's improvement slowed to 15% of its earlier pace.
 - Men's life expectancy reaches 77 by 2050 on the long trend, **74 if the last 20 years repeat**; CONAPO's official projection says 77.
 - A pension annuity at 65 costs 6% more by 2050 on the long trend, 2% on the recent one. Pricing on a period table understates the cost by about **2.6%** against the cohort.
 - INEGI and CONAPO disagree on who dies: INEGI shows **34% fewer deaths for men aged 15 to 39**, 10% to 16% more above 60.

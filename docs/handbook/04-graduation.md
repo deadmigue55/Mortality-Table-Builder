@@ -338,7 +338,7 @@ Averaged over the five years the Heligman-Pollard deviance is 1,159 (women) and 
 
 ## 4.12 Limits
 
-- **One year at a time.** Each year and sex is graduated alone: no strength is borrowed across years. The 2020 to 2022 tables carry the pandemic and are not reference tables; 2023 is. Projection (chapter 6) is where time enters.
+- **One year at a time.** Each year and sex is graduated alone: no strength is borrowed across years. The 2020 to 2022 tables carry the pandemic and are not reference tables; 2023 is. Projection ([chapter 6](06-projection.md)) is where time enters.
 - **Single ages exist only from 2020.** There is no graduated 2019 baseline from single-age data.
 - **The dispersion estimate (4.18) assumes** a smooth underlying curve and independent errors across ages. Digit preference breaks the second assumption mildly (section 4.10); if anything it inflates the estimate a little, which makes the chosen curve slightly smoother.
 - **The intervals (4.16) are approximate** (they use a Bayesian-style variance for the penalized fit, scaled by $`\psi`$) and exist only for the P-spline ages up to 84. The Kannisto closure and the two laws have none.
@@ -350,7 +350,7 @@ Averaged over the five years the Heligman-Pollard deviance is 1,159 (women) and 
 
 - Whittaker, E. T. (1922). On a new method of graduation. *Proceedings of the Edinburgh Mathematical Society* 41, 63-75. Henderson, R. (1924). A new method of graduation. *Transactions of the Actuarial Society of America* 25, 29-40.
 - Eilers, P. H. C. and Marx, B. D. (1996). Flexible smoothing with B-splines and penalties. *Statistical Science* 11(2), 89-121.
-- Currie, I. D., Durban, M. and Eilers, P. H. C. (2004). Smoothing and forecasting mortality rates. *Stat. Model.* 4(4), 279-298.
+- Currie, I. D., Durban, M. and Eilers, P. H. C. (2004). Smoothing and forecasting mortality rates. *Statistical Modelling* 4(4), 279-298.
 - Heligman, L. and Pollard, J. H. (1980). The age pattern of mortality. *Journal of the Institute of Actuaries* 107(1), 49-80.
 - Forfar, D. O., McCutcheon, J. J. and Wilkie, A. D. (1988). On graduation by mathematical formula. *Journal of the Institute of Actuaries* 115(1), 1-135. (The graduation tests of section 4.7.)
 - Thatcher, A. R., Kannisto, V. and Vaupel, J. W. (1998). *The Force of Mortality at Ages 80 to 120*. Odense University Press.

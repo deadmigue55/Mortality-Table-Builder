@@ -65,9 +65,9 @@ Actuarial language is precise, and that precision is useful, so this project kee
 
 | Term | In plain words | Symbol | Read more |
 |---|---|---|---|
-| **Mortality improvement** | The long-run fall in death rates as medicine and living conditions get better | | [Projection](../projection.md) |
+| **Mortality improvement** | The long-run fall in death rates as medicine and living conditions get better | | [Ch. 6](06-projection.md) |
 | **Lee-Carter model** | A projection method that describes every age's mortality with one shared time trend: $`\ln m_{x,t} = \alpha_x + \beta_x \kappa_t`$ | | [Ch. 6](../projection.md) |
-| **Period vs cohort table** | A *period* table uses this year's death rates for every age. A *cohort* table follows one generation through the rates it will actually meet. Cohort values are lower when mortality improves | | [Projection](../projection.md) |
+| **Period vs cohort table** | A *period* table uses this year's death rates for every age. A *cohort* table follows one generation through the rates it will actually meet. Cohort values are lower when mortality improves | | [Ch. 6](06-projection.md#66-cohort-versus-period) |
 | **Excess mortality** | Deaths above what would have been expected without an event such as a pandemic. The *P-score* is that excess as a share of the expected deaths | | [Excess mortality](../excess-mortality.md) |
 | **Stress test** | Asking "what if": replaying a past shock, or doubling mortality, on today's book and measuring the damage | | [Stress tests](../stress-tests.md) |
 

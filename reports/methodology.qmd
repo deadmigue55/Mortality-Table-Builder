@@ -241,7 +241,7 @@ Mortality improves, and the improvement slows and stops. Two classical models ar
 Three things make the projection trustworthy rather than merely sophisticated.
 
 - **Cross-check.** The same models are fitted in R with StMoMo, an independent implementation; the two agree to 2 x 10^-5^ years in life expectancy.
-- **Backtest.** Models are refitted from past dates and scored 10 and 20 years ahead. Men's improvement slowed to about 15% of its earlier pace after 1999, so a forecast made in 1999 overshoots the 2019 male life expectancy by 4.0 years (women 2.4). The model's own prediction interval covers only 40% to 60% of the outcomes, so an **empirical, square-root-of-horizon band** calibrated on these errors is added.
+- **Backtest.** Models are refitted from past dates and scored 10 and 20 years ahead. Men's improvement slowed to about 15% of its earlier pace after 1999, so a forecast made in 1999 overshoots the 2019 male life expectancy by 3.9 years (women 2.3). The model's own prediction interval covers only 40% to 60% of the outcomes, so an **empirical, square-root-of-horizon band** calibrated on these errors is added.
 - **Honest scenarios.** The long-run trend puts male life expectancy in 2050 at 77.0 years, the recent trend at 74.3, CONAPO's official projection at 77.3. Which one an actuary believes is the largest uncertainty of any Mexican longevity price.
 
 An annuity priced on this year's period table understates its cost by `{python} n['cohort_gap']` against the cohort that actually retires, because the buyer lives their old age in the future.

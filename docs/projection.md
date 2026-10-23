@@ -2,6 +2,8 @@
 
 Life tables describe the past. Pricing a pension or a 30-year policy needs the future, and the future of mortality is uncertain. This step fits two stochastic models, tests them on history, projects to 2070 under several scenarios with honest uncertainty, and turns the projection into cohort tables and a longevity-risk measure.
 
+**The mathematics (Lee-Carter, the random walk and its drift uncertainty, Cairns-Blake-Dowd, the backtest calibration and the cohort annuity) is derived in [handbook chapter 6](handbook/06-projection.md); this page is the results.**
+
 Code: `src/mortality/projection.py` (19 unit tests in `tests/test_projection.py` on synthetic data with a known truth) and `r/projection_stmomo.R`. Charts: `uv run mortality figures`.
 
 ## The data problem, and what it forces
@@ -48,7 +50,7 @@ The same Lee-Carter and CBD models are fitted with **StMoMo** in R (a different 
 
 For each sex, fitting window and origin (1979, 1989, 1999, 2009) the models are fitted to the years up to the origin and forecast 10 and 20 years ahead, against CONAPO's reconstruction (`projection_backtest`).
 
-- **Men's improvement stalled.** Lee-Carter fitted to 1970-1999 and restarted at the 1999 rates overshoots men's 2019 life expectancy at birth by **4.0 years** (women: 2.4). The period index shows why:
+- **Men's improvement stalled.** Lee-Carter fitted to 1970-1999 and restarted at the 1999 rates overshoots men's 2019 life expectancy at birth by **3.9 years** (women: 2.3). The period index shows why:
 
 ![Period index](img/period_index.png)
 

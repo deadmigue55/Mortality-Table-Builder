@@ -97,7 +97,8 @@ def test_a_chapter_marked_done_in_the_handbook_index_exists():
 
 
 def test_documentation_uses_american_spelling():
-    """One spelling throughout; identifiers in code spans (`standardised_trend`) are skipped."""
+    """One spelling throughout; code spans (`standardised_trend`) and reference lists, where
+    titles keep the spelling they were published with, are skipped."""
     british = re.compile(
         r"\b(standardis\w+|modelling|modelled|labelled|summaris\w+|penalis\w+|optimis(?:e|ed|er|ing)\b"
         r"|judgement|behaviour\w*|ageing|centres?|colour\w*|licence)\b",
@@ -105,11 +106,15 @@ def test_documentation_uses_american_spelling():
     )
     offenders = []
     for path in MARKDOWN:
-        fenced = False
+        fenced = in_references = False
         for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             if line.strip().startswith("```"):
                 fenced = not fenced
             if fenced:
+                continue
+            if line.startswith("#"):
+                in_references = line.strip().lower() == "## references"
+            if in_references:
                 continue
             plain = re.sub(r"`[^`]*`|\]\([^)]*\)|https?://\S+", " ", line)
             offenders += [f"{path.name}:{number}: {m.group(0)}" for m in british.finditer(plain)]
