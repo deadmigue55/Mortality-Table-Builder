@@ -37,7 +37,7 @@ Every step is explained in plain words on this page and in [the results](docs/re
 
 | Finding | The number | In plain words |
 |---|---|---|
-| **How long Mexicans live** | **72.9** years (men), **78.9** (women), 2023 | Life expectancy at birth ($\mathring{e}_0$) from the rebuilt life table |
+| **How long Mexicans live** | **72.9** years (men), **78.9** (women), 2023 | Life expectancy at birth ($`\mathring{e}_0`$) from the rebuilt life table |
 | **The population vs the regulator** | Men aged 40 die at **4.1×** the CNSF 2013 rate, women at **1.5×** | The regulatory table prices *insured* lives, who are healthier, so this is a gap to know about, not a flaw |
 | **Who buys insurance dies much less** | Insured lives die at **14% to 25%** of the population's rate (ages 20 to 65) | Insured people are wealthier, medically underwritten and mostly urban |
 | **What that does to a quote** | A man of 40, 20-year term, net premium per 1,000: **0.85** on the insured table, **1.74** on CNSF 2013, **6.62** on the population | The *net premium* is the price of the risk alone, before expenses and profit |

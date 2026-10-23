@@ -39,9 +39,10 @@ The [front page](../../README.md) and the [results](../results.md) say *what was
 
 A mathematical document that nobody can check rots. Three safeguards keep this one honest, and they run on every change:
 
-1. **Every formula is tested against the code.** `tests/test_handbook_*.py` evaluates the identities of a chapter numerically (for example $A_x = 1 - d\,\ddot{a}_x$ at every age, or prospective equals retrospective reserve) and fails if the software and the text disagree. While writing chapter 5 this caught a sentence that overstated what the code returns above the oldest age; the text and the docstring were corrected.
-2. **Every formula is syntax-checked.** `node scripts/mathcheck/check.mjs` renders each LaTeX expression and rejects any that does not parse, exactly as GitHub will read it.
-3. **Every number comes from the data.** Results quoted in the chapters are the ones the pipeline produces, and a worked example's numbers are asserted in a test, so a changed method cannot leave a stale figure behind.
+1. **Every formula is tested against the code.** `tests/test_handbook_*.py` evaluates the identities of a chapter numerically (for example $`A_x = 1 - d\,\ddot{a}_x`$ at every age, or prospective equals retrospective reserve) and fails if the software and the text disagree. While writing chapter 5 this caught a sentence that overstated what the code returns above the oldest age; the text and the docstring were corrected.
+2. **Every formula is syntax-checked.** `node scripts/mathcheck/check.mjs` renders each LaTeX expression with KaTeX and rejects any that does not parse.
+3. **Every formula is drawn by GitHub.** Valid LaTeX can still be broken by Markdown: GitHub reads italics before math. `scripts/mathcheck/github_render.py` sends each chapter through GitHub's own renderer and counts the formulas it draws against the formulas written. It caught 6 broken formulas in chapter 5 that the syntax check could not see, which is why inline math is written with a backtick inside the dollars.
+4. **Every number comes from the data.** Results quoted in the chapters are the ones the pipeline produces, and a worked example's numbers are asserted in a test, so a changed method cannot leave a stale figure behind.
 
 ## References
 

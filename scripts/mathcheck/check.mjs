@@ -5,12 +5,16 @@
 // A formula is one of:
 //   * display math between two lines that contain only "$$"
 //   * one-line display math written as "$$ ... $$"
-//   * inline math "$ ... $" where the opening $ is followed by a non-space, the closing $ is
-//     preceded by a non-space and not followed by a digit (GitHub's rule, so "$5 and $6" is
-//     not math)
+//   * inline math written as $`...`$ (a dollar, a backtick, the formula, a backtick, a dollar)
+//
+// Inline math MUST use the backtick form. GitHub's Markdown parser reads the underscores of a
+// plain $...$ formula as italics before it looks for math, so formulas such as
+// ${}_nq_x$ or $(1-\phi_x)\,\mathring{e}_x$ are silently broken (found by sending the handbook
+// through GitHub's own renderer: 6 of 242 formulas failed in plain form, 0 in backtick form).
+// A plain $...$ pair is therefore an error here, as is a lone "$".
+//
 // Code fences and `inline code` are skipped. Each formula is rendered with KaTeX and any parse
-// error is reported with its file and line. A lone "$" that is not part of a formula is also
-// an error: write money as MXN or \$ so GitHub never guesses.
+// error is reported with its file and line. Write money as MXN or \$.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -19,7 +23,8 @@ import katex from "katex";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..");
-const targets = process.argv.slice(2).length ? process.argv.slice(2) : [path.join(root, "docs", "handbook")];
+const args = process.argv.slice(2);
+const targets = args.length ? args : [path.join(root, "docs", "handbook")];
 
 function markdownFiles(p) {
   const stat = fs.statSync(p);
@@ -57,44 +62,28 @@ export function extract(text) {
       block = { start: lineNo, lines: [] };
       return;
     }
-    // one-line display math
     const oneLine = trimmed.match(/^\$\$(.+)\$\$$/);
     if (oneLine) {
       formulas.push({ tex: oneLine[1], display: true, line: lineNo });
       return;
     }
-    // inline math: remove `code` first, then scan for $...$
-    const noCode = line.replace(/`[^`]*`/g, (m) => " ".repeat(m.length));
-    let k = 0;
-    while (k < noCode.length) {
-      const ch = noCode[k];
-      if (ch === "\\" && noCode[k + 1] === "$") {
-        k += 2; // escaped dollar: a literal money sign
-        continue;
-      }
-      if (ch !== "$") {
-        k++;
-        continue;
-      }
-      // find the closing $ that obeys GitHub's rule
-      let end = -1;
-      for (let j = k + 1; j < noCode.length; j++) {
-        if (noCode[j] === "\\") {
-          j++;
-          continue;
-        }
-        if (noCode[j] === "$" && !/\s/.test(noCode[j - 1]) && !/\d/.test(noCode[j + 1] ?? "")) {
-          end = j;
-          break;
-        }
-      }
-      if (end === -1 || /\s/.test(noCode[k + 1] ?? " ")) {
-        problems.push({ line: lineNo, message: "a lone $ that does not open a formula (write money as MXN or \\$)" });
-        k++;
-        continue;
-      }
-      formulas.push({ tex: line.slice(k + 1, end), display: false, line: lineNo });
-      k = end + 1;
+    // 0) a code span written with two or more backticks may *show* the formula syntax: skip it
+    const shown = line.replace(/(`{2,}).+?\1/g, (m) => " ".repeat(m.length));
+    // 1) the allowed inline form: $`...`$
+    let rest = shown.replace(/\$`([^`]+)`\$/g, (_, tex) => {
+      formulas.push({ tex, display: false, line: lineNo });
+      return " ".repeat(tex.length + 4);
+    });
+    // 2) mask ordinary `code` spans and escaped dollars, then anything left with a $ is a problem
+    rest = rest.replace(/`[^`]*`/g, (m) => " ".repeat(m.length)).replace(/\\\$/g, "  ");
+    if (rest.includes("$")) {
+      const plain = /\$[^\s$][^$]*[^\s$]\$|\$[^\s$]\$/.test(rest);
+      problems.push({
+        line: lineNo,
+        message: plain
+          ? "plain $...$ inline math is fragile on GitHub: write it as $`...`$"
+          : "a lone $ that does not open a formula (write money as MXN or \\$)",
+      });
     }
   });
   if (block) problems.push({ line: block.start, message: "display math opened with $$ and never closed" });
@@ -110,7 +99,7 @@ for (const file of targets.flatMap(markdownFiles)) {
   let display = 0;
   for (const f of formulas) {
     total++;
-    f.display ? display++ : null;
+    if (f.display) display++;
     try {
       katex.renderToString(f.tex, { displayMode: f.display, throwOnError: true, strict: "error", trust: false });
     } catch (err) {
