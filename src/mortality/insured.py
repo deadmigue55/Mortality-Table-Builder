@@ -5,14 +5,17 @@ counts as a death and as exposure matter a great deal. They are written down her
 small functions, so every figure and every sensitivity in the project uses the same definition.
 
 **What counts as a death** (``death_cells``). A row of the claims sheet with cover
-``Fallecimiento``, a known age and sex and a positive claimed amount. Rows without age and sex
-are *not* deaths: they are an adjustment ledger (settlements and cancellations of claims
-reported in earlier years; see ``docs/insured-lives.md``). Alternative readings are provided as
-named rules so their effect on the premium can be shown rather than argued.
+``Fallecimiento``, a known age and sex, a positive claimed amount and a cause that can cause a
+death. Two kinds of rows are *not* deaths: rows without age and sex are an adjustment ledger
+(settlements and cancellations of claims reported in earlier years), and rows whose cause is a
+sprained ankle are endowment maturities booked under the death cover with a placeholder cause.
+See ``docs/insured-lives.md``. Alternative readings are provided as named rules so their effect
+on the premium can be shown rather than argued.
 
-**What counts as exposure** (``exposure_cells``). The insured lives of the exposure sheet
-(policies exposed at any time during the year). It is a head count, not person-years, so a
-turnover allowance can shorten it (``central_exposure``).
+**What counts as exposure** (``exposure_cells``). The insured lives holding the death cover
+(the issue sheet reports lives by cover, so numerator and denominator refer to the same
+benefit). It is a head count, not person-years, so a turnover allowance can shorten it
+(``central_exposure``).
 """
 
 from __future__ import annotations
@@ -27,12 +30,68 @@ from scipy import special, stats
 DEATH_COVER = "Fallecimiento"
 CELL = ["year", "age", "sex"]
 
+# Mortality differs a great deal between the products of one market (a term cover for a
+# borrower, a traditional term policy, a whole-life universal policy), so a table is built for
+# each segment as well as for the market as a whole. A segment is a filter on the plan and the
+# modality of the policy as the CNSF reports them.
+SEGMENTS: dict[str, dict] = {
+    "all": {"label": "All individual life", "plan": None, "modality": None},
+    "term": {"label": "Term (all modalities)", "plan": ("Temporal",), "modality": None},
+    "term_traditional": {
+        "label": "Term, traditional",
+        "plan": ("Temporal",),
+        "modality": ("Tradicional",),
+    },
+    "credit": {"label": "Term, credit life", "plan": ("Temporal",), "modality": ("Deudores",)},
+    "term_other": {
+        "label": "Term, other modalities",
+        "plan": ("Temporal",),
+        "modality_not": ("Tradicional", "Deudores"),
+    },
+    "permanent": {
+        "label": "Whole life and endowment",
+        "plan": ("Vitalicio", "Dotal Mixto"),
+        "modality": None,
+    },
+}
+
+# The products are graduated on their own; the two market-wide tables are exposure-weighted
+# blends of them, so the market table is always consistent with its parts and carries the mix
+# of business of the base years.
+GRADUATED = ("term_traditional", "credit", "permanent")
+# A segment too thin to graduate on its own is a multiple of a reference segment's table.
+RELATIVE = {"term_other": "term_traditional"}
+PARTS = (*GRADUATED, *RELATIVE)  # the partition of the business that the blends add up
+BLENDS = {
+    "term": ("term_traditional", "credit", "term_other"),
+    "all": PARTS,
+}
+RELATIVITY_AGES = (25, 65)  # ages over which a segment's multiplier is estimated
+RELATIVITY_REFERENCE = "term_traditional"  # the standard product, the base of the relativities
+
+
+def segment_rows(frame: pd.DataFrame, segment: str = "all") -> pd.DataFrame:
+    """The rows of a claims or exposure frame that belong to a segment."""
+    if segment not in SEGMENTS:
+        raise ValueError(f"unknown segment {segment!r}; choose from {sorted(SEGMENTS)}")
+    spec = SEGMENTS[segment]
+    keep = pd.Series(True, index=frame.index)
+    if spec.get("plan") is not None:
+        keep &= frame["plan"].isin(spec["plan"])
+    if spec.get("modality") is not None:
+        keep &= frame["modality"].isin(spec["modality"])
+    if spec.get("modality_not") is not None:
+        keep &= ~frame["modality"].isin(spec["modality_not"])
+    return frame[keep]
+
+
 # The readings of the claims sheet, from the one used for the table to the extremes.
 RULES = {
-    "base": "known age and sex, positive claimed amount",
+    "base": "known age and sex, positive claimed amount, a cause that can cause a death",
     "net": "base minus the cancelled claims (negative claimed amount)",
     "plus_positive": "base plus the no-detail rows with a positive amount, spread pro rata",
     "plus_all": "base plus every no-detail row, spread pro rata (the reading the evidence rejects)",
+    "with_maturities": "base without removing the maturity payments coded as sprains",
 }
 
 
@@ -40,26 +99,55 @@ def _death_rows(claims: pd.DataFrame) -> pd.DataFrame:
     return claims[claims["coverage"] == DEATH_COVER]
 
 
-def death_cells(claims: pd.DataFrame, rule: str = "base") -> pd.DataFrame:
-    """Deaths per year, age and sex under one of the named ``RULES``."""
+def _without_maturities(rows: pd.DataFrame) -> pd.DataFrame:
+    """Drop the claims whose cause text is a sprain.
+
+    Those entries are endowment maturities booked under the death cover with a placeholder
+    cause: they sit at ages 60 to 69 (spread of 4 years against 14 for all claims), average
+    3.6 times a death claim, start in 2022 and lie on savings-type plans. They are not deaths.
+    """
+    if "cause" not in rows.columns:
+        return rows
+    from mortality import insured_causes
+
+    return rows[insured_causes.group_causes(rows["cause"]) != insured_causes.IMPLAUSIBLE]
+
+
+def death_cells(claims: pd.DataFrame, rule: str = "base", segment: str = "all") -> pd.DataFrame:
+    """Deaths per year, age and sex under one of the named ``RULES``, for one segment.
+
+    The no-detail rows have no plan or modality either, so they cannot be assigned to a segment:
+    the alternative readings that add them spread the market's extra deaths over every
+    segment in proportion to its known deaths (the same factor for all).
+    """
     if rule not in RULES:
         raise ValueError(f"unknown rule {rule!r}; choose from {sorted(RULES)}")
-    rows = _death_rows(claims)
-    known = rows["age"].notna() & rows["sex"].notna()
-    amount = rows["amount_claimed"]
+    market = _death_rows(claims)
+    if rule != "with_maturities":
+        market = _without_maturities(market)
+    rows = segment_rows(market, segment)
 
-    def count(mask: pd.Series) -> pd.Series:
-        picked = rows[mask]
-        return picked.groupby(CELL)["claims"].sum()
+    def known_rows(frame: pd.DataFrame) -> pd.DataFrame:
+        known = frame["age"].notna() & frame["sex"].notna()
+        return frame[known & (frame["amount_claimed"] > 0)]
 
-    base = count(known & (amount > 0))
+    base = known_rows(rows).groupby(CELL)["claims"].sum()
     if rule == "net":
-        base = base.sub(count(known & (amount < 0)), fill_value=0.0)
+        known = rows["age"].notna() & rows["sex"].notna()
+        cancelled = rows[known & (rows["amount_claimed"] < 0)].groupby(CELL)["claims"].sum()
+        base = base.sub(cancelled, fill_value=0.0)
     out = base.rename("deaths").reset_index()
     if rule in ("plus_positive", "plus_all"):
-        extra_mask = ~known & (amount > 0) if rule == "plus_positive" else ~known
-        extra = rows[extra_mask].groupby("year")["claims"].sum()
-        out = spread_pro_rata(out, extra)
+        no_detail = market["age"].isna() | market["sex"].isna()
+        extra_rows = (
+            market[no_detail & (market["amount_claimed"] > 0)]
+            if rule == "plus_positive"
+            else market[no_detail]
+        )
+        extra = extra_rows.groupby("year")["claims"].sum()
+        market_known = known_rows(market).groupby("year")["claims"].sum()
+        segment_known = known_rows(rows).groupby("year")["claims"].sum()
+        out = spread_pro_rata(out, extra * segment_known / market_known)
     out["deaths"] = out["deaths"].clip(lower=0.0)
     out["age"] = out["age"].astype(int)
     return out.sort_values(CELL, ignore_index=True)
@@ -77,11 +165,15 @@ def spread_pro_rata(deaths: pd.DataFrame, extra: pd.Series) -> pd.DataFrame:
     return out
 
 
-def exposure_cells(exposure: pd.DataFrame, *, plans: tuple[str, ...] | None = None) -> pd.DataFrame:
-    """Insured lives per year, age and sex (rows with a known age and sex only)."""
-    rows = exposure[exposure["age"].notna() & exposure["sex"].notna()]
-    if plans is not None:
-        rows = rows[rows["plan"].isin(plans)]
+def exposure_cells(exposure: pd.DataFrame, segment: str = "all") -> pd.DataFrame:
+    """Insured lives per year, age and sex (rows with a known age and sex only).
+
+    The lives should be those holding the death cover, so that numerator and denominator refer
+    to the same benefit (the issue sheet reports lives by cover; the exposure sheet counts
+    every life with any cover, 11% to 15% more for term business).
+    """
+    rows = segment_rows(exposure, segment)
+    rows = rows[rows["age"].notna() & rows["sex"].notna()]
     out = rows.groupby(CELL)["insured"].sum().rename("exposure").reset_index()
     out["age"] = out["age"].astype(int)
     return out.sort_values(CELL, ignore_index=True)
@@ -223,16 +315,19 @@ def last_credible_age(
     exposure,
     q_reference,
     *,
-    window: tuple[int, int] = (60, 80),
+    window: tuple[int, int] = (40, 60),
     keep: float = 0.85,
-    bounds: tuple[int, int] = (75, 90),
+    bounds: tuple[int, int] = (55, 90),
 ) -> int:
     """The last age at which the insured data can be trusted.
 
-    Over ``window`` the ratio of the insured rate to the reference is steady. Beyond some age it
-    collapses, because lives who died stay in the books and their deaths are never reported.
-    The rule: the first age whose ratio (smoothed over three ages) falls below ``keep`` times
-    its median over the window ends the credible range at the age before.
+    Over ``window`` (ages where the insured are a settled, underwritten group) the ratio of the
+    insured rate to the reference is steady. At older ages it can collapse: a term policy ends
+    and the lives that remain are few and unrepresentative, and lives who died stay in the
+    books with their deaths never reported. The rule: the first age from ``bounds[0]`` whose
+    ratio (smoothed over three ages) falls below ``keep`` times its median over the window
+    ends the credible range at the age before. A ratio that rises (a product mix that moves
+    towards whole life) is not a collapse.
     """
     ages = np.asarray(ages, dtype=int)
     ratio = pd.Series(
@@ -335,6 +430,39 @@ def _fit_all(ages, deaths, exposure, q_ref) -> tuple[dict, dict]:
     return rate, {"relational": rel, "direct": direct, "makeham": gm, "brass": brass}
 
 
+MIN_LIVES = 500  # an age with fewer insured lives in any year is too thin to graduate
+MIN_AGES = 30  # fewest ages a graduation is allowed to rest on
+
+
+def first_fit_age(
+    crude: pd.DataFrame, last_age: int, years=BASE_YEARS, *, floor: int = FIT_FROM_AGE
+) -> int:
+    """The youngest age from which every age up to ``last_age`` has deaths in every year.
+
+    The smoothers work on the log of the counts, so an age without a single death in some year
+    cannot be graduated. In a thin segment that moves the start of the fit up (below it the
+    table follows the population shape scaled to the first fitted age).
+    """
+    cells = crude[crude["year"].isin(years)]
+    per_age = cells.groupby("age").agg(
+        deaths=("deaths", "min"), lives=("exposure", "min"), years=("year", "nunique")
+    )
+    ok = (
+        (per_age["deaths"] >= 1)
+        & (per_age["lives"] >= MIN_LIVES)
+        & (per_age["years"] == len(years))
+    )
+    first = last_age + 1
+    for age in range(last_age, floor - 1, -1):
+        if age in ok.index and ok.loc[age]:
+            first = age
+        else:
+            break
+    if last_age - first + 1 < MIN_AGES:
+        raise ValueError(f"too few usable ages ({first} to {last_age}) to graduate")
+    return first
+
+
 def graduate_sex(
     crude: pd.DataFrame, q_population: pd.Series, sex: str, *, years=BASE_YEARS, last_age=None
 ) -> SexFits:
@@ -346,7 +474,8 @@ def graduate_sex(
     q_all = q_population.reindex(pool["age"]).to_numpy()
     if last_age is None:
         last_age = last_credible_age(pool["age"], pool["deaths"], pool["exposure"], q_all)
-    pool = pool[pool["age"] <= last_age]
+    first_age = first_fit_age(crude[crude["sex"] == sex], last_age, years)
+    pool = pool[pool["age"].between(first_age, last_age)]
     ages = pool["age"].to_numpy()
     d, e = pool["deaths"].to_numpy(), pool["exposure"].to_numpy()
     q_ref = q_population.reindex(ages).to_numpy()
@@ -356,10 +485,10 @@ def graduate_sex(
     folds = {m: 0.0 for m in METHODS}
     for held in years:
         train = pooled_cells(crude, tuple(y for y in years if y != held))
-        train = train[(train["sex"] == sex) & train["age"].between(FIT_FROM_AGE, last_age)]
+        train = train[(train["sex"] == sex) & train["age"].between(first_age, last_age)]
         train = train.sort_values("age")
         test = crude[(crude["year"] == held) & (crude["sex"] == sex)]
-        test = test[test["age"].between(FIT_FROM_AGE, last_age)].sort_values("age")
+        test = test[test["age"].between(first_age, last_age)].sort_values("age")
         test = test.set_index("age").reindex(train["age"].to_numpy())
         t_rate, _ = _fit_all(
             train["age"].to_numpy(),
@@ -467,6 +596,10 @@ DESCRIPTIONS = {
         "Age-standardised insured death rates by year and sex, and the fitted annual change "
         "over the base years with its 95% interval"
     ),
+    "insured_relativities": (
+        "Multiplier of the traditional-term table that matches each segment's deaths, by sex and "
+        "age range, with a 95% interval widened by the dispersion"
+    ),
 }
 
 
@@ -546,7 +679,14 @@ def standardised_trend(crude: pd.DataFrame, weights_year: int = 2024) -> pd.Data
         for sex in ("M", "F"):
             wt = w.loc[sex]
             r = rate.loc[sex].reindex(wt.index)
-            rows.append({"year": int(year), "sex": sex, "rate": float((r * wt).sum() / wt.sum())})
+            seen = r.notna()  # a thin segment can lack an age in some year: weight what exists
+            rows.append(
+                {
+                    "year": int(year),
+                    "sex": sex,
+                    "rate": float((r[seen] * wt[seen]).sum() / wt[seen].sum()),
+                }
+            )
     out = pd.DataFrame(rows)
     ref = out[out["year"] == BASE_YEARS[0]].set_index("sex")["rate"]
     out["index_vs_first_base_year"] = out["rate"] / out["sex"].map(ref)
@@ -589,40 +729,231 @@ def annual_change(crude: pd.DataFrame, q_table: pd.DataFrame, years=BASE_YEARS) 
     return pd.DataFrame(rows)
 
 
-def build_tables(con) -> list[tuple[str, str]]:
-    """Create the insured-lives tables from the CNSF statistics; returns (name, description)."""
-    docs: list[tuple[str, str]] = []
-    if not _has(con, "cnsf_vi_claims", "cnsf_vi_exposure", "graduated_qx", "cnsf_rates"):
-        return docs
+def relativity(pooled: pd.DataFrame, q_reference: pd.Series, ages=RELATIVITY_AGES) -> dict:
+    """Multiplier of a reference table that matches a segment's deaths (one sex).
+
+    The Poisson maximum-likelihood estimate of a single factor ``k`` with expected deaths
+    ``exposure * q_reference`` is total deaths over total expected deaths. Its interval is
+    widened by the dispersion of the age-decade ratios, because the segment's age pattern is
+    never exactly the reference's.
+    """
+    lo, hi = ages
+    p = pooled[pooled["age"].between(lo, hi)].copy()
+    p["expected"] = p["exposure"] * p["age"].map(q_reference)
+    p = p.dropna(subset=["expected"])
+    deaths, expected = float(p["deaths"].sum()), float(p["expected"].sum())
+    k = deaths / expected
+    decade = (p["age"] // 10) * 10
+    g = p.groupby(decade)[["deaths", "expected"]].sum()
+    g = g[g["expected"] > 0]
+    pearson = float((((g["deaths"] - k * g["expected"]) ** 2) / (k * g["expected"])).sum())
+    dispersion = max(1.0, pearson / max(len(g) - 1, 1))
+    se = np.sqrt(dispersion / max(deaths, 1.0))
+    z = stats.norm.ppf(0.975)
+    return {
+        "k": k,
+        "lower": k * np.exp(-z * se),
+        "upper": k * np.exp(z * se),
+        "deaths": deaths,
+        "expected": expected,
+        "dispersion": dispersion,
+        "ages": f"{lo}-{hi}",
+    }
+
+
+def fit_relative_curve(pooled: pd.DataFrame, q_reference: pd.Series, ages=RELATIVITY_AGES) -> dict:
+    """Multiplier of a reference table that changes with age: ``log k(x) = a + b (x - 45) / 20``.
+
+    A Poisson regression with offset ``log(exposure * q_reference)`` over ``ages``, standard
+    errors scaled by the Pearson dispersion. Two parameters are all a thin segment can carry,
+    and they capture what a single factor cannot (whole life against term pulls away from
+    it as ages rise).
+    """
+    lo, hi = ages
+    p = pooled[pooled["age"].between(lo, hi)].copy()
+    p["expected"] = p["exposure"] * p["age"].map(q_reference)
+    p = p.dropna(subset=["expected"])
+    p = p[p["expected"] > 0]
+    x = (p["age"].to_numpy(float) - 45.0) / 20.0
+    res = sm.GLM(
+        p["deaths"].to_numpy(float),
+        sm.add_constant(x),
+        family=sm.families.Poisson(),
+        offset=np.log(p["expected"].to_numpy(float)),
+    ).fit(scale="X2")
+    return {
+        "a": float(res.params[0]),
+        "b": float(res.params[1]),
+        "cov": np.asarray(res.cov_params()),
+        "dispersion": float(res.scale),
+        "ages": (lo, hi),
+    }
+
+
+def relative_table(
+    curve: dict,
+    reference: pd.DataFrame,
+    q_population: pd.Series,
+    reference_last_age: int,
+    *,
+    converge_age: int = 105,
+) -> pd.DataFrame:
+    """A segment's table as an age-varying multiple of a reference segment's table (one sex).
+
+    Up to the reference's last credible age the rate is ``k(x) * q_reference(x)`` (the
+    multiplier is held at its end values outside the ages it was fitted on). Above it the
+    segment follows the same rule as every other table: its ratio to the population moves to 1
+    at ``converge_age``. So a multiplier above 1 can never lift the old-age rates above the
+    population's.
+    """
+    ages = reference["age"].to_numpy()
+    lo, hi = curve["ages"]
+    x = (np.clip(ages, lo, hi).astype(float) - 45.0) / 20.0
+    design = np.column_stack([np.ones_like(x), x])
+    centre = design @ np.array([curve["a"], curve["b"]])
+    se = np.sqrt(np.einsum("ij,jk,ik->i", design, curve["cov"], design))
+    z = stats.norm.ppf(0.975)
+    q_ref = reference["qx"].to_numpy()
+    q = np.minimum(q_ref * np.exp(centre), 1.0)
+    out = reference.copy()
+    out["qx_lower"] = np.minimum(reference["qx_lower"].to_numpy() * np.exp(centre - z * se), 1.0)
+    out["qx_upper"] = np.minimum(reference["qx_upper"].to_numpy() * np.exp(centre + z * se), 1.0)
+    out["qx"] = extend_to_reference(
+        ages,
+        q,
+        q_population.reindex(ages).to_numpy(),
+        last_age=reference_last_age,
+        converge_age=converge_age,
+    )
+    out["method"] = "relativity"
+    return out
+
+
+def floor_men_at_women(table: pd.DataFrame, from_age: int = FIT_FROM_AGE) -> pd.DataFrame:
+    """Raise men's rates to women's wherever the table leaves men below them.
+
+    No population and no insured group shows women dying faster than men at working and old
+    ages. It happens here only because the sexes are extended from different ages (women's
+    credible range ends earlier) or through noise in thin cells, and the cure is the rule the
+    population table already follows: men are floored at women. The changed ages are flagged in
+    ``sex_floor`` and lose their interval.
+    """
+    out = table.copy()
+    out["sex_floor"] = False
+    men = out.index[out["sex"] == "M"]
+    ages = out.loc[men, "age"].to_numpy()
+    women = out[out["sex"] == "F"].set_index("age")["qx"].reindex(ages).to_numpy()
+    low = (ages >= from_age) & (out.loc[men, "qx"].to_numpy() < women)
+    out.loc[men[low], "qx"] = women[low]
+    out.loc[men[low], ["qx_lower", "qx_upper"]] = np.nan
+    out.loc[men[low], "sex_floor"] = True
+    return out
+
+
+def blend_tables(tables: dict[str, pd.DataFrame], pooled: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Exposure-weighted blend of segment tables (``insured_table`` frames without references).
+
+    The weight of a segment at a sex and age is its share of the pooled insured lives there, so
+    the blend is the table of the market as it was in the base years. Where no segment has
+    lives (very young and very old ages) the weights of the nearest age with lives are used.
+    Bands are blended only where every component has one.
+    """
+    weights = []
+    for name, frame in pooled.items():
+        weights.append(frame[["sex", "age", "exposure"]].assign(segment=name))
+    w = pd.concat(weights).pivot_table(
+        index=["sex", "age"], columns="segment", values="exposure", aggfunc="sum"
+    )
+    names = list(tables)
+    w = w.reindex(columns=names).fillna(0.0)
+    parts = []
+    for name, frame in tables.items():
+        parts.append(
+            frame.set_index(["sex", "age"])[["qx", "qx_lower", "qx_upper", "source"]].add_prefix(
+                f"{name}|"
+            )
+        )
+    wide = pd.concat(parts, axis=1)
+    index = wide.index
+    share = w.reindex(index)
+    share = share.groupby(level="sex", group_keys=False).apply(lambda g: g.ffill().bfill())
+    share = share.div(share.sum(axis=1).replace(0.0, np.nan), axis=0).fillna(1.0 / len(names))
+    out = pd.DataFrame(index=index)
+    for column in ("qx", "qx_lower", "qx_upper"):
+        stacked = np.column_stack([wide[f"{n}|{column}"].to_numpy() for n in names])
+        # NaN in any component gives NaN: a band exists only where every component has one
+        out[column] = np.sum(stacked * share[names].to_numpy(), axis=1)
+    # an age is "graduated" only if every product's rate there comes from data
+    sources = np.column_stack([wide[f"{n}|source"].to_numpy() for n in names])
+    out["source"] = np.where(
+        (sources == "extended").any(axis=1),
+        "extended",
+        np.where((sources == "below_fit").any(axis=1), "below_fit", "graduated"),
+    )
+    out["method"] = "blend"
+    return out.reset_index()
+
+
+def segment_q(
+    segment: str,
+    claims: pd.DataFrame,
+    exposure: pd.DataFrame,
+    pop: pd.DataFrame,
+    *,
+    rule: str = "base",
+    years=BASE_YEARS,
+    method: str | None = None,
+    converge_age: int = 105,
+    turnover: float = 0.0,
+) -> dict[str, pd.Series]:
+    """The q table (ages 0 to 110) of a segment for each sex under alternative choices.
+
+    This is the table-building pipeline with every modelling choice exposed as an argument, so
+    the sensitivity analysis can change one choice at a time: the reading of the claims sheet
+    (``rule``), the years pooled, the graduation ``method`` (default: the one selected), the
+    age at which the insured table meets the population (``converge_age``) and the share of
+    lives who are exposed only part of the year (``turnover``).
+    """
+    crude = crude_cells(
+        death_cells(claims, rule, segment),
+        central_exposure(exposure_cells(exposure, segment), turnover),
+    )
+    crude = crude[crude["age"] <= TERMINAL_AGE]
+    out = {}
+    for sex in ("M", "F"):
+        q_pop = pop[pop["sex"] == sex].set_index("age")["qx"]
+        fits = graduate_sex(crude, q_pop, sex, years=years)
+        chosen = method or select_method(fits.comparison)
+        out[sex] = full_table(fits, chosen, q_pop, converge_age=converge_age)
+    return out
+
+
+def _segment_frames(
+    segment: str,
+    claims: pd.DataFrame,
+    exposure: pd.DataFrame,
+    pop: pd.DataFrame,
+    cnsf: pd.Series,
+    *,
+    graduate: bool = True,
+) -> dict[str, pd.DataFrame]:
+    """Every result table of one segment, before the segment column is added.
+
+    With ``graduate=False`` only the crude and pooled experience are returned (for the blended
+    market tables, which are built from their parts).
+    """
     from mortality import graduation
 
-    claims = pd.read_sql(
-        "SELECT year, age, sex, coverage, claims, amount_claimed, amount_paid FROM cnsf_vi_claims "
-        f"WHERE coverage = '{DEATH_COVER}'",
-        con,
-    )
-    exposure = pd.read_sql(
-        "SELECT year, age, sex, plan, SUM(insured) AS insured FROM cnsf_vi_exposure "
-        "GROUP BY year, age, sex, plan",
-        con,
-    )
-    pop = pd.read_sql("SELECT sex, age, qx FROM graduated_qx WHERE year = 2023", con)
-    cnsf = pd.read_sql(
-        "SELECT age, qx FROM cnsf_rates WHERE \"table\" = 'CNSF M 2013' AND variant = 'base'", con
-    ).set_index("age")["qx"]
-
-    def save(name: str, frame: pd.DataFrame) -> None:
-        frame.to_sql(name, con, if_exists="replace", index=False)
-        docs.append((name, DESCRIPTIONS[name]))
-
-    save("insured_ledger", ledger_table(claims))
-    save("insured_rules", rules_table(claims))
-
-    crude = crude_cells(death_cells(claims), exposure_cells(exposure))
+    if segment_rows(exposure, segment).empty:
+        raise ValueError(f"no insured lives in the segment {segment!r}")
+    crude = crude_cells(death_cells(claims, segment=segment), exposure_cells(exposure, segment))
     crude = crude[crude["age"] <= TERMINAL_AGE]
-    save("insured_crude", _add_references(_with_intervals(crude), pop, cnsf))
     pooled = pooled_cells(crude)
-    save("insured_pooled", _add_references(_with_intervals(pooled), pop, cnsf))
+    if not graduate:
+        return {
+            "insured_crude": _add_references(_with_intervals(crude), pop, cnsf),
+            "insured_pooled": _add_references(_with_intervals(pooled), pop, cnsf),
+        }
 
     methods, graduated, tests, table = [], [], [], []
     for sex in ("M", "F"):
@@ -631,7 +962,9 @@ def build_tables(con) -> list[tuple[str, str]]:
         chosen = select_method(fits.comparison)
         methods.append(
             fits.comparison.assign(
-                selected=lambda f, c=chosen: f["method"] == c, last_age=fits.last_age
+                selected=lambda f, c=chosen: f["method"] == c,
+                first_age=int(fits.ages[0]),
+                last_age=fits.last_age,
             )
         )
         for method in METHODS:
@@ -695,26 +1028,143 @@ def build_tables(con) -> list[tuple[str, str]]:
                 }
             )
         )
-    save("insured_methods", pd.concat(methods, ignore_index=True))
-    save("insured_graduated", pd.concat(graduated, ignore_index=True))
-    save("insured_fit_tests", pd.concat(tests, ignore_index=True))
     table_df = _add_table_references(pd.concat(table, ignore_index=True), pop, cnsf)
-    save("insured_table", table_df)
-
     trend = standardised_trend(crude)
     change = annual_change(crude, table_df[["sex", "age", "qx"]])
-    save(
-        "insured_trend",
-        pd.concat(
+    return {
+        "insured_crude": _add_references(_with_intervals(crude), pop, cnsf),
+        "insured_pooled": _add_references(_with_intervals(pooled), pop, cnsf),
+        "insured_methods": pd.concat(methods, ignore_index=True),
+        "insured_graduated": pd.concat(graduated, ignore_index=True),
+        "insured_fit_tests": pd.concat(tests, ignore_index=True),
+        "insured_table": table_df,
+        "insured_trend": pd.concat(
             [trend.assign(kind="standardised_rate"), change.assign(kind="annual_change")],
             ignore_index=True,
         ),
+    }
+
+
+def build_tables(con) -> list[tuple[str, str]]:
+    """Create the insured-lives tables from the CNSF statistics; returns (name, description)."""
+    docs: list[tuple[str, str]] = []
+    if not _has(con, "cnsf_vi_claims", "cnsf_vi_issued", "graduated_qx", "cnsf_rates"):
+        return docs
+
+    claims = pd.read_sql(
+        "SELECT year, age, sex, plan, modality, coverage, claims, amount_claimed, amount_paid "
+        f"FROM cnsf_vi_claims WHERE coverage = '{DEATH_COVER}'",
+        con,
     )
+    # lives holding the death cover: the denominator that matches the numerator
+    exposure = pd.read_sql(
+        "SELECT year, age, sex, plan, modality, SUM(insured) AS insured FROM cnsf_vi_issued "
+        f"WHERE coverage = '{DEATH_COVER}' GROUP BY year, age, sex, plan, modality",
+        con,
+    )
+    pop = pd.read_sql("SELECT sex, age, qx FROM graduated_qx WHERE year = 2023", con)
+    cnsf = pd.read_sql(
+        "SELECT age, qx FROM cnsf_rates WHERE \"table\" = 'CNSF M 2013' AND variant = 'base'", con
+    ).set_index("age")["qx"]
+
+    def save(name: str, frame: pd.DataFrame) -> None:
+        frame.to_sql(name, con, if_exists="replace", index=False)
+        docs.append((name, DESCRIPTIONS[name]))
+
+    save("insured_ledger", ledger_table(claims))
+    save("insured_rules", rules_table(claims))
+
+    collected: dict[str, list[pd.DataFrame]] = {}
+
+    def keep(segment: str, frames: dict[str, pd.DataFrame]) -> None:
+        for name, frame in frames.items():
+            collected.setdefault(name, []).append(frame.assign(segment=segment))
+
+    graduated_frames: dict[str, dict[str, pd.DataFrame]] = {}
+    for segment in GRADUATED:
+        try:
+            graduated_frames[segment] = _segment_frames(segment, claims, exposure, pop, cnsf)
+        except ValueError:  # a segment too thin to graduate is left out, not forced
+            continue
+        keep(segment, graduated_frames[segment])
+    relativity_rows: list[dict] = []
+    for segment, reference in RELATIVE.items():
+        if reference not in graduated_frames:
+            continue
+        try:
+            frames = _segment_frames(segment, claims, exposure, pop, cnsf, graduate=False)
+        except ValueError:  # no lives in this segment
+            continue
+        ref_table = graduated_frames[reference]["insured_table"]
+        keep_columns = ["sex", "age", "qx", "qx_lower", "qx_upper", "source", "method"]
+        tables = []
+        for sex in ("M", "F"):
+            ref = ref_table[ref_table["sex"] == sex]
+            pooled_sex = frames["insured_pooled"][frames["insured_pooled"]["sex"] == sex]
+            curve = fit_relative_curve(pooled_sex, ref.set_index("age")["qx"])
+            last = int(ref.loc[ref["source"] == "graduated", "age"].max())
+            q_pop = pop[pop["sex"] == sex].set_index("age")["qx"]
+            tables.append(relative_table(curve, ref[keep_columns], q_pop, last))
+        table = _add_table_references(pd.concat(tables, ignore_index=True), pop, cnsf)
+        crude = frames["insured_crude"]
+        frames["insured_table"] = table
+        frames["insured_trend"] = pd.concat(
+            [
+                standardised_trend(crude).assign(kind="standardised_rate"),
+                annual_change(crude, table[["sex", "age", "qx"]]).assign(kind="annual_change"),
+            ],
+            ignore_index=True,
+        )
+        graduated_frames[segment] = frames
+        keep(segment, frames)
+    reference = RELATIVITY_REFERENCE
+    for segment, frames in graduated_frames.items():
+        ref_table = graduated_frames[reference]["insured_table"]
+        for sex in ("M", "F"):
+            q_ref = ref_table[ref_table["sex"] == sex].set_index("age")["qx"]
+            pooled_sex = frames["insured_pooled"]
+            pooled_sex = pooled_sex[pooled_sex["sex"] == sex]
+            for ages in (RELATIVITY_AGES, (25, 44), (45, 65)):
+                if segment == reference and ages != RELATIVITY_AGES:
+                    continue
+                relativity_rows.append(
+                    {"segment": segment, "sex": sex, "reference": reference}
+                    | relativity(pooled_sex, q_ref, ages)
+                )
+    if relativity_rows:
+        save("insured_relativities", pd.DataFrame(relativity_rows))
+    for blend, members in BLENDS.items():
+        members = [m for m in members if m in graduated_frames]
+        if not members:
+            continue
+        frames = _segment_frames(blend, claims, exposure, pop, cnsf, graduate=False)
+        columns = ["sex", "age", "qx", "qx_lower", "qx_upper", "source"]
+        table = blend_tables(
+            {m: graduated_frames[m]["insured_table"][columns] for m in members},
+            {m: graduated_frames[m]["insured_pooled"] for m in members},
+        )
+        table = _add_table_references(table, pop, cnsf)
+        crude = frames["insured_crude"]
+        frames["insured_table"] = table
+        frames["insured_trend"] = pd.concat(
+            [
+                standardised_trend(crude).assign(kind="standardised_rate"),
+                annual_change(crude, table[["sex", "age", "qx"]]).assign(kind="annual_change"),
+            ],
+            ignore_index=True,
+        )
+        keep(blend, frames)
+    for name, parts in collected.items():
+        frame = pd.concat(parts, ignore_index=True)
+        order = ["segment", *[c for c in frame.columns if c != "segment"]]
+        save(name, frame[order])
     return docs
 
 
 def _add_table_references(table: pd.DataFrame, pop: pd.DataFrame, cnsf: pd.Series) -> pd.DataFrame:
-    out = table.merge(pop.rename(columns={"qx": "q_population"}), on=["sex", "age"], how="left")
+    out = floor_men_at_women(table).merge(
+        pop.rename(columns={"qx": "q_population"}), on=["sex", "age"], how="left"
+    )
     out["q_cnsf2013"] = out["age"].map(cnsf)
     out["ratio_population"] = out["qx"] / out["q_population"]
     out["ratio_cnsf2013"] = out["qx"] / out["q_cnsf2013"]

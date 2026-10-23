@@ -2316,10 +2316,18 @@ FIGURES = (
 
 
 def build_all(out: Path) -> list[Path]:
-    """Draw every figure into ``out``; returns the written paths."""
+    """Draw every figure into ``out``; returns the written paths.
+
+    The insured-lives figures of version 2 live in ``figures_insured`` and are drawn when the
+    insured tables are in the warehouse.
+    """
+    from mortality import figures_insured
+
     _style()
     con = warehouse.connect()
     try:
-        return [figure(con, out) for figure in FIGURES]
+        names = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+        insured = figures_insured.FIGURES if "insured_table" in names else ()
+        return [figure(con, out) for figure in (*FIGURES, *insured)]
     finally:
         con.close()

@@ -24,6 +24,9 @@ from mortality import (
     experience,
     graduation,
     insured,
+    insured_analysis,
+    insured_compare,
+    insured_sensitivity,
     lifetable,
     pricing,
     projection,
@@ -329,6 +332,9 @@ def build(*, paths: Paths | None = None) -> dict[str, int]:
         docs += rates.build_tables(con)
         docs += graduation.build_tables(con)
         docs += insured.build_tables(con)
+        docs += insured_compare.build_tables(con)
+        docs += insured_analysis.build_tables(con)
+        docs += insured_sensitivity.build_tables(con)
         docs += lifetable.build_tables(con)
         docs += projection.build_tables(con)
         docs += experience.build_tables(con)

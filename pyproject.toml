@@ -61,6 +61,7 @@ select = [
 "tests/**" = ["B011"]
 "app/**" = ["E501"]  # dashboard prose and chart specs read better on long lines
 "src/mortality/export.py" = ["E501"]  # prose written into the workbook
+"src/mortality/figures_insured.py" = ["E501"]  # figure titles and source lines are text
 
 # ── Tests ──
 [tool.pytest.ini_options]

@@ -86,11 +86,13 @@ def test_exposure_cells_drop_unknown_age_or_sex_and_filter_plans():
             "age": pd.array([40, 40, pd.NA, 41], dtype="Int16"),
             "sex": pd.array(["M", "M", "F", None], dtype="string"),
             "plan": ["Temporal", "Vitalicio", "Temporal", "Temporal"],
+            "modality": ["Tradicional"] * 4,
             "insured": [10.0, 5.0, 7.0, 3.0],
         }
     )
     assert insured.exposure_cells(exposure)["exposure"].tolist() == [15.0]
-    assert insured.exposure_cells(exposure, plans=("Temporal",))["exposure"].tolist() == [10.0]
+    assert insured.exposure_cells(exposure, "term")["exposure"].tolist() == [10.0]
+    assert insured.exposure_cells(exposure, "permanent")["exposure"].tolist() == [5.0]
 
 
 def test_central_exposure_shortens_by_half_the_turnover():

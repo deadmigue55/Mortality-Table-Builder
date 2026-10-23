@@ -285,6 +285,27 @@ def test_all_check_sql_is_valid(paths):
         "soa_rates": "table_id, sub_table, age, rate",
         "soa_catalog": 'table_id, "group"',
         "cnsf_rates": '"table", variant, age, qx',
+        "cnsf_vi_exposure": (
+            "year, age, plan, modality, currency, state, sex, channel, dividend_type, insured, "
+            "ceded_premium, direct_commission, investment_fund, admin_fund, dividends, "
+            "surrender_value"
+        ),
+        "cnsf_vi_issued": (
+            "year, age, coverage, plan, modality, currency, state, sex, channel, insured, "
+            "premium, sum_assured"
+        ),
+        "cnsf_vi_claims": (
+            "year, age, coverage, state, cause, plan, modality, sex, claims, amount_claimed, "
+            "maturities, amount_paid, reinsured"
+        ),
+        "cnsf_vi_control": 'year, sheet, "column", format, rows, total, non_numeric',
+        "insured_table": (
+            "segment, sex, age, qx, qx_lower, qx_upper, source, method, sex_floor, q_population, "
+            "q_cnsf2013, ratio_population, ratio_cnsf2013"
+        ),
+        "insured_crude": "segment, year, sex, age, deaths, exposure",
+        "insured_rules": "year, rule, reading, deaths, change_vs_base",
+        "insured_premiums": '"table", sex, issue_age, term, premium_per_1000, ratio_to_cnsf2013',
         "crude_rates_single": (
             "year, sex, age, exposure, deaths, mx, mx_lower, mx_upper, qx, credible"
         ),

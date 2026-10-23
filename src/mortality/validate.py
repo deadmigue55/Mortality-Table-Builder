@@ -383,6 +383,99 @@ CHECKS: tuple[Check, ...] = (
         "        > 0.1 * SUM(CASE WHEN amount_claimed > 0 THEN claims ELSE 0 END))",
         "Cancelled death claims (negative claimed amount) are under 10% of the known claims",
     ),
+    # ── Insured-lives tables ────────────────────────────────────────────────
+    Check(
+        "insured_table_complete",
+        "FAIL",
+        ("insured_table",),
+        "SELECT COUNT(*) FROM (SELECT segment, sex FROM insured_table GROUP BY segment, sex"
+        " HAVING COUNT(*) <> 111 OR MIN(age) <> 0 OR MAX(age) <> 110"
+        "  OR MIN(qx) < 0 OR MAX(qx) > 1"
+        "  OR MAX(CASE WHEN age = 110 THEN qx END) <> 1)",
+        "Every insured table has ages 0 to 110, probabilities in [0, 1] and q = 1 at 110",
+    ),
+    Check(
+        "insured_old_ages_rise",
+        "FAIL",
+        ("insured_table",),
+        "SELECT COUNT(*) FROM insured_table a JOIN insured_table b"
+        " ON b.segment = a.segment AND b.sex = a.sex AND b.age = a.age + 1"
+        " WHERE a.age >= 85 AND b.qx < a.qx - 1e-12",
+        "From age 85 the insured mortality never falls with age",
+    ),
+    Check(
+        "insured_never_above_population",
+        "FAIL",
+        ("insured_table",),
+        "SELECT COUNT(*) FROM insured_table WHERE age BETWEEN 18 AND 109"
+        " AND qx > q_population * 1.0001",
+        "Insured mortality is never above the population's (selection and underwriting)",
+    ),
+    Check(
+        "insured_below_cnsf_at_working_ages",
+        "WARN",
+        ("insured_table",),
+        "SELECT COUNT(*) FROM insured_table WHERE segment = 'all' AND age BETWEEN 25 AND 60"
+        " AND qx > q_cnsf2013",
+        "The market insured table is below the regulatory table CNSF 2013 at ages 25 to 60",
+    ),
+    Check(
+        "insured_women_below_men",
+        "WARN",
+        ("insured_table",),
+        "SELECT COUNT(*) FROM insured_table f JOIN insured_table m"
+        " ON m.segment = f.segment AND m.age = f.age AND m.sex = 'M'"
+        " WHERE f.sex = 'F' AND f.age BETWEEN 18 AND 85 AND f.qx > m.qx",
+        "Women's insured mortality is not above men's between ages 18 and 85",
+    ),
+    Check(
+        "insured_blend_between_parts",
+        "FAIL",
+        ("insured_table",),
+        "SELECT COUNT(*) FROM insured_table a JOIN ("
+        " SELECT sex, age, MIN(qx) AS lo, MAX(qx) AS hi FROM insured_table"
+        " WHERE segment IN ('term_traditional', 'credit', 'term_other', 'permanent')"
+        " GROUP BY sex, age) p ON p.sex = a.sex AND p.age = a.age"
+        " WHERE a.segment = 'all' AND (a.qx < p.lo - 1e-12 OR a.qx > p.hi + 1e-12)",
+        "The market table lies between its product tables at every sex and age",
+    ),
+    Check(
+        "insured_partition_adds_up",
+        "FAIL",
+        ("insured_crude",),
+        "SELECT COUNT(*) FROM ("
+        " SELECT year,"
+        "  SUM(CASE WHEN segment = 'all' THEN deaths END) AS a,"
+        "  SUM(CASE WHEN segment IN ('term_traditional', 'credit', 'term_other', 'permanent')"
+        "      THEN deaths END) AS p"
+        " FROM insured_crude GROUP BY year"
+        " HAVING p > a + 1e-6 OR p < 0.95 * a)",
+        "The four products hold 95% to 100% of the market's deaths in every year",
+    ),
+    Check(
+        "insured_death_readings_are_ordered",
+        "FAIL",
+        ("insured_rules",),
+        "SELECT COUNT(*) FROM ("
+        " SELECT year,"
+        "  MAX(CASE WHEN rule = 'net' THEN deaths END) AS n,"
+        "  MAX(CASE WHEN rule = 'base' THEN deaths END) AS b,"
+        "  MAX(CASE WHEN rule = 'plus_positive' THEN deaths END) AS pp,"
+        "  MAX(CASE WHEN rule = 'plus_all' THEN deaths END) AS pa"
+        " FROM insured_rules GROUP BY year"
+        " HAVING NOT (n <= b AND b <= pp AND pp <= pa))",
+        "Deaths rise from the net reading to the base, the positive and the all-rows readings",
+    ),
+    Check(
+        "insured_premiums_rise_with_age",
+        "FAIL",
+        ("insured_premiums",),
+        "SELECT COUNT(*) FROM insured_premiums a JOIN insured_premiums b"
+        ' ON b."table" = a."table" AND b.sex = a.sex AND b.term = a.term'
+        " AND b.issue_age = a.issue_age + 5"
+        " WHERE b.premium_per_1000 < a.premium_per_1000",
+        "Net term premiums rise with issue age on every table",
+    ),
     # ── Across sources ──────────────────────────────────────────────────────
     Check(
         "inegi_vs_conapo_deaths",
