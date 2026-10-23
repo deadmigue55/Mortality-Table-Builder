@@ -1,6 +1,6 @@
 [project]
 name = "mortality-table-builder"
-version = "1.0.0"
+version = "2.0.0"
 description = "End-to-end actuarial mortality tables for Mexico: official data, graduation, projection, pricing and risk."
 readme = "README.md"
 license = "MIT"
