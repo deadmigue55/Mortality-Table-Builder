@@ -54,12 +54,12 @@ Actuarial language is precise, and that precision is useful, so this project kee
 
 | Term | In plain words | Symbol | Read more |
 |---|---|---|---|
-| **A/E** (actual over expected) | Deaths that really happened divided by the deaths a reference table predicted. 1.00 means the table fits; 0.77 means 23% fewer deaths than expected | | [Experience study](../experience-study.md) |
-| **Credibility** | How much weight to put on your own data rather than on a reference table. Few deaths, little weight; many deaths, full weight | $`Z`$ | [Experience study](../experience-study.md) |
-| **Select period** | The first years after a policy is sold, when mortality is lower because the person has just passed medical underwriting | | [Experience study](../experience-study.md) |
-| **Claims lag / IBNR** | Claims for deaths that have already happened but have not been reported yet. Counting only reported claims makes the latest months look too good | | [Experience study](../experience-study.md) |
-| **GLM** | A regression that explains deaths by age, sex, policy year and other factors at once, with the right model for counts | | [Experience study](../experience-study.md) |
-| **Planted truth** | Known effects deliberately built into synthetic data to check that the method finds them: the test that a method works | | [Experience study](../experience-study.md) |
+| **A/E** (actual over expected) | Deaths that really happened divided by the deaths a reference table predicted. 1.00 means the table fits; 0.77 means 23% fewer deaths than expected | | [Ch. 7](07-experience-study.md#72-actual-to-expected-by-count-and-by-amount) |
+| **Credibility** | How much weight to put on your own data rather than on a reference table. Few deaths, little weight; many deaths, full weight | $`Z`$ | [Ch. 7](07-experience-study.md#73-how-far-to-trust-a-ratio-credibility) |
+| **Select period** | The first years after a policy is sold, when mortality is lower because the person has just passed medical underwriting | | [Ch. 7](07-experience-study.md#75-the-select-period) |
+| **Claims lag / IBNR** | Claims for deaths that have already happened but have not been reported yet. Counting only reported claims makes the latest months look too good | | [Ch. 7](07-experience-study.md#76-deaths-not-yet-reported-the-claims-lag) |
+| **GLM** | A regression that explains deaths by age, sex, policy year and other factors at once, with the right model for counts | | [Ch. 7](07-experience-study.md#74-separating-overlapping-effects-a-poisson-glm) |
+| **Planted truth** | Known effects deliberately built into synthetic data to check that the method finds them: the test that a method works | | [Ch. 7](07-experience-study.md#79-validation) |
 
 ## Looking forward and sideways
 

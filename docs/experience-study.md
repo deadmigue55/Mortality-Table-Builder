@@ -4,6 +4,8 @@ An experience study answers the question every life insurer asks each year: **ho
 
 This step builds one end to end: from a policy-level administrative extract to validated data, exact exposure, actual-to-expected ratios by count and by amount, credibility, multivariate relativities, select-period and calendar findings, a claims-reporting-lag correction, a derived company basis, and the effect on prices and reserves.
 
+**The mathematics (expected deaths, A/E, credibility, the regression, the select period, the claims lag and the basis) is derived in [handbook chapter 7](handbook/07-experience-study.md); this page is the results.**
+
 Code: `src/mortality/lexis.py` (exposure), `experience.py` (the study), `portfolio.py` (a synthetic portfolio). Tests: `tests/test_lexis.py`, `test_experience.py`, `test_portfolio.py` (43 tests).
 
 ## What is real and what is synthetic
@@ -114,7 +116,7 @@ One-way tables mislead when factors overlap: a channel that sells mostly simplif
 Two details matter:
 
 - **Pandemic years are excluded** from the relativities, because their excess varies by age and would contaminate the age effect.
-- **Dispersion** is estimated on bins of about 10 expected deaths, not cell by cell. With 155,000 sparse cells, the usual Pearson statistic is dominated by cells expecting a fraction of a death and overstates dispersion even for exactly Poisson data (1.61 here; the binned estimate is 1.27, and it is unbiased on pure-Poisson test data). Standard errors are scaled by it (quasi-Poisson).
+- **Dispersion** is estimated on bins of about 10 expected deaths, not cell by cell. With 155,000 sparse cells, the usual Pearson statistic is dominated by cells expecting a fraction of a death, where a Poisson count is far from normal, so it is noisy; the binned estimate (1.27 here) rests on cells large enough for the chi-square to hold. On exactly Poisson data both are close to 1. Standard errors are scaled by it (quasi-Poisson).
 
 **The study recovers 15 of 15 planted effects within their 95% intervals** (95% expected), with point estimates close: women 0.65 against 0.66 planted, rated risks 1.53 against 1.55, large policies 0.73 against 0.74. This is the central validation.
 
@@ -132,7 +134,7 @@ The planted select effect fades over five years. All ten estimates fall inside t
 
 A/E by calendar year shows the pandemic in the portfolio: 0.76 to 0.83 before 2020, 1.06 in 2020, 1.00 in 2021, then back to 0.83, 0.77 and 0.69 (`experience_ae_covid`, `experience_ae_quarterly`). The last value is misleading.
 
-**The latest quarter looks too good because deaths have not been reported yet.** The extract was taken 46 days after the study ended, and deaths are notified after a median of 30 days (49% within 30 days, 73% within 60, 84% within 90, 95% within 180). For the last quarter only 82% of deaths are in the extract: A/E as reported is 0.72, and 0.88 once completed. The completion factors come from the portfolio's own notification lags, using only deaths old enough that nearly all have been reported.
+**The latest quarter looks too good because deaths have not been reported yet.** The extract was taken 46 days after the study ended, and deaths are notified after a median of 32 days (49% within 30 days, 73% within 60, 84% within 90, 95% within 180). For the last quarter only 82% of deaths are in the extract: A/E as reported is 0.72, and 0.88 once completed. The completion factors come from the portfolio's own notification lags, using only deaths old enough that nearly all have been reported.
 
 Against the truth the generator knows (`experience_lag_validation`), the correction works: for the last quarter the completed count is 186 against a true 190, an error of −2.0%, where the raw count is 19.5% short. The quarter before, the raw error is −8.8% and the completed one −3.8%. The practical rule follows: **do not read the last two or three quarters raw, and do not set an assumption on them.**
 

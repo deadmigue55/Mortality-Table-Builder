@@ -339,7 +339,7 @@ print(c.whole_life_insurance(0), c.annuity_due(0))  # 0.85423  3.06109
 
 ## 5.12 Limits
 
-- **Single decrement.** Death is the only way out. Lapses and other exits belong to the experience study (chapter 7), where exposure is cut at the exit.
+- **Single decrement.** Death is the only way out. Lapses and other exits belong to the experience study ([chapter 7](07-experience-study.md)), where exposure is cut at the exit.
 - **Interest is a constant** $`i`$ in every formula here. Pricing with a yield curve changes $`v^k`$ to a product of forward factors and the commutation shortcut no longer applies.
 - **Payments at the end of the year of death** are the base case. The UDD factor (5.25) moves them to the end of the month; a payment at the moment of death needs the force of interest and is not used.
 - **The Woolhouse approximation** (5.24) drops a term that grows with $`\mu_x`$ and the interest rate; at very high ages or high rates use (5.23) or sum monthly survival directly.

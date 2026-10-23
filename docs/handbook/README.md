@@ -18,7 +18,7 @@ The [front page](../../README.md) and the [results](../results.md) say *what was
 | 4 | [Graduation](04-graduation.md) | How do we smooth rates without losing the truth? | [Graduation](../graduation.md) | `graduation.py` | done |
 | 5 | [Life tables and actuarial functions](05-life-tables.md) | How does a rate become a price? | [Life tables](../life-tables.md) | `lifetable.py` | done |
 | 6 | [Projection](06-projection.md) | How will mortality change? | [Projection](../projection.md) | `projection.py` | done |
-| 7 | Experience study | How does a company's own experience compare, and how sure is it? | [Experience study](../experience-study.md) | `experience.py` | in progress |
+| 7 | [Experience study](07-experience-study.md) | How does a company's own experience compare, and how sure is it? | [Experience study](../experience-study.md) | `experience.py` | done |
 | 8 | Pricing, profit and reserves | What should a policy cost? | [Pricing](../pricing.md) | `pricing.py` | in progress |
 | 9 | Excess mortality and stress tests | What did the pandemic cost, and what would a repeat do? | [Excess](../excess-mortality.md), [stress](../stress-tests.md) | `excess.py`, `stress.py` | in progress |
 | 10 | Reinsurance | How is risk shared and priced? | [Reinsurance](../reinsurance.md) | `reinsurance.py` | in progress |

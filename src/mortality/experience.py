@@ -353,10 +353,10 @@ def binned_dispersion(observed, fitted, n_params: int, bin_size: float = 10.0) -
     """Overdispersion of a Poisson fit, estimated on bins that have enough expected deaths.
 
     With 100,000 sparse cells the usual Pearson statistic is dominated by cells that expect a
-    fraction of a death, where a Poisson count is far from normal, and it overstates the
-    dispersion even for data that are exactly Poisson. Cells are sorted by fitted value and pooled
-    into bins of about ``bin_size`` expected deaths; the Pearson statistic of the bins, divided
-    by their degrees of freedom, is a stable estimate. Values below 1 are reported as 1.
+    fraction of a death, where a Poisson count is far from normal, so it is noisy. Cells are
+    sorted by fitted value and pooled into bins of about ``bin_size`` expected deaths; the
+    Pearson statistic of the bins, divided by their degrees of freedom, is a stable estimate.
+    Values below 1 are reported as 1.
     """
     o = np.asarray(observed, dtype=float)
     f = np.asarray(fitted, dtype=float)

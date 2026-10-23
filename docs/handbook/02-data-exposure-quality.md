@@ -222,7 +222,7 @@ The four pieces add to 625 days, $`625/365.25 = 1.71116`$ years, the time from e
 | (2.10), (2.11) | `quality.completion_factors`, `tail_factor`, `complete_cells` | `test_the_tail_factor_multiplies_every_completion_factor`, `test_complete_cells_scales_reported_deaths_by_the_age_band_factor` |
 | (2.12) | `quality.COVID_SHARE_THRESHOLD` | `test_a_year_is_a_covid_year_from_one_percent_coded_deaths` |
 | (2.13) | `lexis.lexis_split` | `test_lexis_toy_example_pieces_and_days`, `test_pieces_add_up_to_the_observation_time_for_random_policies`, `test_each_piece_sits_inside_one_duration_and_one_calendar_year`, `test_the_number_of_pieces_is_one_plus_the_cut_dates_inside` |
-| (2.14) | the experience study (chapter 7) | `test_the_central_rate_is_the_maximum_likelihood_estimate` |
+| (2.14) | the experience study ([chapter 7](07-experience-study.md)) | `test_the_central_rate_is_the_maximum_likelihood_estimate` |
 | Section 2.8, tables | `quality.build_tables` | `test_chapter_numbers_match_the_database` |
 
 To reproduce the Lexis example of section 2.7:
@@ -242,7 +242,7 @@ print(lexis_split(day("2018-06-15"), day("2018-06-15"), day("2020-03-01")))
 - **The chain ladder assumes stable development.** The lag-1 share has varied between years, lag-3 factors rest on a single year, and the 2024 completion carries an uncertainty of about 2,800 deaths (0.35%). The table `registration_completion` keeps the pieces, so any assumption can be changed and the build rerun. The method gives a point estimate; it does not give a prediction interval.
 - **The heaping indices average over age ranges and over both sexes.** A rounding effect confined to one sex, such as the small one found in chapter 4, can hide inside a "highly accurate" index.
 - **The tail is estimated from two years.** Deaths registered five or more years late are 0.07% of the total; even a large error in that estimate moves no figure by more than a few hundred deaths.
-- **Exposure by date is exact only for the policies in the extract.** If the extract omits lives or misdates exits, the split reproduces the error exactly: it cleans no data, it only avoids adding a second source of error. Chapter 7 validates the extract before the split.
+- **Exposure by date is exact only for the policies in the extract.** If the extract omits lives or misdates exits, the split reproduces the error exactly: it cleans no data, it only avoids adding a second source of error. [Chapter 7](07-experience-study.md#71-exposure-and-expected-deaths) validates the extract before the split.
 
 ## References
 

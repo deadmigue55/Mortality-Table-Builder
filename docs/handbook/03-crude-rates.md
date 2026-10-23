@@ -171,7 +171,7 @@ $$
 
 Here $`A`$ is the actual number of deaths and $`E`$ the number the table predicts. A ratio of 3 means the population dies three times as fast as the table says. The project reports it by five-year band for ages 25 to 84 (the range every benchmark table covers) and for the total of those bands, against CNSF 2013 and nine SOA tables for Mexico. Mexico's rate is also divided, band by band, by that of each country in the Human Mortality Database (a plain ratio of crude rates, with no interval).
 
-The intervals here are extremely narrow, because the counts are in the hundreds of thousands. They describe random variation only. They say nothing about whether the table fits an *insured* book, which is selected and healthier than the population: that question needs company experience, and it is the subject of chapter 7.
+The intervals here are extremely narrow, because the counts are in the hundreds of thousands. They describe random variation only. They say nothing about whether the table fits an *insured* book, which is selected and healthier than the population: that question needs company experience, and it is the subject of [chapter 7](07-experience-study.md).
 
 ## 3.9 When is a rate credible?
 
@@ -181,7 +181,7 @@ $$
 \lambda \ \ge\ n_F = \left(\frac{z_{(1+p)/2}}{k}\right)^{2}. \tag{3.19}
 $$
 
-For $`p = 90\%`$ and $`k = 5\%`$ this is $`(1.645/0.05)^2 = 1{,}082`$ deaths, the **full credibility standard** (a Poisson count of 1,082 really does land within 5% of its mean about 90% of the time). The project flags a cell as **thin** when it has fewer than 30 deaths, a floor below which a rate is noise, not a claim of credibility: 1,082 is the bar for a rate to stand on its own, and everything in between is the work of credibility weighting in chapter 7.
+For $`p = 90\%`$ and $`k = 5\%`$ this is $`(1.645/0.05)^2 = 1{,}082`$ deaths, the **full credibility standard** (a Poisson count of 1,082 really does land within 5% of its mean about 90% of the time). The project flags a cell as **thin** when it has fewer than 30 deaths, a floor below which a rate is noise, not a claim of credibility: 1,082 is the bar for a rate to stand on its own, and everything in between is the work of [credibility weighting in chapter 7](07-experience-study.md#73-how-far-to-trust-a-ratio-credibility).
 
 ## 3.10 Examples you can check by hand
 
