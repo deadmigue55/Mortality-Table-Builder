@@ -173,7 +173,7 @@ Development: `uv run pytest`, `uv run ruff check . && uv run ruff format .`, `uv
 ```
 Mortality-Table-Builder/
 ├── docs/handbook/   # the math: one chapter per step, notation and glossary
-├── docs/            # results write-ups, data sources, warehouse catalog, figures
+├── docs/            # results write-ups, data sources, warehouse catalog, figures, design research
 ├── src/mortality/   # the package: ingest, quality, rates, graduation, lifetable, projection,
 │                    #   experience, excess, pricing, stress, reinsurance, insured*, export, validate
 ├── app/             # the Streamlit dashboard and its shareable demo bundle
