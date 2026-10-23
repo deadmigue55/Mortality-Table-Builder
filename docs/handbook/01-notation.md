@@ -93,7 +93,7 @@ The notation is the International Actuarial Notation, with the symbols below.
 - **Money** is written MXN (Mexican pesos). Premiums are quoted per 1,000 of sum assured unless stated.
 - **Local symbols.** The chapters on graduation, projection and the experience study reuse Greek letters ($`\alpha_x`$, $`\beta_x`$, $`\kappa_t`$ in the Lee-Carter model; $`\theta`$ for spline coefficients). Each declares its own symbols in its first lines, and none of them uses a symbol of §1.4 or §1.5 for something else.
 - **Uncertainty** is stated with 95% intervals unless another level is given.
-- **Writing formulas.** Display equations go between two lines that contain only `$$`. Inline formulas are written with a backtick inside the dollars, as in `` $`q_x`$ `` (not `$q_x$`), because GitHub reads Markdown before math and a plain inline formula with underscores can be turned into italics. `node scripts/mathcheck/check.mjs` rejects the plain form.
+- **Writing formulas.** Display equations go between two lines that contain only `$$`, with a blank line before the first and after the second (GitHub draws a display block that touches a text line as plain text). Inline formulas are written with a backtick inside the dollars, as in `` $`q_x`$ `` (not `$q_x$`), because GitHub reads Markdown before math and a plain inline formula with underscores can be turned into italics. `node scripts/mathcheck/check.mjs` rejects the plain form.
 
 ## 1.7 Where each symbol lives in the code
 

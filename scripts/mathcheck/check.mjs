@@ -39,6 +39,7 @@ export function extract(text) {
   const problems = [];
   let fence = null;
   let block = null;
+  let closedAt = -1;
   lines.forEach((raw, i) => {
     const lineNo = i + 1;
     const line = raw.replace(/\r$/, "");
@@ -53,12 +54,21 @@ export function extract(text) {
       if (trimmed === "$$") {
         formulas.push({ tex: block.lines.join("\n"), display: true, line: block.start });
         block = null;
+        closedAt = lineNo;
       } else {
         block.lines.push(line);
       }
       return;
     }
+    // GitHub only reads a display block that is a paragraph of its own: a blank line before the
+    // opening $$ and after the closing $$ (found when one such block was drawn as plain text)
+    if (closedAt === lineNo - 1 && trimmed !== "") {
+      problems.push({ line: lineNo, message: "write a blank line after the closing $$ of a display formula" });
+    }
     if (trimmed === "$$") {
+      if (i > 0 && lines[i - 1].trim() !== "") {
+        problems.push({ line: lineNo, message: "write a blank line before the opening $$ of a display formula" });
+      }
       block = { start: lineNo, lines: [] };
       return;
     }

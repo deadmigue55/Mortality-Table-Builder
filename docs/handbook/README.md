@@ -5,7 +5,7 @@
 The [front page](../../README.md) and the [results](../results.md) say *what was found*, in plain words. This handbook says *how, and why you can believe it*: each method is derived step by step in LaTeX, checked against a worked example small enough to do by hand, and tied to the function that implements it and the test that proves the two agree.
 
 > [!TIP]
-> **How to read it.** New to actuarial work? Start with the [glossary](00-glossary.md), then the [notation](01-notation.md), then chapter 5, which is a complete small theory in itself. Already an actuary? Go straight to the chapter you want: every chapter opens with a one-minute summary, so you can see in a minute whether it holds what you need.
+> **How to read it.** New to actuarial work? Start with the [glossary](00-glossary.md), then the [notation](01-notation.md), then chapter 4 (how rates are smoothed) and chapter 5 (how they become prices), each a complete small theory in itself. Already an actuary? Go straight to the chapter you want: every chapter opens with a one-minute summary, so you can see in a minute whether it holds what you need.
 
 ## The chapters
 
@@ -15,7 +15,7 @@ The [front page](../../README.md) and the [results](../results.md) say *what was
 | 1 | [Notation and conventions](01-notation.md) | What does each symbol mean, once and for all? | | | done |
 | 2 | Data, exposure and quality | How do records become exposure and rates? | [Data quality](../data-quality.md), [warehouse](../warehouse.md) | `quality.py`, `lexis.py` | in progress |
 | 3 | Crude rates and comparison | How big is the gap, and how sure are we? | [Crude rates](../crude-rates.md) | `rates.py` | in progress |
-| 4 | Graduation | How do we smooth rates without losing the truth? | [Graduation](../graduation.md) | `graduation.py` | in progress |
+| 4 | [Graduation](04-graduation.md) | How do we smooth rates without losing the truth? | [Graduation](../graduation.md) | `graduation.py` | done |
 | 5 | [Life tables and actuarial functions](05-life-tables.md) | How does a rate become a price? | [Life tables](../life-tables.md) | `lifetable.py` | done |
 | 6 | Projection | How will mortality change? | [Projection](../projection.md) | `projection.py` | in progress |
 | 7 | Experience study | How does a company's own experience compare, and how sure is it? | [Experience study](../experience-study.md) | `experience.py` | in progress |
@@ -41,7 +41,7 @@ A mathematical document that nobody can check rots. Three safeguards keep this o
 
 1. **Every formula is tested against the code.** `tests/test_handbook_*.py` evaluates the identities of a chapter numerically (for example $`A_x = 1 - d\,\ddot{a}_x`$ at every age, or prospective equals retrospective reserve) and fails if the software and the text disagree. While writing chapter 5 this caught a sentence that overstated what the code returns above the oldest age; the text and the docstring were corrected.
 2. **Every formula is syntax-checked.** `node scripts/mathcheck/check.mjs` renders each LaTeX expression with KaTeX and rejects any that does not parse.
-3. **Every formula is drawn by GitHub.** Valid LaTeX can still be broken by Markdown: GitHub reads italics before math. `scripts/mathcheck/github_render.py` sends each chapter through GitHub's own renderer and counts the formulas it draws against the formulas written. It caught 6 broken formulas in chapter 5 that the syntax check could not see, which is why inline math is written with a backtick inside the dollars.
+3. **Every formula is drawn by GitHub.** Valid LaTeX can still be broken by Markdown: GitHub reads italics before math. `scripts/mathcheck/github_render.py` sends each chapter through GitHub's own renderer and counts the formulas it draws against the formulas written. It caught 6 broken formulas in chapter 5 that the syntax check could not see, which is why inline math is written with a backtick inside the dollars. It later caught a display equation that touched a text line (chapter 4), so the syntax checker now insists on a blank line before and after every `$$` block.
 4. **Every number comes from the data.** Results quoted in the chapters are the ones the pipeline produces, and a worked example's numbers are asserted in a test, so a changed method cannot leave a stale figure behind.
 
 ## References

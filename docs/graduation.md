@@ -2,6 +2,8 @@
 
 Crude death rates are noisy, and at the oldest ages they are wrong in a systematic way. Graduation turns them into smooth, credible rates that a life table can be built on. This step fits four methods to every year (2020 to 2024) and sex, picks the smoothing with a stated criterion, tests every fit, closes the table at age 110, and writes the result to the warehouse as `graduated_qx`.
 
+**The mathematics, derived step by step and checked by hand, is in [handbook chapter 4](handbook/04-graduation.md).** This page is the results.
+
 Code: `src/mortality/graduation.py` (pure NumPy/pandas functions, 22 unit tests in `tests/test_graduation.py` on synthetic data with a known truth). Charts: `uv run mortality figures`.
 
 ## The four methods

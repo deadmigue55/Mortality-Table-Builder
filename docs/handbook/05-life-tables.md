@@ -3,7 +3,7 @@
 > [!NOTE]
 > **In one minute.** A life table follows an imaginary group of 100,000 newborns through the mortality rates of one year and sex, and records how many are alive at each age. Everything an insurer prices comes out of that single column of survivors: how long people live, what a promise to pay at death is worth today, what a pension costs. The only mathematics needed is a recursion ($`\ell_{x+1} = \ell_x p_x`$), a discount factor ($`v = 1/(1+i)`$) and sums.
 >
-> **What this chapter does:** it turns the graduated rates of [chapter 4](../graduation.md) into complete life tables, derives every actuarial function from them, and shows how each formula is checked against the code.
+> **What this chapter does:** it turns the graduated rates of [chapter 4](04-graduation.md) into complete life tables, derives every actuarial function from them, and shows how each formula is checked against the code.
 >
 > **The number to remember.** In 2023 a Mexican man could expect to live $`\mathring{e}_0 = 72.9`$ years and a woman 78.9. A life annuity of 1 a year at 65 costs 12.21 for men on this table and 14.94 on the regulator's CNSF 2013 table.
 
@@ -39,7 +39,7 @@ A graduated table gives $`q_x`$ directly and the integral is never evaluated: (5
 
 ## 5.2 The separation factor
 
-The graduation of chapter 4 produces **two** rates for each age: the probability $`q_x`$ and the central rate $`m_x`$ (deaths per person-year lived). They are different numbers because the people who die during the year do not live all of it. To keep a table consistent with both, we need the average fraction of the year lived by those who die in it, the **separation factor** $`\phi_x`$.
+The graduation of [chapter 4](04-graduation.md) produces **two** rates for each age: the probability $`q_x`$ and the central rate $`m_x`$ (deaths per person-year lived). They are different numbers because the people who die during the year do not live all of it. To keep a table consistent with both, we need the average fraction of the year lived by those who die in it, the **separation factor** $`\phi_x`$.
 
 Let $`L_x`$ be the person-years lived between $`x`$ and $`x+1`$. The $`\ell_{x+1}`$ survivors each contribute a full year and the $`d_x`$ decedents contribute $`\phi_x`$ of a year on average:
 
@@ -343,7 +343,7 @@ print(c.whole_life_insurance(0), c.annuity_due(0))  # 0.85423  3.06109
 - **Interest is a constant** $`i`$ in every formula here. Pricing with a yield curve changes $`v^k`$ to a product of forward factors and the commutation shortcut no longer applies.
 - **Payments at the end of the year of death** are the base case. The UDD factor (5.25) moves them to the end of the month; a payment at the moment of death needs the force of interest and is not used.
 - **The Woolhouse approximation** (5.24) drops a term that grows with $`\mu_x`$ and the interest rate; at very high ages or high rates use (5.23) or sum monthly survival directly.
-- **Above the credible age** the table follows the closure of chapter 4 (Kannisto) and not data: every value that depends on those ages, such as $`e^{\dagger}`$ and long annuities, carries that assumption.
+- **Above the credible age** the table follows the closure of [chapter 4](04-graduation.md#48-closing-the-table-at-the-oldest-ages) (Kannisto) and not data: every value that depends on those ages, such as $`e^{\dagger}`$ and long annuities, carries that assumption.
 
 ## References
 

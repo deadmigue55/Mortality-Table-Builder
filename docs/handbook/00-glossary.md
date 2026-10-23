@@ -20,13 +20,18 @@ Actuarial language is precise, and that precision is useful, so this project kee
 
 | Term | In plain words | Symbol | Read more |
 |---|---|---|---|
-| **Graduation** | Smoothing the wobbly crude rates into a clean curve by age, without erasing real features | | [Ch. 4](../graduation.md) |
+| **Graduation** | Smoothing the wobbly crude rates into a clean curve by age, without erasing real features | | [Ch. 4](04-graduation.md) |
+| **Smoothing parameter** | The dial that sets how smooth the graduated curve is: low follows every wiggle of the data, high flattens real features. Chosen by a stated rule, not by eye | $`\lambda`$ | [Ch. 4](04-graduation.md#45-how-smooth-is-smooth-enough) |
+| **Effective parameters** | How many free "knobs" a smoothed curve really uses: between 2 (a straight line on the log scale) and the number of ages. The P-spline here uses 33 to 39 | $`\mathrm{edf}`$ | [Ch. 4](04-graduation.md#43-whittaker-henderson) |
+| **Deviance** | A measure of how far a fitted curve is from the data, built from the likelihood of the death counts. Zero is a perfect fit; larger is worse | $`\mathrm{Dev}`$ | [Ch. 4](04-graduation.md#42-measuring-misfit-deviance-and-residuals) |
+| **Dispersion** | How many times more scatter the data show than pure chance would. 1 is pure chance; men's death counts here run 1.9 to 3.1 | $`\psi`$ | [Ch. 4](04-graduation.md#45-how-smooth-is-smooth-enough) |
+| **Standardized residual** | The gap between observed and fitted deaths, in units of chance variation. Beyond 2 happens about 1 time in 22 for a good fit | $`z_x`$ | [Ch. 4](04-graduation.md#47-tests-of-fit) |
 | **Life table** | A table that follows 100,000 imaginary newborns through one year's mortality rates and records how many are alive at each age | $`\ell_x`$ | [Ch. 5](05-life-tables.md) |
 | **Radix** | The starting size of the imaginary group (100,000) | $`\ell_0`$ | [Ch. 5](05-life-tables.md) |
 | **Separation factor** | The average share of a year lived by people who die in it. It is what turns a death *rate* into a death *probability*: $`q = m / (1 + (1 - \phi)\,m)`$ | $`\phi_x`$ | [Ch. 5](05-life-tables.md#52-the-separation-factor) |
 | **Life expectancy** | The average number of years a newborn (or a person of a given age) can expect to live, if today's death rates stayed fixed | $`\mathring{e}_x`$ | [Ch. 5](05-life-tables.md#53-person-years-and-life-expectancy) |
 | **Lifespan disparity** | The average number of years of life lost at death. High when many people die young as well as old: how *unequal* lifespans are | $`e^{\dagger}`$ | [Ch. 5](05-life-tables.md#55-summary-measures) |
-| **Closure** (old-age) | Rates at the oldest ages are unreliable, so they are replaced by a fitted curve (here, a Kannisto logistic) instead of read from the data | | [Ch. 4](../graduation.md) |
+| **Closure** (old-age) | Rates at the oldest ages are unreliable, so they are replaced by a fitted curve (here, a Kannisto logistic) instead of read from the data | | [Ch. 4](04-graduation.md#48-closing-the-table-at-the-oldest-ages) |
 
 ## Pricing and reserves
 
