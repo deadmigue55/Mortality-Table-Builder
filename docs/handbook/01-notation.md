@@ -34,7 +34,7 @@ Observed quantities come from records and are written in calligraphic type so th
 |---|---|---|
 | $`\mathcal{D}_{x,t}`$ | Observed deaths at age $`x`$ in year $`t`$ | INEGI registered deaths, completed for late registration |
 | $`\mathcal{E}_{x,t}`$ | Central exposure: person-years lived at age $`x`$ in year $`t`$ | CONAPO mid-year population, or exact Lexis exposure for a policy book |
-| $`\hat m_{x,t}`$ | Crude central rate, $`\mathcal{D}_{x,t} / \mathcal{E}_{x,t}`$ | Chapter 3 |
+| $`\hat m_{x,t}`$ | Crude central rate, $`\mathcal{D}_{x,t} / \mathcal{E}_{x,t}`$ | [Chapter 3](03-crude-rates.md) |
 
 ## 1.4 The life table
 

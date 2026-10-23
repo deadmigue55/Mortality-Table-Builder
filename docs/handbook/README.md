@@ -14,7 +14,7 @@ The [front page](../../README.md) and the [results](../results.md) say *what was
 | | [Glossary](00-glossary.md) | What does each term mean? | | | done |
 | 1 | [Notation and conventions](01-notation.md) | What does each symbol mean, once and for all? | | | done |
 | 2 | Data, exposure and quality | How do records become exposure and rates? | [Data quality](../data-quality.md), [warehouse](../warehouse.md) | `quality.py`, `lexis.py` | in progress |
-| 3 | Crude rates and comparison | How big is the gap, and how sure are we? | [Crude rates](../crude-rates.md) | `rates.py` | in progress |
+| 3 | [Crude rates and comparison](03-crude-rates.md) | How big is the gap, and how sure are we? | [Crude rates](../crude-rates.md) | `rates.py` | done |
 | 4 | [Graduation](04-graduation.md) | How do we smooth rates without losing the truth? | [Graduation](../graduation.md) | `graduation.py` | done |
 | 5 | [Life tables and actuarial functions](05-life-tables.md) | How does a rate become a price? | [Life tables](../life-tables.md) | `lifetable.py` | done |
 | 6 | Projection | How will mortality change? | [Projection](../projection.md) | `projection.py` | in progress |

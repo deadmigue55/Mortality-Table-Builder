@@ -2,6 +2,8 @@
 
 This step turns the analysis-ready deaths from [data-quality.md](data-quality.md) into death rates, and uses them for a first look at the questions the rest of the project answers: how heavy is Mexican mortality, how did the pandemic move it, and how does it compare with the tables insurers use?
 
+**The mathematics behind each method is in [handbook chapter 3](handbook/03-crude-rates.md); this page is the results.**
+
 Everything is built by `uv run mortality db build` (tables) and `uv run mortality figures` (the charts below), from the code in `src/mortality/rates.py` and `figures.py`. The statistical functions are plain pandas/NumPy with unit tests in `tests/test_rates.py`.
 
 ## Method in brief

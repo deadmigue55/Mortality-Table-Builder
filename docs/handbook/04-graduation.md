@@ -3,7 +3,7 @@
 > [!NOTE]
 > **In one minute.** A crude death rate is a count divided by a count, and counts are noisy: even in a country of 130 million people, the number of deaths at age 53 in one year is partly luck. A life table built on those raw rates would zigzag, and every price built on it would inherit the zigzag. **Graduation** draws a smooth curve through the crude rates, with a stated rule for how smooth is smooth enough, a measure of how much uncertainty is left, and a set of tests that say whether the curve has thrown away something real.
 >
-> **What this chapter does:** it turns the crude rates of chapter 3 into the graduated rates that [chapter 5](05-life-tables.md) builds life tables on. It derives the two smoothers the project uses (Whittaker-Henderson and the Poisson P-spline), the rule that chooses their smoothness, the two parametric laws they are compared with, the old-age closure that carries the table to age 110, and the tests that judge every fit.
+> **What this chapter does:** it turns the crude rates of [chapter 3](03-crude-rates.md) into the graduated rates that [chapter 5](05-life-tables.md) builds life tables on. It derives the two smoothers the project uses (Whittaker-Henderson and the Poisson P-spline), the rule that chooses their smoothness, the two parametric laws they are compared with, the old-age closure that carries the table to age 110, and the tests that judge every fit.
 >
 > **The number to remember.** In 2023 the P-spline's deviance (a measure of misfit, section 4.3) was 99 for women and 129 for men; Heligman-Pollard, the classic eight-parameter law, was **8.8 and 8.7 times worse**. A smooth law is not a smooth curve through the data: the data have shapes a law does not allow.
 
