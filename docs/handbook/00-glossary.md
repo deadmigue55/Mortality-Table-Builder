@@ -9,12 +9,12 @@ Actuarial language is precise, and that precision is useful, so this project kee
 | **Death rate** (central rate) | Deaths in a year divided by the years of life lived by the group. "Out of every 1,000 person-years, how many ended in death?" | $`m_x`$ | [Ch. 3](03-crude-rates.md), [Ch. 5](05-life-tables.md) |
 | **Probability of dying** | The chance that someone exactly $`x`$ years old does not reach their next birthday. Close to the death rate, but not the same number (see *separation factor*) | $`q_x`$ | [Ch. 5](05-life-tables.md#52-the-separation-factor) |
 | **Force of mortality** | The instantaneous risk of dying at an exact age, the rate the probability is built from | $`\mu_x`$ | [Ch. 5](05-life-tables.md#51-from-rates-to-a-table) |
-| **Exposure** | The denominator of every rate: person-years actually lived at risk. A person who is alive for 3 months of a year adds 0.25 | $`\mathcal{E}_{x,t}`$ | [Data quality](../data-quality.md), [Ch. 3](03-crude-rates.md) |
+| **Exposure** | The denominator of every rate: person-years actually lived at risk. A person who is alive for 3 months of a year adds 0.25 | $`\mathcal{E}_{x,t}`$ | [Ch. 2](02-data-exposure-quality.md#26-exposure-from-dates-the-lexis-split), [Ch. 3](03-crude-rates.md) |
 | **Crude rate** | The raw rate, deaths over exposure, before any smoothing. It wobbles from age to age because deaths are random | $`\hat{m}_{x,t}`$ | [Ch. 3](03-crude-rates.md) |
 | **Age-standardized rate** | A rate recomputed as if every year (or place) had the same age mix, so that comparing them does not just compare how old each population is | | [Ch. 3](03-crude-rates.md#36-direct-standardization) |
 | **SMR** (standardized mortality ratio) | Deaths that happened divided by the deaths the national rates would predict for that age and sex mix. 1.19 means 19% more deaths than expected | | [Ch. 3](03-crude-rates.md#37-indirect-standardization-the-smr) |
-| **Age heaping / Whipple index** | The habit of reporting ages that end in 0 or 5. The Whipple index is 100 when ages are reported evenly and rises with heaping | | [Data quality](../data-quality.md) |
-| **Late registration** | Deaths that occurred in a year but were officially registered in a later one. The latest year is always incomplete until they are added back | | [Data quality](../data-quality.md) |
+| **Age heaping / Whipple index** | The habit of reporting ages that end in 0 or 5. The Whipple index is 100 when ages are reported evenly and rises with heaping | | [Ch. 2](02-data-exposure-quality.md#22-do-certificates-round-ages-heaping-indices) |
+| **Late registration** | Deaths that occurred in a year but were officially registered in a later one. The latest year is always incomplete until they are added back | | [Ch. 2](02-data-exposure-quality.md#24-late-registration-the-chain-ladder) |
 
 ## Building a table
 

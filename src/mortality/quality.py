@@ -40,7 +40,8 @@ def whipple_index(counts: pd.Series, lo: int = 23, hi: int = 62) -> float:
     """Whipple index: 100 when ages ending in 0 or 5 hold exactly their fair fifth.
 
     ``counts`` is indexed by single year of age. 500 means every record is on a 0 or 5.
-    Deaths rise with age, which tilts the index slightly upward even without heaping.
+    The eight heaped ages have the same mean age as the forty, so any straight-line age
+    profile scores exactly 100; a smooth curve moves it by under a point.
     """
     c = _by_age(counts, lo, hi)
     total = c.sum()

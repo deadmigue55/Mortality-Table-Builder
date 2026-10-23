@@ -78,7 +78,7 @@ Every step is explained in plain words on this page and in [the results](docs/re
 | # | Step | The question it answers | Results | The math |
 |:-:|---|---|---|---|
 | 1 | **Ingestion** | Where does every number come from? | [Sources](docs/data-sources.md), [warehouse](docs/warehouse.md) | |
-| 2 | **Data quality** | Can the records be trusted, and what is missing? | [Data quality](docs/data-quality.md) | Chapter 2 |
+| 2 | **Data quality** | Can the records be trusted, and what is missing? | [Data quality](docs/data-quality.md) | [**Chapter 2**](docs/handbook/02-data-exposure-quality.md) |
 | 3 | **Crude rates** | How big is the gap, and how sure are we? | [Crude rates](docs/crude-rates.md) | [**Chapter 3**](docs/handbook/03-crude-rates.md) |
 | 4 | **Graduation** | How do we smooth the rates without losing the truth? | [Graduation](docs/graduation.md) | [**Chapter 4**](docs/handbook/04-graduation.md) |
 | 5 | **Life tables** | How does a death rate become a price? | [Life tables](docs/life-tables.md) | [**Chapter 5**](docs/handbook/05-life-tables.md) |

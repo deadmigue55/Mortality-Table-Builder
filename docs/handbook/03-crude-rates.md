@@ -3,7 +3,7 @@
 > [!NOTE]
 > **In one minute.** A death rate is a count of deaths divided by the years of life the group lived. This chapter is about doing that division honestly: where the two numbers come from, how much luck is in them, and how to compare rates across years, regions and published tables without being fooled by differences in age. The tools are small (a Poisson interval, a weighted average, a ratio of observed to expected), but each one answers a question that a careless comparison gets wrong.
 >
-> **What this chapter does:** it turns the cleaned deaths and the population of chapter 2 into the crude rates that [chapter 4](04-graduation.md) smooths, and it builds the comparisons the project's headline findings rest on: against the regulator's table, across the pandemic, and between states.
+> **What this chapter does:** it turns the cleaned deaths and the population of [chapter 2](02-data-exposure-quality.md) into the crude rates that [chapter 4](04-graduation.md) smooths, and it builds the comparisons the project's headline findings rest on: against the regulator's table, across the pandemic, and between states.
 >
 > **The number to remember.** In 2019, before the pandemic, Mexican men aged 25 to 84 died at **3.03 times** the rate the regulator's CNSF 2013 table predicts (1.85 times for women). In 2020 the age-standardized male death rate jumped **51%**, from 637 to 960 per 100,000.
 
@@ -49,7 +49,7 @@ $$
 
 Dividing by the exposure (taken as known) gives the interval for the rate. Three properties matter.
 
-**It works for fractional counts.** The gamma form needs no integer $`d`$, which matters because the deaths used here are *adjusted* (late registrations completed and unknowns spread, chapter 2), so they are not whole numbers.
+**It works for fractional counts.** The gamma form needs no integer $`d`$, which matters because the deaths used here are *adjusted* (late registrations completed and unknowns spread, [chapter 2](02-data-exposure-quality.md#23-deaths-with-missing-sex-or-age)), so they are not whole numbers.
 
 **It is conservative.** Because a Poisson count takes only whole values, an exact interval cannot cover exactly 95%; it covers *at least* 95% for every true mean:
 
@@ -117,7 +117,7 @@ $$
 \mathcal{D}'_{x,s} = \mathcal{D}_{x,s}\left(1 + \frac{U_s}{\sum_x \mathcal{D}_{x,s}}\right). \tag{3.12}
 $$
 
-Both steps conserve the total ($`M' + F' = M + F + U`$ and $`\sum_x \mathcal{D}'_{x,s} = \sum_x \mathcal{D}_{x,s} + U_s`$). The assumption is that a missing label is unrelated to the person's age and sex (a **missing-at-random** assumption). The unknowns are 0.5% to 0.7% of deaths in these tables, so the effect of the assumption is small; the microdata from 2020 on are treated the same way in chapter 2.
+Both steps conserve the total ($`M' + F' = M + F + U`$ and $`\sum_x \mathcal{D}'_{x,s} = \sum_x \mathcal{D}_{x,s} + U_s`$). The assumption is that a missing label is unrelated to the person's age and sex (a **missing-at-random** assumption). The unknowns are 0.5% to 0.7% of deaths in these tables, so the effect of the assumption is small; the microdata from 2020 on are treated the same way in [chapter 2](02-data-exposure-quality.md#23-deaths-with-missing-sex-or-age).
 
 ## 3.6 Direct standardization
 
@@ -224,7 +224,7 @@ The pooled rates are $`42/40\,000 = 0.00105`$ (young) and $`260/10\,000 = 0.026`
 
 The age-standardized rates sit nearly flat from 2014 to 2019, jump in the pandemic, and by 2024 are back at the pre-pandemic level (for 2023 and 2024 on CONAPO's projected population, section 3.13). Men aged 25 to 29 were at 4.30 times the CNSF 2013 table in 2019, falling to 1.98 times at 80 to 84: the table is too light for the young adults most.
 
-*Registered versus occurred deaths.* From 2020 the rates use deaths by year of **occurrence**; before that only the INEGI tables by year of **registration** exist. The two bases are close: the ratio of registered to occurred deaths is 0.994 to 1.007 in every year from 2020 to 2024, so 2014 to 2019 is a fair baseline.
+*Registered versus occurred deaths.* From 2020 the rates use deaths by year of **occurrence**; before that only the INEGI tables by year of **registration** exist. The two bases are close: the ratio of registered to occurred deaths is 0.994 to 1.007 in every year from 2020 to 2024, so 2014 to 2019 is a fair baseline. (The registered count includes the 0.1% to 0.2% of deaths of known residents abroad, which the occurrence series leaves out; restricted to residents of Mexico the difference runs from -0.7% in 2020 to +0.5% in 2024.)
 
 *States.* In 2023 the 32 states range from an SMR of 0.81 (Sinaloa; Guerrero 0.85) to 1.19 (Chihuahua; Colima 1.18). These compare registered deaths with a projected population, so registration coverage and migration move them along with true risk: they are a rating-factor starting point, not a causal finding.
 

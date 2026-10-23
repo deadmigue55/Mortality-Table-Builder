@@ -1,6 +1,6 @@
 # Data quality
 
-Step 3 asks whether the death and population data can be trusted before any rate is computed, and corrects what can be corrected. All numbers below are from the October 2026 build and are reproduced by `uv run mortality db build`.
+Step 3 asks whether the death and population data can be trusted before any rate is computed, and corrects what can be corrected. **The method behind each correction is derived, with worked examples, in [handbook chapter 2](handbook/02-data-exposure-quality.md); this page is the results.** All numbers below are from the October 2026 build and are reproduced by `uv run mortality db build`.
 
 The output is the table **`deaths_adjusted`**: national deaths by year of occurrence, sex and single age, with every correction in its own column so nothing is hidden:
 
@@ -20,8 +20,8 @@ Rates divide deaths by the mid-year population of people living in Mexico, so th
 
 | Group | Share of deaths | Treatment |
 |---|---:|---|
-| Residents of the 32 states | 98.6% to 98.9% | counted |
-| State of residence unspecified (code 99) | 0.9% to 1.3% | **counted nationally** (they died in Mexico; almost all are residents) |
+| Residents of the 32 states | 98.6% to 99.0% | counted |
+| State of residence unspecified (code 99) | 0.9% to 1.2% | **counted nationally** (they died in Mexico; almost all are residents) |
 | Known residents abroad (codes 33 to 35) | 0.10% to 0.21% | excluded |
 
 An early version of the national table dropped the unspecified-residence deaths, which would have understated every national rate by about 1%. State-level tables will need those deaths spread across states; that belongs to the state analysis, not here.
