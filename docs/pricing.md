@@ -2,6 +2,8 @@
 
 What the mortality work is worth to an insurer: the premium of a term life policy, whether that premium earns its target return, which assumption puts the return at risk, and how much money the regulator makes the company hold against it. Every number comes from the project's own tables (CNSF 2013, the company experience of step 8, the population mortality of step 5, the improvement of step 7).
 
+**The mathematics (net premium and reserve, the profit test and its two identities, the best-estimate liability and the mortality cushion) is derived in [handbook chapter 8](handbook/08-pricing.md); this page is the results.**
+
 Code: `src/mortality/pricing.py` (13 unit tests in `tests/test_pricing.py`), six data checks in `validate.py`. Charts: `uv run mortality figures`. Tables: `pricing_premiums`, `pricing_adequacy`, `pricing_profit_test`, `pricing_sensitivity`, `pricing_reserves`.
 
 > **What is real and what is assumed.** The mortality is real or derived from real data. The *product* (a level term policy), its expenses, commissions, lapses and the 10% hurdle are **illustrative assumptions** chosen to be typical of a Mexican individual term product; a company would replace them with its own. The company-experience basis comes from the synthetic portfolio of step 8.
@@ -53,7 +55,7 @@ What the numbers say:
 
 - **The loading over the net premium shrinks with age** (58% at 30, 5% at 60): expenses are a fixed amount plus a percentage, so they weigh most on small premiums.
 - **Every policy loses money in year 1**, by 75% to 95% of its premium at ages 30 to 60: acquisition and the 40% commission arrive before any premium has been earned. It takes until year 8 or 9 for the cumulative profit to turn positive, and until **year 19** once profit is discounted at the 10% hurdle. That is the real cost of selling term business, and the reason lapses and the claims lag matter.
-- A renewal-year premium of a man of 40 is spent on claims (55%), expenses (13%), commission (5%), additions to reserves (11%) and profit (16%).
+- In policy year 5, a man of 40's premium is spent on claims (55%), expenses (13%), commission (5%), additions to reserves (11%) and profit (16%).
 
 ## Is the premium adequate?
 

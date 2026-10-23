@@ -43,11 +43,11 @@ Actuarial language is precise, and that precision is useful, so this project kee
 | **Whole life / endowment** | Whole life pays at death whenever it happens. An endowment also pays if the person survives to the end of the term | $`A_x`$, $`A_{x:\overline{n}\vert}`$ | [Ch. 5](05-life-tables.md) |
 | **Life annuity** | A payment of 1 a year for as long as the person lives (a pension). *Annuity-due* pays at the start of each year | $`\ddot{a}_x`$ | [Ch. 5](05-life-tables.md) |
 | **Net premium** | The price of the risk alone: just enough to pay the expected claims, with no expenses and no profit | $`P_x`$ | [Ch. 5](05-life-tables.md#57-premiums-and-reserves) |
-| **Gross premium** | What the customer pays: the net premium plus commissions, expenses and the profit the company targets | | [Pricing](../pricing.md) |
+| **Gross premium** | What the customer pays: the net premium plus commissions, expenses and the profit the company targets | | [Ch. 8](08-pricing.md#82-the-profit-test) |
 | **Reserve** | The money the insurer must hold today against future claims on policies it has already sold | $`{}_tV_x`$ | [Ch. 5](05-life-tables.md#57-premiums-and-reserves) |
-| **Best-estimate liability** | The expected present value of future claims and costs minus future premiums, with no safety margin | | [Pricing](../pricing.md) |
-| **Profit test** | Projecting a policy's cash flows year by year to see when it breaks even and what return it earns | | [Pricing](../pricing.md) |
-| **IRR** | Internal rate of return: the yearly return a policy earns on the money the company puts in | | [Pricing](../pricing.md) |
+| **Best-estimate liability** | The expected present value of future claims and costs minus future premiums, with no safety margin | | [Ch. 8](08-pricing.md#84-the-best-estimate-liability) |
+| **Profit test** | Projecting a policy's cash flows year by year to see when it breaks even and what return it earns | | [Ch. 8](08-pricing.md#82-the-profit-test) |
+| **IRR** | Internal rate of return: the yearly return a policy earns on the money the company puts in | | [Ch. 8](08-pricing.md#82-the-profit-test) |
 | **Margin for adverse deviation** | A deliberate cushion added to mortality so that a bad but plausible outcome does not turn the product into a loss | | [Insured lives](../insured-lives.md) |
 
 ## Looking back at experience
