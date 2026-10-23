@@ -187,7 +187,7 @@ with tab_state:
     hi_s, lo_s = g["p"].idxmax(), g["p"].idxmin()
     st.caption(
         f"{g.loc[hi_s, 'state_name']} had {g.loc[hi_s, 'p']:.0%} more deaths than its own 2023 mortality predicts; "
-        f"{g.loc[lo_s, 'state_name']} {g.loc[lo_s, 'p']:.0%}. The centre of the country, with the densest cities, "
+        f"{g.loc[lo_s, 'state_name']} {g.loc[lo_s, 'p']:.0%}. The center of the country, with the densest cities, "
         "was hit hardest."
     )
     ui.source_note(["excess_state"], "excess-mortality.md")

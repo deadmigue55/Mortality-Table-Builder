@@ -196,7 +196,7 @@ with tab_cover:
     st.caption(
         f"Expected claims {ui.money(mean, ' MXN')}; standard deviation {ui.money(gross['sd'], ' MXN')} "
         f"({gross['cv']:.1%} of the mean). After the cover the standard deviation falls "
-        f"{row['sd_reduction']:.0%}. The right tail of the grey histogram is the pandemic years."
+        f"{row['sd_reduction']:.0%}. The right tail of the gray histogram is the pandemic years."
     )
 
 

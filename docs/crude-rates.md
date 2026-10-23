@@ -1,4 +1,4 @@
-# Crude rates, standardisation and first benchmarks (step 4)
+# Crude rates, standardization and first benchmarks (step 4)
 
 This step turns the analysis-ready deaths from [data-quality.md](data-quality.md) into death rates, and uses them for a first look at the questions the rest of the project answers: how heavy is Mexican mortality, how did the pandemic move it, and how does it compare with the tables insurers use?
 
@@ -14,7 +14,7 @@ Everything is built by `uv run mortality db build` (tables) and `uv run mortalit
 
 **q from m.** `q = m / (1 + (1 - a) m)` with `a = 0.5` above age 0 and, for infants, the Preston et al. (2001) relation between `a0` and `m0` (deaths in infancy cluster in the first weeks). This is a bridge to the life tables of step 6, which will replace it with graduated rates.
 
-**Standardisation.** The Segi world standard population gives an age-standardised rate with a Fay-Feuer interval, so years can be compared without the effect of ageing. States use *indirect* standardisation: observed deaths over the deaths their age and sex mix predicts at national rates (the SMR), which is stable for small populations.
+**Standardization.** The Segi world standard population gives an age-standardized rate with a Fay-Feuer interval, so years can be compared without the effect of aging. States use *indirect* standardization: observed deaths over the deaths their age and sex mix predicts at national rates (the SMR), which is stable for small populations.
 
 **Benchmarks.** Expected deaths for a table are the CONAPO population times the table's central rate; actual-to-expected (A/E) is the ratio, reported by 5-year band for ages 25 to 84.
 
@@ -24,7 +24,7 @@ Everything is built by `uv run mortality db build` (tables) and `uv run mortalit
 |---|---:|---|
 | `crude_rates_single` | 1,010 | Rates by year (2020 to 2024), sex and single age, with intervals, `qx` and a thin-cell flag |
 | `crude_rates_grouped` | 627 | Rates by year (2014 to 2024), sex (M, F, T) and 5-year band, with the basis used |
-| `age_standardised_rates` | 33 | Segi-standardised and crude rates with intervals, by year and sex |
+| `age_standardised_rates` | 33 | Segi-standardized and crude rates with intervals, by year and sex |
 | `basis_bridge` | 11 | Registered versus occurred deaths by year |
 | `state_smr` | 32 | State SMRs for 2023 (latest complete non-COVID year) |
 | `benchmark_ae` | 2,574 | A/E against CNSF 2013 and nine SOA Mexican tables, by year, sex and band |
@@ -49,9 +49,9 @@ At age 40 a Mexican man has a 0.45% chance of dying within the year; the CNSF 20
 
 ### The pandemic
 
-![Age-standardised trend](img/standardised_trend.png)
+![Age-standardized trend](img/standardised_trend.png)
 
-Age-standardised male mortality stayed between 615 and 637 per 100,000 from 2014 to 2019, jumped to **960 in 2020 (+51%)**, and fell back to 614 by 2024. Women rose from 417 to 588 at the 2021 peak (+41%). Note that the 2023 and 2024 levels sit slightly below 2019 and depend on CONAPO's projected population, which is the denominator from 2020; the spike itself does not.
+Age-standardized male mortality stayed between 615 and 637 per 100,000 from 2014 to 2019, jumped to **960 in 2020 (+51%)**, and fell back to 614 by 2024. Women rose from 417 to 588 at the 2021 peak (+41%). Note that the 2023 and 2024 levels sit slightly below 2019 and depend on CONAPO's projected population, which is the denominator from 2020; the spike itself does not.
 
 ![Pandemic shock by age](img/covid_shock.png)
 

@@ -32,7 +32,7 @@ For every year (2020 to 2024) and for men (`M`), women (`F`) and both sexes (`T`
 1. **It reproduces HMD.** Life tables built here from HMD's own q and a for nine countries and three sexes (27 tables) give life expectancy at birth within **0.007 years** of HMD's published figure, and at 65 within 0.004. This is a data check in the warehouse (`hmd_life_expectancy_reproduced`), so it re-runs on every build.
 2. **It agrees with CONAPO.** In 2022 to 2024, life expectancy at birth is within 0.7 years of CONAPO's for both sexes (2023 men 72.9 against 72.3; women 78.9 against 78.6). Both start from INEGI deaths and CONAPO population, so this tests the graduation and life-table steps rather than the data.
 
-In the COVID years the two differ by 1.5 to 2.2 years, in the direction expected: CONAPO's modelled deaths are 1,194,524 (2020) and 1,219,005 (2021), 9% above the 1,093,073 and 1,117,650 that INEGI registered and the quality step completed. In 2022 the relationship reverses (CONAPO 788,552 against 843,757). Which count is closer to the truth is the question of the excess-mortality step; this project carries both.
+In the COVID years the two differ by 1.5 to 2.2 years, in the direction expected: CONAPO's modeled deaths are 1,194,524 (2020) and 1,219,005 (2021), 9% above the 1,093,073 and 1,117,650 that INEGI registered and the quality step completed. In 2022 the relationship reverses (CONAPO 788,552 against 843,757). Which count is closer to the truth is the question of the excess-mortality step; this project carries both.
 
 ![Life expectancy](img/life_expectancy_trend.png)
 

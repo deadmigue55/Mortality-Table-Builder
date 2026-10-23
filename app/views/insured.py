@@ -96,7 +96,7 @@ with t_table:
         f"Green: the {LABELS[segment].split(' (')[0].lower()} table for "
         f"{ui.SEX_NAME[sex].lower()}. Dots are the raw rates it was fitted to. Past age {last} the "
         "insured data stop being a safe guide, so the table follows the population's shape and the "
-        "gap closes to zero by 105: a judgement, set out in the write-up."
+        "gap closes to zero by 105: a judgment, set out in the write-up."
     )
     cols = ["age", "qx", "qx_lower", "qx_upper", "source", "q_population", "q_cnsf2013"]
     with st.expander("The table itself"):

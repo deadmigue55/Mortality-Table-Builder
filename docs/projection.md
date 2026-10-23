@@ -115,5 +115,5 @@ A person who turns 65 in year Y lives through the rates of Y at 65, Y + 1 at 66,
 - **Five backtests per sex** is a small sample. The 90% coverage figures and the calibration constants are indicative.
 - **COVID is excluded from the fit** (2020 to 2022 are not in the 1970 to 2019 window) and treated as a level shock that the restart absorbs. The scenarios do not model repeat shocks.
 - **Linear trends in log mortality cannot slow down on their own.** The long-run scenario will eventually overstate improvement at the youngest ages; that is why the recent-trend scenario is shown beside it.
-- **No cause-of-death structure.** Violence, diabetes and COVID are not modelled separately; the stagnation of men is observed, not explained.
+- **No cause-of-death structure.** Violence, diabetes and COVID are not modeled separately; the stagnation of men is observed, not explained.
 - **Old ages** rest on the closure described in [graduation.md](graduation.md).

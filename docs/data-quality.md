@@ -32,7 +32,7 @@ When ages are reported carelessly, records pile up on ages ending in 0 and 5. Th
 
 - **Whipple** (ages 23 to 62): 100 means no preference; the UN scale calls under 105 "highly accurate".
 - **Myers** (ages 10 to 99): 0 means no preference, 90 is the maximum.
-- **Noumbissi** (digits 0 and 5): compares those ages with their neighbours, so a rising trend in deaths is not mistaken for heaping. 1.00 means none.
+- **Noumbissi** (digits 0 and 5): compares those ages with their neighbors, so a rising trend in deaths is not mistaken for heaping. 1.00 means none.
 
 | Dataset (2022; female / male) | Whipple | Myers |
 |---|---|---|

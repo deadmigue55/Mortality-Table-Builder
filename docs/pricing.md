@@ -112,7 +112,7 @@ For a man of 40 with a 20-year term:
 
 - **The BEL is negative at first**: the expected future premiums are worth more than the expected future claims and expenses, so the business is an asset. The statutory reserve is positive from year 1. The difference, about 3,000 per policy at the start, is margin held for prudence and released over the life of the policy: it is the reason the regulator's requirement is conservative and the economic one is not.
 - The two meet near expiry, where little is left to be uncertain about.
-- The negative BEL is an artefact of the level premium and the loaded first-year cost, not a free lunch: it is the same year-1 strain seen from the liabilities side.
+- The negative BEL is an artifact of the level premium and the loaded first-year cost, not a free lunch: it is the same year-1 strain seen from the liabilities side.
 
 ## Validation
 

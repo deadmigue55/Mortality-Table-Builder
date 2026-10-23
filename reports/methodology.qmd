@@ -153,7 +153,7 @@ n["tables"] = f"{q('SELECT COUNT(*) c FROM table_docs').c.iloc[0]}"
 
 Mexico has no up-to-date mortality table that an actuary can use for the population as it is today, and none for the people an insurer actually quotes. The regulatory table in force (CNSF 2013) is more than a decade old and mixes both sexes; the insured-lives tables are older still. This project **rebuilds the table from the raw data** (INEGI registered deaths, CONAPO population) and then does with it what an insurer or a reinsurer does: prices a policy, reserves it, stresses it with the pandemic and with longevity, structures a reinsurance treaty and prices a longevity swap.
 
-Version 2 adds the table a quote is priced on, built from the industry's own insured-lives statistics. The work is a pipeline with `{python} n['checks']` automated data checks, over four hundred unit tests and a one-command rebuild, so that every number in this report is computed from the data when the report is rendered. The book of policies used in the applications is **synthetic** and every market assumption is labelled illustrative; the mortality is real or derived from real data.
+Version 2 adds the table a quote is priced on, built from the industry's own insured-lives statistics. The work is a pipeline with `{python} n['checks']` automated data checks, over four hundred unit tests and a one-command rebuild, so that every number in this report is computed from the data when the report is rendered. The book of policies used in the applications is **synthetic** and every market assumption is labeled illustrative; the mortality is real or derived from real data.
 
 | What it found | Result |
 |:--------------------|:----------------------------------|
@@ -210,7 +210,7 @@ The warehouse holds `{python} n['tables']` tables, each with a one-line descript
 
 # From deaths to rates
 
-Crude death rates are deaths over exposure, with exact Poisson confidence intervals. Age-standardised rates (Segi weights) make states and years comparable; standardised mortality ratios rank the states. The rates are benchmarked against every Mexican table in use with an actual-to-expected (A/E) ratio.
+Crude death rates are deaths over exposure, with exact Poisson confidence intervals. Age-standardized rates (Segi weights) make states and years comparable; standardized mortality ratios rank the states. The rates are benchmarked against every Mexican table in use with an actual-to-expected (A/E) ratio.
 
 ![The Mexican population against the regulatory table CNSF 2013 and its range.](../docs/img/population_vs_tables.png){width=85%}
 
@@ -218,7 +218,7 @@ Two findings shape everything that follows. First, **Mexican men aged 40 die at 
 
 # Graduation
 
-Rates at single ages are noisy, and at old ages unreliable. Four graduation methods are fitted per year and sex: a penalised spline (P-spline, with the smoothing parameter chosen by an information criterion corrected for over-dispersion), Whittaker-Henderson, Heligman-Pollard and Gompertz-Makeham. The dispersion is estimated from the crude rates' own fourth differences (1.0 to 3.1), which determines how much smoothing the data support.
+Rates at single ages are noisy, and at old ages unreliable. Four graduation methods are fitted per year and sex: a penalized spline (P-spline, with the smoothing parameter chosen by an information criterion corrected for over-dispersion), Whittaker-Henderson, Heligman-Pollard and Gompertz-Makeham. The dispersion is estimated from the crude rates' own fourth differences (1.0 to 3.1), which determines how much smoothing the data support.
 
 ![The graduated table against the crude rates, with the 95% interval.](../docs/img/graduation_fit.png){width=85%}
 
@@ -287,7 +287,7 @@ The population table answers population questions and is the wrong tool for a qu
 
 **What it changes downstream.** A margin of `{python} n['margin']` on mortality is sized from the adverse readings that cannot be ruled out (`{python} n['margin_q']` in quadrature). Priced on the insured table against the CNSF 2013 statutory reserve, the 20-year term of a man of 40 needs a gross premium of `{python} n['gi_M']` per 1,000 against `{python} n['gc_M']` on CNSF 2013 (`{python} n['sv_M']` lower); a woman's is `{python} n['sv_F']` lower. Replaying 2021 as insured lives lived it adds `{python} n['observed']` to a year's claims.
 
-![Which table is used moves a premium more than any modelling choice behind it.](../docs/img/insured_tornado.png){width=85%}
+![Which table is used moves a premium more than any modeling choice behind it.](../docs/img/insured_tornado.png){width=85%}
 
 # Applications
 
@@ -353,7 +353,7 @@ The dashboard (`mortality app`) and an **Excel workbook with live commutation fo
 - Heligman, L., Pollard, J. (1980). The age pattern of mortality. *Journal of the Institute of Actuaries* 107.
 - Kannisto, V. (1994). *Development of Oldest-Old Mortality, 1950-1990*. Odense University Press.
 - Lee, R., Carter, L. (1992). Modeling and forecasting U.S. mortality. *Journal of the American Statistical Association* 87.
-- Villegas, A., Millossovich, P., Kaishev, V. (2018). StMoMo: an R package for stochastic mortality modelling. *Journal of Statistical Software* 84(3).
+- Villegas, A., Millossovich, P., Kaishev, V. (2018). StMoMo: an R package for stochastic mortality modeling. *Journal of Statistical Software* 84(3).
 - Human Mortality Database. University of California, Berkeley, and Max Planck Institute for Demographic Research. www.mortality.org.
 - INEGI, *Estadísticas de defunciones registradas*; CONAPO, *Proyecciones de la población de México y de las entidades federativas*; CNSF, *Circular Única de Seguros y Fianzas*, Anexo 5.3.3-a.
 - Society of Actuaries, mort.soa.org, *Mortality and Other Rate Tables*.

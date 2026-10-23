@@ -80,7 +80,7 @@ The exposure sheet counts every life with any cover. Deaths are counted under th
 | # | Decision | What we did | Why | What the alternative does (man of 40, 20-year term) |
 |---|---|---|---|---|
 | 1 | **Years** | Pool 2023, 2024 and 2025 | Post-COVID, and three years give enough deaths at most ages. 2021 and 2022 are used only to measure the pandemic | 2023-24 only: +0.8%. 2024-25 only: -5.3% |
-| 2 | **What counts as a death** | Cover `Fallecimiento`; age and sex known; claimed amount positive; a cause that can cause a death | Traps 1 and 2. Riders (accidental death, funeral expenses) are separate covers of the same death and would be counted twice | Net of cancelled claims: -2.3%. Plus the positive no-detail rows: +11.1%. Plus all no-detail rows: +24.9%. Keeping the maturities: +2.2% on 2023 deaths, 0 at age 40 |
+| 2 | **What counts as a death** | Cover `Fallecimiento`; age and sex known; claimed amount positive; a cause that can cause a death | Traps 1 and 2. Riders (accidental death, funeral expenses) are separate covers of the same death and would be counted twice | Net of canceled claims: -2.3%. Plus the positive no-detail rows: +11.1%. Plus all no-detail rows: +24.9%. Keeping the maturities: +2.2% on 2023 deaths, 0 at age 40 |
 | 3 | **Exposure** | Lives holding the death cover (issue sheet) | Trap 3: same benefit in numerator and denominator | All lives, any cover: -11.4% (term: 10% more lives) |
 | 4 | **Head count, not person-years** | Count the lives as given; allow for turnover as a sensitivity | A policy issued or lapsed during the year counts as one life, so the rate is slightly low. The data give no way to measure the share exposed part of the year | 10% of lives exposed part of the year: +5.3%. 20%: +11.1% |
 | 5 | **Several policies per person** | No adjustment | A person with two policies counts twice in the exposure *and* produces two claims, so the rate is not distorted; only the variance is | none |
@@ -92,7 +92,7 @@ The exposure sheet counts every life with any cover. Deaths are counted under th
 | 11 | **Ages below 18-26** | The population curve scaled by the insured/population ratio at the first fitted age | The tables are for pricing adults; the youngest ages are kept so a table is complete | none |
 | 12 | **Sex** | Separate tables; men floored at women where an extension leaves them below (61 age-cells, all at ages 82 and over) | No population shows women dying faster at these ages | none |
 | 13 | **2018-2020 format** | Read, kept, not pooled | Women's share of lives goes 46%, 36%, 37% in three years (50-52% from 2021); rates against the modern level range from 0.7 to 1.6 for men, 1.2 to 2.2 for women, with 2019 30% below 2018; no cause or cover detail | none |
-| 14 | **Improvement** | None in the table (it is the 2023-25 level, centred on 2024). Roll forward with the population's projected rates | The insured trend (-5% a year for men, -11% for women) is real but contaminated by new business (freshly underwritten) and cannot be told apart from improvement with three years | Rolling to 2026 at the projected rates: -2.4% |
+| 14 | **Improvement** | None in the table (it is the 2023-25 level, centered on 2024). Roll forward with the population's projected rates | The insured trend (-5% a year for men, -11% for women) is real but contaminated by new business (freshly underwritten) and cannot be told apart from improvement with three years | Rolling to 2026 at the projected rates: -2.4% |
 | 15 | **Amount against count** | Count basis in the table; amount ratio published | Larger policies die more in traditional term (ratio 1.26 to 1.38), less in credit life (0.44 to 0.71): a different measure, not a doubt about this one | By sum assured: +36.9% |
 | 16 | **Margin** | 15% on mortality | The adverse readings that cannot be ruled out, in quadrature: sqrt(11.1%² + 5.3%²) = 12.3% (12.4% for women, 12.0% for the 55-year-old man), rounded up to the next 5% | n/a |
 | 17 | **Interest and expenses** | Net premium at 4%; no expenses | The table is about mortality; the pricing step adds expenses, lapses and profit | n/a |
@@ -100,7 +100,7 @@ The exposure sheet counts every life with any cover. Deaths are counted under th
 
 <p align="center"><img src="img/insured_tornado.png" alt="What moves the price" width="900"></p>
 
-The tornado makes the point of decision 7: **which table you quote on moves a premium by more than every modelling choice behind the table.**
+The tornado makes the point of decision 7: **which table you quote on moves a premium by more than every modeling choice behind the table.**
 
 ## 5. The table
 
@@ -121,7 +121,7 @@ Men, traditional term (43 ages): direct P-spline 47.4, relational 48.8, Gompertz
 
 ### Fit tests and honesty
 
-With counts this large a chi-square test almost always rejects (the data are not exactly Poisson: reporting varies by insurer). The dispersion says how much: 0.7 to 2.7 across the six selected fits. The share of standardised residuals beyond 2 is 2% to 8% (4.6% expected), and the runs test passes in 5 of the 6 fits (it fails for women's whole life).
+With counts this large a chi-square test almost always rejects (the data are not exactly Poisson: reporting varies by insurer). The dispersion says how much: 0.7 to 2.7 across the six selected fits. The share of standardized residuals beyond 2 is 2% to 8% (4.6% expected), and the runs test passes in 5 of the 6 fits (it fails for women's whole life).
 
 ### Where the data stop
 
@@ -214,9 +214,9 @@ If mortality turns out to be the best estimate (no margin), the same premium ear
 
 ### The trend
 
-Age-standardised insured death rates fell 9% (men) and 21% (women) between 2023 and 2025 on the market blend: about -4.7% and -11.4% a year in the fitted model, with intervals of -8.2 to -1.1% and -15.2 to -7.5%. That is not improvement: the book grew 20% in two years, new business is freshly underwritten (the select period), and three years cannot separate the two. The table is the 2023-25 level; the improvement assumption comes from the population's projection (decision 14).
+Age-standardized insured death rates fell 9% (men) and 21% (women) between 2023 and 2025 on the market blend: about -4.7% and -11.4% a year in the fitted model, with intervals of -8.2 to -1.1% and -15.2 to -7.5%. That is not improvement: the book grew 20% in two years, new business is freshly underwritten (the select period), and three years cannot separate the two. The table is the 2023-25 level; the improvement assumption comes from the population's projection (decision 14).
 
-## 7. The old ages: a judgement
+## 7. The old ages: a judgment
 
 For ages above the credible range the table is not read from the data. The reasons, in the order they were found:
 

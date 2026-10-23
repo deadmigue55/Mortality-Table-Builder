@@ -46,10 +46,10 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
 | Workbook | Use |
 |---|---|
 | `0_Pob_Mitad_1950_2070.xlsx` | Mid-year (1 July) population, the exposure. State rows add up exactly to the national total |
-| `1_Defunciones_1950_2070.xlsx` | CONAPO's modelled deaths, a cross-check against INEGI |
+| `1_Defunciones_1950_2070.xlsx` | CONAPO's modeled deaths, a cross-check against INEGI |
 | `6_Esperanza_Vida_Nacer_1950_2070.xlsx` | Life expectancy at birth (74.8 in 2019, 68.9 in 2020, 68.8 in 2021) |
 
-**Important:** 1950 to 2019 are reconciled estimates, but **2020 onward are projections** from the 2020 census base made before the full COVID-19 impact was known. Recent exposure is therefore a model output, not a count, and modelled 2022 deaths (about 789,000) sit below INEGI's registered 832,000. Rates for 2020 onward carry that uncertainty, which the project reports instead of hiding.
+**Important:** 1950 to 2019 are reconciled estimates, but **2020 onward are projections** from the 2020 census base made before the full COVID-19 impact was known. Recent exposure is therefore a model output, not a count, and modeled 2022 deaths (about 789,000) sit below INEGI's registered 832,000. Rates for 2020 onward carry that uncertainty, which the project reports instead of hiding.
 
 ## Mexico: regulatory and industry tables
 

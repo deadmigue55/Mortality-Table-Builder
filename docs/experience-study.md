@@ -71,7 +71,7 @@ Against the generator's hidden truth the identity is exact: studied deaths = tru
 
 Exposure is computed from dates, not from policy-year counts. Each policy's observation period is cut at every policy anniversary and every 1 January (a **Lexis split**), so every day belongs to exactly one combination of attained age, policy duration and calendar year, and expected deaths are `exposure x rate` with no approximation. The portfolio yields 5.47 million pieces and 2,601,603 policy-years, with 4,336 deaths against 5,184 expected on CNSF 2013 (all years).
 
-The split handles left truncation (policies issued before the study start), 29 February issue dates, anniversaries on 1 January, and exits on any day. The tests include a 4,000-policy randomised property test in which every observed day is counted exactly once and no piece crosses a boundary.
+The split handles left truncation (policies issued before the study start), 29 February issue dates, anniversaries on 1 January, and exits on any day. The tests include a 4,000-policy randomized property test in which every observed day is counted exactly once and no piece crosses a boundary.
 
 ## 3. Actual to expected, by count and by amount
 
@@ -140,7 +140,7 @@ Against the truth the generator knows (`experience_lag_validation`), the correct
 
 ![Impact](img/experience_impact.png)
 
-The study derives a company mortality basis (`experience_basis`): the CNSF 2013 table times a multiplier by sex, age and policy-year group, from a GLM on the non-pandemic years. The overall level and each effect are shrunk toward 1.0 by limited-fluctuation credibility on the deaths behind them, and interpolated between age-group centres so there are no steps. A **prudent** version uses the 95% upper bound of the multiplier from the model's covariance: a margin an actuary can add where a prudent basis is required, and the visible price of thin data.
+The study derives a company mortality basis (`experience_basis`): the CNSF 2013 table times a multiplier by sex, age and policy-year group, from a GLM on the non-pandemic years. The overall level and each effect are shrunk toward 1.0 by limited-fluctuation credibility on the deaths behind them, and interpolated between age-group centers so there are no steps. A **prudent** version uses the 95% upper bound of the multiplier from the model's covariance: a margin an actuary can add where a prudent basis is required, and the visible price of thin data.
 
 Applying it (`experience_pricing`, `experience_impact`):
 

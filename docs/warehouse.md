@@ -23,7 +23,7 @@
 | `deaths_by_occurrence` | 43,538 | Deaths of residents of a known state, by year of occurrence, state, sex and age (state-level; unspecified-residence deaths are not in it, so use `deaths_adjusted` for national totals) |
 | `deaths_unallocated` | 83 | Deaths with unknown sex, age or residence, by year |
 | `inegi_completeness` | 83 | Per year of occurrence: own file loaded, next file loaded (late registrations), and so whether the year is complete |
-| `crude_rates_single`, `crude_rates_grouped`, `age_standardised_rates`, `basis_bridge`, `state_smr`, `benchmark_ae`, `benchmark_countries` | 1,010 / 627 / 33 / 11 / 32 / 2,574 / 5,358 | Death rates, standardisation and first benchmarks: see [crude-rates.md](crude-rates.md) |
+| `crude_rates_single`, `crude_rates_grouped`, `age_standardised_rates`, `basis_bridge`, `state_smr`, `benchmark_ae`, `benchmark_countries` | 1,010 / 627 / 33 / 11 / 32 / 2,574 / 5,358 | Death rates, standardization and first benchmarks: see [crude-rates.md](crude-rates.md) |
 | `graduated_qx` | 1,110 | **The graduated table:** m and q by year, sex and age 0 to 110, with source and sex-floor flags. Start here for life tables. See [graduation.md](graduation.md) |
 | `graduated_rates`, `graduation_selection`, `graduation_fit_tests`, `graduation_lambda_path`, `graduation_params`, `graduation_digit_preference` | 3,220 / 40 / 40 / 1,220 / 130 / 10 | The four graduations, how each was chosen and tested, fitted parameters, and the digit-preference measure |
 | `life_tables` | 1,665 | **Complete life tables** by year and sex (M, F, T = both sexes), ages 0 to 110: qx, mx, ax, lx, dx, person_years, total_person_years, ex. See [life-tables.md](life-tables.md) |
@@ -36,7 +36,7 @@
 | `reinsurance_concentration`, `reinsurance_aggregate`, `reinsurance_structures`, `reinsurance_frontier`, `reinsurance_price_sensitivity`, `reinsurance_yrt_rating`, `reinsurance_longevity_swap`, `reinsurance_longevity_distribution` | 6 / 3 / 11 / 36 / 9 / 9 / 1 / 7 | Reinsurance: size concentration, simulated aggregate claims by source of risk, quota share / surplus / excess of loss / stop loss with cost and capital relief, retention layers and their price, sensitivity to the reinsurer's return, YRT experience rating by cedant segment, and a longevity swap on the annuity block. See [reinsurance.md](reinsurance.md) |
 | `experience_*` (18 tables) | see [experience-study.md](experience-study.md) | The experience study on the synthetic portfolio: data validation and reconciliation, A/E by count and amount, credibility, GLM relativities and their recovery of the planted truth, select factors, claims lag and quarterly A/E, the derived basis, pricing and in-force impact. The policy-level portfolio itself is kept as Parquet in `data/processed/experience/` |
 | `conapo_population` | 737,660 | Mid-year population by year, state, age and sex (the exposure) |
-| `conapo_deaths` | 737,660 | CONAPO modelled deaths, a cross-check |
+| `conapo_deaths` | 737,660 | CONAPO modeled deaths, a cross-check |
 | `conapo_life_expectancy` | 10,059 | CONAPO life expectancy at birth |
 | `dim_state` | 33 | State codes: CONAPO integer, INEGI two-digit text, name |
 | `hmd_deaths`, `hmd_exposures`, `hmd_life_tables` | 385,614 each | Human Mortality Database, nine comparison countries |
@@ -90,10 +90,10 @@ Each check counts violations. `FAIL` means the data is wrong; `WARN` means a kno
 | `conapo_states_sum_to_national` | FAIL | The 32 states add up to the national total |
 | `conapo_complete_grid` | FAIL | Every year, state and sex has ages 0 to 109 |
 | `hmd_keys_unique`, `hmd_counts_non_negative`, `hmd_life_table_qx_range` | FAIL / FAIL / WARN | One row per country-year-age-sex; no negative counts; qx is a probability |
-| `soa_rates_are_probabilities`, `soa_every_table_has_rates` | FAIL | SOA rates in [0, 1]; every catalogued table has rates |
+| `soa_rates_are_probabilities`, `soa_every_table_has_rates` | FAIL | SOA rates in [0, 1]; every cataloged table has rates |
 | `soa_mexico_tables_present` | WARN | At least 10 Mexican SOA tables |
 | `cnsf_complete`, `cnsf_percentiles_bracket_base` | FAIL | Nine tables with 111 ages; 99.5th percentile never below base |
-| `inegi_vs_conapo_deaths` | WARN | For complete years, INEGI is within 15% of CONAPO's modelled deaths |
+| `inegi_vs_conapo_deaths` | WARN | For complete years, INEGI is within 15% of CONAPO's modeled deaths |
 | `manifest_integrity` | FAIL | Raw files match their recorded SHA-256 |
 
 The rate tables of [step 4](crude-rates.md) add eight more checks:

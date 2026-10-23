@@ -23,7 +23,7 @@ Observed deaths are INEGI's by year of occurrence, completed for late registrati
 
 Two built-in checks:
 
-- **They agree with each other.** The spread between the highest and lowest baseline is 2.6% of expected deaths in 2020, 5.0% in 2021 and 7.4% in 2022. It keeps widening the farther the baselines are carried (9.7% in 2023, 12.1% in 2024): the counterfactual becomes less certain with time, which is the right behaviour.
+- **They agree with each other.** The spread between the highest and lowest baseline is 2.6% of expected deaths in 2020, 5.0% in 2021 and 7.4% in 2022. It keeps widening the farther the baselines are carried (9.7% in 2023, 12.1% in 2024): the counterfactual becomes less certain with time, which is the right behavior.
 - **They predict 2023.** After the pandemic, mortality should be back on the baseline. The four baselines are within -3.7% to +2.0% of the 798,055 deaths observed in 2023 (flat 2019 -2.2%, trend -3.7%, Lee-Carter +2.0%; interpolation is anchored there by construction), and the central one is -0.5%. Both are data checks.
 
 ## The result

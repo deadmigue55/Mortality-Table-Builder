@@ -29,7 +29,7 @@ An end-to-end actuarial pipeline, validated at every step. **Version 2: the insu
 Mexico's regulatory mortality table (CNSF 2013) is more than a decade old and mixes both sexes. This project **rebuilds the table from the raw data** (INEGI registered deaths, CONAPO population) and then does with it what an insurer or a reinsurer does: graduates and projects it, runs an experience study, prices a policy, reserves it, stresses it with the pandemic and with longevity, structures a reinsurance treaty and prices a longevity swap.
 
 > [!NOTE]
-> The mortality is real or derived from real data. The **book of policies, the annuity block and the market assumptions** (expenses, commissions, lapses, cost of capital) are **synthetic or illustrative**, and labelled that way wherever they appear. The method is validated by planting known effects in the synthetic book and checking that it finds them.
+> The mortality is real or derived from real data. The **book of policies, the annuity block and the market assumptions** (expenses, commissions, lapses, cost of capital) are **synthetic or illustrative**, and labeled that way wherever they appear. The method is validated by planting known effects in the synthetic book and checking that it finds them.
 
 ## Version 2: the table a pricing actuary needs
 
@@ -163,7 +163,7 @@ Life insurers and reinsurers price and reserve with mortality tables. In Mexico 
 | 1 | **Setup** | Package, environment, tests, linting, CI | |
 | 2 | **Ingestion** | INEGI, CONAPO, CNSF, SOA, HMD into a SQLite warehouse with a SHA-256 manifest and automatic checks | [warehouse](docs/warehouse.md), [sources](docs/data-sources.md) |
 | 3 | **Data quality** | Age heaping, unknown ages, late-registration completion, COVID flags | [data quality](docs/data-quality.md) |
-| 4 | **Crude rates** | Exposure, rates with exact intervals, standardisation, state SMRs, benchmarks | [crude rates](docs/crude-rates.md) |
+| 4 | **Crude rates** | Exposure, rates with exact intervals, standardization, state SMRs, benchmarks | [crude rates](docs/crude-rates.md) |
 | 5 | **Graduation** | P-spline, Whittaker-Henderson, Heligman-Pollard, Gompertz-Makeham, Kannisto closure | [graduation](docs/graduation.md) |
 | 6 | **Life tables** | lx to ex, commutation functions, insurances, annuities, premiums | [life tables](docs/life-tables.md) |
 | 7 | **Projection** | Lee-Carter and CBD in Python and R, backtest, fan charts, cohort tables | [projection](docs/projection.md) |
@@ -191,7 +191,7 @@ Each step has its own write-up; these are the findings that matter most. Expand 
 <summary><b>4. Crude rates</b>: Mexican men die 3 times as fast as the regulatory table says</summary>
 
 - Mexican men die **3.0x** as fast as the CNSF 2013 table predicts at ages 25 to 84 (4.1x at 40 to 44); women 1.8x.
-- Age-standardised male mortality rose **51%** in 2020 and was back at the 2019 level by 2023.
+- Age-standardized male mortality rose **51%** in 2020 and was back at the 2019 level by 2023.
 - Chihuahua and Colima run about 19% above their age mix, Sinaloa 19% below.
 - Men aged 25 to 29 die at 6.7x the rate of Spanish men, 1.6x that of US men.
 

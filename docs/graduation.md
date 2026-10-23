@@ -8,23 +8,23 @@ Code: `src/mortality/graduation.py` (pure NumPy/pandas functions, 22 unit tests 
 
 | Method | What it is | Parameters |
 |---|---|---|
-| **Poisson P-spline** (Eilers and Marx) | Cubic B-spline curve for log m, 40 knot intervals, penalty on second differences of the coefficients, fitted by penalised maximum likelihood with exposure as offset | 33 to 39 effective |
+| **Poisson P-spline** (Eilers and Marx) | Cubic B-spline curve for log m, 40 knot intervals, penalty on second differences of the coefficients, fitted by penalized maximum likelihood with exposure as offset | 33 to 39 effective |
 | **Whittaker-Henderson** | The classic actuarial graduation: weighted least squares on log m, weights equal to deaths, penalty on third differences | 31 to 43 effective |
-| **Heligman-Pollard** (1980) | Eight-parameter law for the whole age range: childhood decline, accident hump, Gompertz ageing | 8 |
+| **Heligman-Pollard** (1980) | Eight-parameter law for the whole age range: childhood decline, accident hump, Gompertz aging | 8 |
 | **Gompertz-Makeham** | `A + B c^x`, fitted from age 35 | 3 |
 
 Ages 1 to 89 are graduated. Age 0 keeps its crude rate (tens of thousands of deaths, and its own shape). Ages 90 and over come from the closure below.
 
 ### How the smoothing is chosen
 
-The smoothing parameter is chosen by **quasi-AIC**: `deviance / dispersion + 2 x effective parameters`, minimised over a grid of 61 values.
+The smoothing parameter is chosen by **quasi-AIC**: `deviance / dispersion + 2 x effective parameters`, minimized over a grid of 61 values.
 
 The dispersion matters. With 100,000s of deaths, a plain AIC follows every irregularity of the crude rates. The dispersion is therefore estimated from the **crude rates' own fourth differences** (for a smooth curve they are mostly noise, with a known Poisson variance), not from any fitted curve. It is stable across difference orders 3 to 5, and it says something real about the data:
 
 - **women:** 1.0 to 1.7 (close to pure Poisson noise);
 - **men:** 1.85 to 3.1 (up to three times the scatter that sampling alone explains).
 
-An earlier version estimated the dispersion at the best-AIC fit instead; with an almost-saturated Whittaker-Henderson fit it returned 1.06 and the criterion stopped penalising complexity. That version is gone, and `test_lambda_selection_*` guards the behaviour: exactly-Gompertz data must pick the straight line (2 parameters), and data with a bump must stay flexible.
+An earlier version estimated the dispersion at the best-AIC fit instead; with an almost-saturated Whittaker-Henderson fit it returned 1.06 and the criterion stopped penalizing complexity. That version is gone, and `test_lambda_selection_*` guards the behavior: exactly-Gompertz data must pick the straight line (2 parameters), and data with a bump must stay flexible.
 
 ![Smoothing selection](img/lambda_selection.png)
 
@@ -33,12 +33,12 @@ An earlier version estimated the dispersion at the best-AIC fit instead; with an
 ![Graduation fit](img/graduation_fit.png)
 
 - The two smoothers are almost indistinguishable and follow the crude rates, including men's young-adult plateau.
-- **Heligman-Pollard has about nine times the P-spline's deviance in 2023** (8.8 for women, 8.7 for men), and 15 to 17 times on average over the five years (1,159 and 2,052 against 77 and 122). The first fit used a likelihood optimiser that stopped early on the badly scaled childhood parameters; switching to least squares on deviance residuals cut HP's deviance by about a quarter. A search from 60 random starts with the weaker optimiser did *not* reveal this, which is why the test now recovers a known Heligman-Pollard curve from simulated data. The remaining gap is a real property of the law, not a fitting failure.
+- **Heligman-Pollard has about nine times the P-spline's deviance in 2023** (8.8 for women, 8.7 for men), and 15 to 17 times on average over the five years (1,159 and 2,052 against 77 and 122). The first fit used a likelihood optimizer that stopped early on the badly scaled childhood parameters; switching to least squares on deviance residuals cut HP's deviance by about a quarter. A search from 60 random starts with the weaker optimizer did *not* reveal this, which is why the test now recovers a known Heligman-Pollard curve from simulated data. The remaining gap is a real property of the law, not a fitting failure.
 - Gompertz-Makeham fits only ages 35 and over and is a baseline, not a candidate.
 
 ## Tests of the fit
 
-`graduation_fit_tests` stores, per year, sex and method: chi-square and dispersion, signs test, runs test, serial correlation of residuals, cumulative deviation, the share of standardised residuals beyond 2 and a smoothness measure.
+`graduation_fit_tests` stores, per year, sex and method: chi-square and dispersion, signs test, runs test, serial correlation of residuals, cumulative deviation, the share of standardized residuals beyond 2 and a smoothness measure.
 
 With counts this large, the chi-square and runs tests flag *some* lack of fit for every smooth curve. What matters is its size:
 
@@ -55,7 +55,7 @@ The P-spline's fit is within what Poisson noise allows for women and moderately 
 
 ### A finding: digit preference in men's death records
 
-The standardised residuals spike on **ages ending in 0 and 5**. Measured as excess deaths against the smooth curve over ages 25 to 70 (`graduation_digit_preference`):
+The standardized residuals spike on **ages ending in 0 and 5**. Measured as excess deaths against the smooth curve over ages 25 to 70 (`graduation_digit_preference`):
 
 | | Excess at ages ending in 0 or 5 | At other ages |
 |---|---|---|

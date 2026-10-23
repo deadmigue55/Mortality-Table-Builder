@@ -66,7 +66,7 @@ Taking the per-life retention down adds a layer. The price of each layer (`reins
 - A per-life cover with a 1 million retention costs 9.1% of the capital relieved at a 6% reinsurer return and **crosses the cedant's 10% at 6.9%**. At 6% the layers up to 5.6 million are worth buying (a net benefit of MXN 6.1 million a year); at 7% or more not even the lowest one is.
 - A stop loss costs about the reinsurer's own return per peso of capital relieved (6.0% at 6%), so it is worth buying until the reinsurer asks the cedant's 10%.
 
-The retention is therefore not a number to optimise in the abstract: it is the point where the reinsurer's price, the cedant's cost of capital and the claim distribution meet, and moving the price by a point or two moves it from worth buying to not.
+The retention is therefore not a number to optimize in the abstract: it is the point where the reinsurer's price, the cedant's cost of capital and the claim distribution meet, and moving the price by a point or two moves it from worth buying to not.
 
 ## How should the treaty be rated by cedant?
 

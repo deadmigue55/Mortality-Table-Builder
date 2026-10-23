@@ -69,13 +69,13 @@ The same shocks on both books (`stress_hedge`; a positive change is a loss):
 
 - **A pandemic costs the life book and releases annuity reserve.** Each extra annuitant death frees the present value of the pensions that will not be paid. With the 2021 profile the annuity block (reserve 25 billion) releases 374 million, 84% of what the life book (PV of death benefits 27.4 billion) loses. An annuity block **1.2 times the size** would offset it exactly.
 - **Longevity is the other way round, and the life book gains more.** A permanent 20% fall in mortality adds 1.5 billion to the annuity reserve and takes 2.9 billion off the life book's death benefits (their *timing* moves later; whole life and endowment pay eventually). The net is a gain: of the two risks, the life book is the more exposed to a pandemic and the annuity block to longevity, and a company that writes both is partly protected against each.
-- **The hedge is natural, not complete.** It lasts one year for a pandemic and is permanent for longevity, it acts through different ages and sums, and it needs the two blocks to be in the same legal entity and the same capital pool. That is why reinsurers write both and why the CNSF's capital requirement, like Solvency II, recognises the diversification partly and not wholly.
+- **The hedge is natural, not complete.** It lasts one year for a pandemic and is permanent for longevity, it acts through different ages and sums, and it needs the two blocks to be in the same legal entity and the same capital pool. That is why reinsurers write both and why the CNSF's capital requirement, like Solvency II, recognizes the diversification partly and not wholly.
 
 ## Limits
 
 - **One-year shock on a static block.** The pandemic replay applies one year of excess to the book as it stands. It has no lapse reaction, no anti-selection, no change in sums at risk, no multi-wave scenario, and ignores that the survivors of a wave have lower mortality afterwards (harvesting).
 - **Dampening is an assumption, not an estimate.** 100% and 50% bracket it. A company with real experience for 2020 to 2021 would calibrate it from its own A/E for those years (step 8 provides the machinery and flags the pandemic years in its study).
-- **The annuity block is invented**, and its age distribution is the survivors of a cohort from age 60; a real block has its own, and its own pension indexation, joint-life and guarantee features, none of which are modelled.
+- **The annuity block is invented**, and its age distribution is the survivors of a cohort from age 60; a real block has its own, and its own pension indexation, joint-life and guarantee features, none of which are modeled.
 - **No capital.** The shocks are measured as changes in claims and reserves, not as a solvency capital requirement under the CNSF's rules, which would also carry the probability of each shock and the diversification between them.
 - **Stochastic longevity is not used.** The scenarios are deterministic: no improvement, central, doubled; step 7's fan chart gives their probabilistic counterpart.
 
