@@ -158,6 +158,20 @@ Net annual premium per 1,000 of a 20-year term, at 4% interest:
 
 The regulator's table is unisex, so for women it is **4.6 times** the insured premium at 40. Using it overstates a woman's cost; using the population table overstates a man's by 7.8 times.
 
+### What it means for an insurer: price, volume and return
+
+A lower net premium is only useful if the policy still earns its return. Version 2 therefore solves a **gross** premium for a 10% target internal rate of return (the `pricing_insured` table), with the same illustrative expense, commission and lapse assumptions as the pricing study, the 15% margin on mortality, and the statutory reserve kept on CNSF 2013 as the regulator requires. It compares that with the same product priced on CNSF 2013 at the same target.
+
+| | Result | Where it comes from |
+|---|---|---|
+| **Price at the same 10% return** | Men **20% to 34%** cheaper (ages 25 to 60, 20-year term), women **45% to 57%**; a man of 40 pays 1.57 per 1,000 against 2.32 (**-32%**), a woman of 40 **-55%** | `pricing_insured` |
+| **Return if mortality is as measured** | **12% to 21%** a year against the 10% target (the price carries the margin, so the best estimate beats it) | `pricing_insured.irr_best_estimate` |
+| **Room in the market** | Traditional term wrote **MXN 43.2 billion** of premium in 2023 to 2025 (4.07 per 1,000 of cover) and reported **MXN 9.5 billion** of death claims: **22%** of premium (14% paid). Premium also pays commissions, expenses and profit, so this is room in a price, not profit | `insured_market` |
+| **The law of large numbers** | The one-year standard deviation of claims for a book of equal policies on men aged 40 (q = 0.00053) is **43%** of expected claims at 10,000 policies, **14%** at 100,000 and **4%** at 1,000,000. The 15% margin covers one standard deviation from about **83,000** policies | binomial, `(1 - q) / (n q)` |
+| **The pandemic** | 2021 as insured lives lived it adds **133%** to claims, against **51%** in the regulator's 99.5th percentile scenario | `stress_pandemic_book` |
+
+The chain is: a price that follows the claims is lower; a lower price wins more quotes where price decides; a bigger book has steadier claims, so the saving is earned over time without giving up the target return. **The step from price to volume is the mechanism, not a measured result**: nothing here estimates how many quotes a lower price wins, and a single large claim, anti-selection or a lapse wave can still hurt a small book. The expense, commission and lapse assumptions are illustrative, and the 22% shows how much of a premium is left after claims, not a profit margin. The volatility figure ignores sums assured that differ between policies and the uncertainty in the death rate itself (the 15% margin and the sensitivity table are there for that); the pandemic is a systemic risk that a large book does not diversify away.
+
 <p align="center"><img src="img/insured_countries.png" alt="The league table" width="900"></p>
 
 ### Products and sizes

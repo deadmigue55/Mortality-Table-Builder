@@ -5,6 +5,7 @@
 * ``insured_pandemic``: did insured lives suffer the pandemic like the population?
 * ``insured_amount``: do larger policies die less? Death rates by count and by sum assured.
 * ``insured_causes``: what insured lives die of, from the text of the claim.
+* ``insured_market``: what the market charges per 1,000 of cover and how much of it goes to claims.
 """
 
 from __future__ import annotations
@@ -31,6 +32,12 @@ DESCRIPTIONS = {
     "insured_amount": (
         "Death rates by count and by sum assured for the market and its products, pooled over "
         "the base years: average sum assured, average claim, and the ratio of the two rates"
+    ),
+    "insured_market": (
+        "Premium written, sum assured, lives and death claims by year for the market and for "
+        "traditional term, on the death cover: the premium per 1,000 of cover and the claims "
+        "reported and paid as a share of premium (premium also pays commissions, expenses and "
+        "profit, so the shares show room in a price, not profit)"
     ),
     "insured_causes": (
         "Insured death claims by year, sex, age band and cause group (keyword grouping of the "
@@ -120,6 +127,43 @@ def amount_table(
     ]  # fmt: skip
 
 
+def market_table(
+    claims: pd.DataFrame, issued: pd.DataFrame, segments=("term_traditional", "all")
+) -> pd.DataFrame:
+    """What the market charged and what it paid out, by year and product, on the death cover.
+
+    ``claims``: year, age, sex, plan, modality, cause, claims, amount_claimed, amount_paid.
+    ``issued``: year, age, sex, plan, modality, insured, premium, sum_assured. Claims follow the
+    base death rule (known age and sex, positive amount, no maturity payments), so the ledger of
+    adjustments is not counted. The premium is the premium written for the death cover, which
+    also pays commissions, expenses and profit: the ratios say how much room a price has, not what
+    the profit was.
+    """
+    rows = []
+    for segment in segments:
+        c = insured.segment_rows(insured._without_maturities(claims), segment)
+        c = c[c["age"].notna() & c["sex"].notna() & (c["amount_claimed"] > 0)]
+        i = insured.segment_rows(issued, segment)
+        g = i.groupby("year").agg(
+            lives=("insured", "sum"), sum_assured=("sum_assured", "sum"), premium=("premium", "sum")
+        )
+        d = c.groupby("year").agg(
+            deaths=("claims", "sum"), claimed=("amount_claimed", "sum"), paid=("amount_paid", "sum")
+        )
+        g = g.join(d, how="left").fillna(0.0).reset_index()
+        g["segment"] = segment
+        rows.append(g)
+    out = pd.concat(rows, ignore_index=True)
+    out["premium_per_1000"] = 1000 * out["premium"] / out["sum_assured"]
+    out["claimed_per_1000"] = 1000 * out["claimed"] / out["sum_assured"]
+    out["claimed_to_premium"] = out["claimed"] / out["premium"]
+    out["paid_to_premium"] = out["paid"] / out["premium"]
+    return out[
+        ["segment", "year", "lives", "sum_assured", "premium", "deaths", "claimed", "paid",
+         "premium_per_1000", "claimed_per_1000", "claimed_to_premium", "paid_to_premium"]
+    ]  # fmt: skip
+
+
 def legacy_table(
     issued: pd.DataFrame, claims: pd.DataFrame, base: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -175,17 +219,18 @@ def build_tables(con) -> list[tuple[str, str]]:
         frames["insured_pandemic"] = pandemic_table(market, pop)
 
     claims = pd.read_sql(
-        "SELECT year, age, sex, plan, modality, cause, claims, amount_claimed "
+        "SELECT year, age, sex, plan, modality, cause, claims, amount_claimed, amount_paid "
         f"FROM cnsf_vi_claims WHERE coverage = '{insured.DEATH_COVER}'",
         con,
     )
     issued = pd.read_sql(
         "SELECT year, age, sex, plan, modality, SUM(insured) AS insured, "
-        "SUM(sum_assured) AS sum_assured FROM cnsf_vi_issued "
+        "SUM(premium) AS premium, SUM(sum_assured) AS sum_assured FROM cnsf_vi_issued "
         f"WHERE coverage = '{insured.DEATH_COVER}' GROUP BY year, age, sex, plan, modality",
         con,
     )
     frames["insured_amount"] = amount_table(claims, issued)
+    frames["insured_market"] = market_table(claims, issued)
     frames["insured_causes"] = insured_causes.cause_table(claims)
 
     if {"cnsf_vi_legacy_issued", "cnsf_vi_legacy_claims", "insured_pooled"} <= names:

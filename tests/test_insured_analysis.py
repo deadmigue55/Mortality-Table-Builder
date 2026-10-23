@@ -98,3 +98,37 @@ def test_legacy_table_excludes_rejected_claims_and_reports_the_sex_mix():
         {"M": 1000 / 1300, "F": 300 / 1300}
     )
     assert np.isclose(mix["share"].sum(), 1.0)
+
+
+def test_market_table_counts_known_deaths_and_leaves_out_the_ledger_and_other_products():
+    claims = pd.DataFrame(
+        {
+            "year": [2024] * 4,
+            "age": [40, 41, None, 42],  # the no-age row is the adjustment ledger
+            "sex": ["M", "M", None, "M"],
+            "plan": ["Temporal", "Temporal", None, "Vitalicio"],
+            "modality": ["Tradicional"] * 2 + [None, "Tradicional"],
+            "cause": ["INFARTO", "ACCIDENTE", "SIN DATO", "INFARTO"],
+            "claims": [1.0, 1.0, 5.0, 1.0],
+            "amount_claimed": [100.0, 300.0, -50.0, 900.0],
+            "amount_paid": [90.0, 250.0, 0.0, 800.0],
+        }
+    )
+    issued = pd.DataFrame(
+        {
+            "year": [2024, 2024],
+            "age": [40, 40],
+            "sex": ["M", "M"],
+            "plan": ["Temporal", "Vitalicio"],
+            "modality": ["Tradicional", "Tradicional"],
+            "insured": [1000.0, 10.0],
+            "premium": [4000.0, 500.0],
+            "sum_assured": [1_000_000.0, 50_000.0],
+        }
+    )
+    out = analysis.market_table(claims, issued).set_index("segment")
+    term = out.loc["term_traditional"]
+    assert term["deaths"] == 2 and term["claimed"] == 400.0 and term["paid"] == 340.0
+    assert term["premium_per_1000"] == pytest.approx(4.0)
+    assert term["claimed_to_premium"] == pytest.approx(0.1)
+    assert out.loc["all", "deaths"] == 3  # all products, still without the ledger row

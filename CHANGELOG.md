@@ -11,6 +11,13 @@ All notable changes to this project are listed here. The format follows
   basis), keeping the statutory reserve on CNSF 2013, so it reproduces the stored premium table.
 - Dashboard screenshots retaken, with the Insured lives page added.
 
+### Added
+- `insured_market`: premium written, cover, lives and death claims by year for the market and for
+  traditional term (premium per 1,000 of cover; claims reported and paid as a share of premium).
+- A business-impact section in `docs/insured-lives.md` and the README: price at the same target
+  return, return at measured mortality, room in the market and claims volatility against book size.
+- A scheduled workflow (`keep-alive.yml`) that opens the live dashboard in a browser every six hours.
+
 ### Fixed
 - Cut-off metric values on the overview and Insured lives pages, and the "one fifth to one
   seventh" wording, which did not match the 14% to 25% found.

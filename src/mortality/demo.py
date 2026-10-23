@@ -59,8 +59,9 @@ BUNDLE_TABLES: tuple[str, ...] = (
     "insured_table", "insured_crude", "insured_pooled", "insured_methods", "insured_graduated",
     "insured_fit_tests", "insured_trend", "insured_relativities", "insured_comparison",
     "insured_premiums", "insured_gap", "insured_brass", "insured_improvement",
-    "insured_pandemic", "insured_amount", "insured_causes", "insured_ledger", "insured_rules",
-    "insured_sensitivity", "insured_margin", "insured_legacy", "insured_legacy_mix",
+    "insured_pandemic", "insured_amount", "insured_market", "insured_causes", "insured_ledger",
+    "insured_rules", "insured_sensitivity", "insured_margin", "insured_legacy",
+    "insured_legacy_mix",
 )  # fmt: skip
 
 # Tables copied with some rows removed: (table, column, value to drop, case-insensitive)

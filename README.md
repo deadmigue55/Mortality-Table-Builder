@@ -46,6 +46,9 @@ Mexico's regulatory mortality table (CNSF 2013) is more than a decade old and mi
 | **The pandemic** | Insured lives were **not shielded**: in 2021 their death rates were up to **2.7 times** their 2023 level (the population's: 1.7), so the stress test now replays 2021 as insured lives lived it |
 | **Three traps in the data** | One death claim in five is an **accounting ledger**, not a death; **2,300 "sprained ankle" claims** are endowment maturities; deaths must be measured against lives holding the **death cover** |
 | **Margin** | **15%** on mortality, sized from the adverse readings that cannot be ruled out (12.4% in quadrature) |
+| **What it does to a price** | At the same 10% target return, a 20-year term priced on the insured table costs **20% to 34% less for men and 45% to 57% less for women** (ages 25 to 60) than the same policy priced on CNSF 2013: a man of 40 pays 1.57 per 1,000 against 2.32 (**-32%**). If mortality is as measured it earns **12% to 21%** a year against the 10% target |
+| **Room in the market** | Traditional term wrote **MXN 43.2 billion** of premium in 2023 to 2025 and reported **MXN 9.5 billion** of death claims: **22%** of premium (premium also pays commissions and expenses, so this is room in a price, not profit) |
+| **Why volume pays** | The one-year swing in a book's claims (men at 40, equal policies) falls from **43%** at 10,000 policies to **14%** at 100,000 and **4%** at 1,000,000: a lower price that wins quotes makes the book steadier. The 15% margin covers one standard deviation from about **83,000** policies. Winning more quotes is the mechanism, not a measured result |
 | **Honest about its limits** | Above about 60 for term and 83 for whole life the data stop describing insured lives; the table follows the population there **by assumption**, flagged in every table and figure |
 
 <table>
