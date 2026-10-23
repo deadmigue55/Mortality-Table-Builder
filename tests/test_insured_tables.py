@@ -67,6 +67,7 @@ def warehouse():
                         "plan": "Temporal",
                         "modality": "Tradicional",
                         "coverage": "Fallecimiento",
+                        "cause": "INFARTO AGUDO DEL MIOCARDIO",
                         "claims": d.astype(float),
                         "amount_claimed": 1000.0,
                         "amount_paid": 900.0,
@@ -82,14 +83,29 @@ def warehouse():
             "plan": "Temporal",
             "modality": "Tradicional",
             "coverage": "Fallecimiento",
+            "cause": "OTRAS SEPSIS",
             "claims": [500.0] * 5 + [450.0] * 5,
             "amount_claimed": [1000.0] * 5 + [-1000.0] * 5,
             "amount_paid": 0.0,
         }
     )
+    maturities = pd.DataFrame(
+        {
+            "year": list(YEARS) * 2,
+            "age": [62] * 10,
+            "sex": ["M"] * 5 + ["F"] * 5,
+            "plan": "Temporal",
+            "modality": "Tradicional",
+            "coverage": "Fallecimiento",
+            "cause": "LUXACION, ESGUINCE Y TORCEDURA DE ARTICULACIONES Y LIGAMENTOS DEL TOBILLO",
+            "claims": 40.0,
+            "amount_claimed": 3_000_000.0,
+            "amount_paid": 3_000_000.0,
+        }
+    )
     pd.concat(pop).to_sql("graduated_qx", con, index=False)
     pd.concat(expo).to_sql("cnsf_vi_issued", con, index=False)
-    pd.concat([*claims, ledger]).to_sql("cnsf_vi_claims", con, index=False)
+    pd.concat([*claims, ledger, maturities]).to_sql("cnsf_vi_claims", con, index=False)
     cnsf = pd.DataFrame(
         {"table": "CNSF M 2013", "variant": "base", "age": AGES, "qx": 0.25 * population_q("F")}
     )
@@ -119,6 +135,23 @@ def test_the_table_is_complete_valid_and_ends_at_one(warehouse):
         assert g["qx"].iloc[-1] == 1.0
         old = g[g["age"] >= 85]["qx"].to_numpy()
         assert np.all(np.diff(old) >= 0), f"{segment} {sex}: old-age rates must not fall"
+
+
+def test_maturity_payments_are_not_counted_in_any_table(warehouse):
+    con, _ = warehouse
+    rules = read(con, "SELECT year, rule, deaths FROM insured_rules").pivot_table(
+        index="year", columns="rule", values="deaths"
+    )
+    # the planted block is 80 claims a year (both sexes): in the "with" reading, not in the base
+    assert np.allclose(rules["with_maturities"] - rules["base"], 80.0)
+    at_62 = read(
+        con,
+        "SELECT SUM(deaths) AS d, SUM(exposure) AS e FROM insured_pooled "
+        "WHERE segment = 'term_traditional' AND age = 62",
+    )
+    rate = float(at_62["d"].iloc[0] / at_62["e"].iloc[0])
+    truth = float(np.mean([true_ratio(np.array([62]))[0] * population_q(s)[62] for s in "MF"]))
+    assert rate < 2 * truth  # with 240 maturities in the numerator it would be several times it
 
 
 def test_men_are_floored_at_women_and_the_change_is_flagged():
@@ -151,7 +184,9 @@ def test_the_ledger_rows_never_count_as_deaths(warehouse):
     con, _ = warehouse
     rules = read(con, "SELECT * FROM insured_rules WHERE rule = 'base'")
     claims = read(
-        con, "SELECT year, SUM(claims) AS c FROM cnsf_vi_claims WHERE age IS NOT NULL GROUP BY year"
+        con,
+        "SELECT year, SUM(claims) AS c FROM cnsf_vi_claims WHERE age IS NOT NULL "
+        "AND cause NOT LIKE 'LUXACION%' GROUP BY year",
     )
     merged = rules.merge(claims, on="year")
     assert np.allclose(merged["deaths"], merged["c"])
@@ -196,6 +231,13 @@ def test_a_flexible_method_wins_when_the_truth_is_not_brass(warehouse):
     for _, g in both.groupby("sex"):
         best = g.set_index("method")["qaic"]
         assert best[["direct", "relational"]].min() < best[["brass", "makeham"]].min()
+
+
+def test_both_sexes_share_one_credible_range(warehouse):
+    con, _ = warehouse
+    m = read(con, "SELECT segment, sex, last_age FROM insured_methods WHERE selected = 1")
+    spread = m.groupby("segment")["last_age"].agg(["min", "max"])
+    assert (spread["min"] == spread["max"]).all()
 
 
 def test_the_stale_old_age_data_is_detected_and_replaced(warehouse):

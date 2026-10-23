@@ -2,17 +2,18 @@
 
 # Mortality Table Builder
 
-**From three million Mexican death records to prices, reserves and reinsurance.**<br>
-An end-to-end actuarial pipeline, validated at every step.
+**From Mexican death records to the table a quote is priced on, then to reserves and reinsurance.**<br>
+An end-to-end actuarial pipeline, validated at every step. **Version 2: the insured-lives table.**
 
 [![Live demo](https://img.shields.io/badge/live%20demo-open%20the%20dashboard-FF4B4B?logo=streamlit&logoColor=white)](https://mortality-table-builder.streamlit.app/)
 [![CI](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml/badge.svg)](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
-![Tests](https://img.shields.io/badge/tests-320%2B-brightgreen)
-![Data checks](https://img.shields.io/badge/data%20checks-100-brightgreen)
+![Tests](https://img.shields.io/badge/tests-410%2B-brightgreen)
+![Data checks](https://img.shields.io/badge/data%20checks-122-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 [**Live dashboard**](https://mortality-table-builder.streamlit.app/) ·
+[**Insured-lives write-up**](docs/insured-lives.md) ·
 [**Methodology report (PDF)**](reports/methodology.pdf) ·
 [**Excel workbook**](reports/Mortality_Table_Builder.xlsx) ·
 [**Write-ups**](docs/)
@@ -30,11 +31,51 @@ Mexico's regulatory mortality table (CNSF 2013) is more than a decade old and mi
 > [!NOTE]
 > The mortality is real or derived from real data. The **book of policies, the annuity block and the market assumptions** (expenses, commissions, lapses, cost of capital) are **synthetic or illustrative**, and labelled that way wherever they appear. The method is validated by planting known effects in the synthetic book and checking that it finds them.
 
+## Version 2: the table a pricing actuary needs
+
+**Version 1** rebuilt Mexico's mortality from the registered deaths of the whole population. That answers population questions (life expectancy, the pandemic, longevity) and is the wrong table for **pricing a quote**: the people who buy life insurance are wealthier, underwritten and mostly urban. **Version 2** builds the table from the industry's own statistics (the CNSF's *Sistema Estadístico de Vida Individual*, 2021 to 2025: 81,000 death claims and about 20 million insured lives a year in the three base years), compares it with the population, the regulator's CNSF 2013 table, the US insured table and nine national tables, and explains every choice and what it costs. Version 1 is tagged [`v1.0.0`](https://github.com/deadmigue55/Mortality-Table-Builder/releases/tag/v1.0.0) and stays the population reference.
+
+<p align="center"><img src="docs/img/insured_hero.png" alt="Insured and population mortality" width="900"></p>
+
+| | |
+|---|---|
+| **How different** | Insured lives die at **14% to 25% of the population's rate** between ages 20 and 65. A US insured life dies at 44% to 79% of the US national rate: the Mexican gap is about **three times** the American one |
+| **A quote** | A man of 40, 20-year term, net premium per 1,000: **0.85** on the insured traditional-term table, 1.74 on CNSF 2013, 2.52 on the US insured table, **6.62** on the population. A woman of 40: **0.38**, against 1.74 on the (unisex) regulator's table |
+| **Who they die like** | Insured men of 40: **Sweden in 2021**. The population, at the same age: the **United States in 1966** |
+| **One table is not enough** | Whole life and endowments die at **2 to 3.5 times** traditional term; credit life at 1.3 to 2. Quoting a traditional term policy on the market-wide table would overcharge by **40%** |
+| **The pandemic** | Insured lives were **not shielded**: in 2021 their death rates were up to **2.7 times** their 2023 level (the population's: 1.7), so the stress test now replays 2021 as insured lives lived it |
+| **Three traps in the data** | One death claim in five is an **accounting ledger**, not a death; **2,300 "sprained ankle" claims** are endowment maturities; deaths must be measured against lives holding the **death cover** |
+| **Margin** | **15%** on mortality, sized from the adverse readings that cannot be ruled out (12.4% in quadrature) |
+| **Honest about its limits** | Above about 60 for term and 83 for whole life the data stop describing insured lives; the table follows the population there **by assumption**, flagged in every table and figure |
+
+<table>
+<tr>
+<td width="50%"><img src="docs/img/insured_premiums.png" alt="Premiums by issue age"></td>
+<td width="50%"><img src="docs/img/insured_matches.png" alt="Who do insured Mexicans die like"></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/insured_products.png" alt="Mortality by product"></td>
+<td width="50%"><img src="docs/img/insured_pandemic.png" alt="The pandemic in insured lives"></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/insured_gap.png" alt="Mexico and the United States"></td>
+<td width="50%"><img src="docs/img/insured_tornado.png" alt="What moves the price"></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/insured_stress.png" alt="The stress test"></td>
+<td width="50%"><img src="docs/img/insured_countries.png" alt="The league table of countries"></td>
+</tr>
+</table>
+
+[**Read the full write-up**](docs/insured-lives.md): the data, the three traps, an 18-line decision log (what was chosen, why, and what the alternative does to a quote), the method, validation and limits. Or open the **Insured lives** page of the [live dashboard](https://mortality-table-builder.streamlit.app/).
+
+---
+
 ## Explore it
 
 | | |
 |---|---|
-| **Dashboard** | **[Open the live demo](https://mortality-table-builder.streamlit.app/)**. Nine pages; four are live labs: price a policy, value a pension, design a reinsurance treaty, and run the experience study on **your own policy extract**. Locally: `uv run mortality app` |
+| **Dashboard** | **[Open the live demo](https://mortality-table-builder.streamlit.app/)**. Ten pages, including **Insured lives**; four are live labs: price a policy, value a pension, design a reinsurance treaty, and run the experience study on **your own policy extract**. Locally: `uv run mortality app` |
 | **Report** | An 11-page methodology report with a Spanish executive summary. Every number in the text is computed from the data when it is rendered: [`reports/methodology.pdf`](reports/methodology.pdf) |
 | **Excel workbook** | Life tables with **live commutation formulas** (Dx, Nx, Mx driven by one interest cell) and a premium calculator, checked against the Python code by an independent formula engine: [`reports/Mortality_Table_Builder.xlsx`](reports/Mortality_Table_Builder.xlsx) |
 | **Write-ups** | One document per step with method, results and limits: [`docs/`](docs/) |
@@ -50,7 +91,7 @@ Mexico's regulatory mortality table (CNSF 2013) is more than a decade old and mi
 </tr>
 </table>
 
-## What it found
+## What the population study found (version 1)
 
 | | |
 |---|---|
@@ -65,7 +106,7 @@ Mexico's regulatory mortality table (CNSF 2013) is more than a decade old and mi
 ## What this project demonstrates
 
 - **Actuarial depth, end to end.** Graduation (P-spline, Whittaker-Henderson, Heligman-Pollard, Kannisto), life tables and commutation functions, Lee-Carter and CBD projection, an insurer-style experience study (A/E, credibility, GLM relativities, claims-lag completion), profit testing, reserves, excess mortality, stress testing, reinsurance structures and a longevity swap.
-- **Validation instead of assertion.** Every method is checked against something independent: HMD's published life expectancy (to 0.007 years), an R implementation (StMoMo, to 0.00002 years), a **planted truth** in a synthetic portfolio, a backtest of past forecasts, and an Excel recomputation. The 100 data checks and 320+ tests run on every commit.
+- **Validation instead of assertion.** Every method is checked against something independent: HMD's published life expectancy (to 0.007 years), an R implementation (StMoMo, to 0.00002 years), a **planted truth** in a synthetic portfolio, a backtest of past forecasts, and an Excel recomputation. The 122 data checks (4 documented warnings) and 410+ tests run on every commit.
 - **Honesty about limits.** The four warnings in the data checks are documented, not hidden; the stress tests say which conclusion depends on which assumption.
 - **Engineering.** A reproducible pipeline with a SHA-256 manifest of every input, a SQLite warehouse with 92 documented tables, a CLI, CI, pre-commit hooks, and a public demo bundle built from an **allow-list** so licensed data (the Human Mortality Database) can never leak into the repository.
 - **Communication.** A dashboard for managers, an Excel workbook for actuaries, a report for reviewers, a Spanish summary for Mexican readers.
@@ -78,6 +119,8 @@ Mexico's regulatory mortality table (CNSF 2013) is more than a decade old and mi
 **Mortality Table Builder** reconstruye las tablas de mortalidad de México a partir de los microdatos de defunciones del INEGI y de la población de CONAPO, y las utiliza como lo haría una aseguradora o una reaseguradora: graduación y proyección, estudio de experiencia, precio de un seguro temporal, reservas, pruebas de estrés de pandemia y longevidad, reaseguro y un swap de longevidad.
 
 Los hombres de 40 años mueren a 4.1 veces la tasa de la tabla regulatoria CNSF 2013. Entre 2020 y 2022 murieron unas 746,000 personas más de lo esperado. Una repetición de 2021 elevaría los siniestros de una cartera asegurada en 60%, más que el escenario de estrés de la propia CNSF (51%). La cartera de pólizas es sintética y los supuestos de mercado son ilustrativos; la mortalidad es real o se deriva de datos reales. El informe completo, con resumen ejecutivo en español, está en [`reports/methodology.pdf`](reports/methodology.pdf).
+
+**Versión 2: tabla de vida asegurada.** Con las estadísticas de la CNSF de Vida Individual (2021 a 2025) se construye la tabla que usa quien cotiza un seguro: los asegurados mexicanos mueren a entre 14% y 25% de la tasa de la población (un asegurado estadounidense, entre 44% y 79% de la nacional). Un hombre de 40 años en un temporal a 20 años paga una prima neta de 0.85 por millar con la nueva tabla, 1.74 con la tabla CNSF 2013 y 6.62 con la población. Los datos tienen tres trampas (un quinto de los siniestros por fallecimiento es un libro de ajustes, unos 2,300 "esguinces" son vencimientos de dotales y las defunciones deben medirse contra las vidas con cobertura de fallecimiento). La explicación completa, con cada decisión y su costo, está en [`docs/insured-lives.md`](docs/insured-lives.md).
 
 </details>
 
@@ -120,6 +163,7 @@ Life insurers and reinsurers price and reserve with mortality tables. In Mexico 
 | 8 | **Experience study** | Insurer-style A/E, credibility, GLM, select period, claims lag, validated by planting | [experience study](docs/experience-study.md) |
 | 9 | **Applications** | Excess mortality, pricing and reserves, stress tests, reinsurance and a longevity swap | [excess](docs/excess-mortality.md), [pricing](docs/pricing.md), [stress](docs/stress-tests.md), [reinsurance](docs/reinsurance.md) |
 | 10 | **Dashboard, workbook, report** | Streamlit app, Excel with live formulas, Quarto report | [deploy](docs/deploy.md) |
+| 11 | **Insured lives (version 2)** | The CNSF industry statistics into a table family for pricing: data traps, graduation, comparison with the population, CNSF 2013, the US and nine countries, sensitivity and margin | [insured lives](docs/insured-lives.md) |
 
 ## Results by step
 
@@ -304,11 +348,31 @@ Each step has its own write-up; these are the findings that matter most. Expand 
 <details>
 <summary><b>10. Dashboard, workbook and report</b></summary>
 
-- **Streamlit dashboard** (`uv run mortality app`): nine pages over a shareable demo bundle built from an allow-list of derived tables; four live labs call the same engines the tests check; a Trust page lists all 100 data checks, the sources with checksums and the limits; the app is tested headlessly in CI.
+- **Streamlit dashboard** (`uv run mortality app`): ten pages (the newest is **Insured lives**) over a shareable demo bundle built from an allow-list of derived tables; four live labs call the same engines the tests check; a Trust page lists all 122 data checks, the sources with checksums and the limits; the app is tested headlessly in CI.
 - **Excel workbook** (`uv run mortality export-excel`): lx, dx, Dx, Nx, Cx and Mx as live formulas driven by one interest cell, a premium calculator, a rate card and the stress results; recomputed by an independent formula engine in the tests and matched to the Python functions to 1e-9.
 - **Methodology report** ([PDF](reports/methodology.pdf), Quarto and Typst): 11 pages with a Spanish executive summary; every number in the text is computed from the data bundle when the report is rendered.
 
 [Deployment guide](docs/deploy.md)
+</details>
+
+<details>
+<summary><b>11. Insured lives</b>: the table for a quote, three traps, a 15% margin</summary>
+
+- The CNSF's individual life statistics 2021 to 2025 give **81,000 deaths** and about **20 million insured lives a year** in the base years 2023 to 2025. Every column total is reconciled to the raw cells.
+- **A table family**: traditional term, credit life, and whole life and endowments are graduated on their own (direct and relational P-splines, Gompertz-Makeham and Brass compared by one common dispersion and out-of-sample shape); other term modalities are an age-varying multiple of traditional term; the market-wide table is an exposure-weighted blend.
+- **Three traps**: a fifth of death claims are a cancellation-heavy ledger (+11% to +25% on a quote if counted); 2,300 sprain-coded claims are endowment maturities (ages 60 to 69, 3.6 times a normal claim); deaths against the wrong cover would lower a quote by 11%.
+- **A man of 40, 20-year term, per 1,000**: 0.85 insured traditional term, 1.20 market, 1.74 CNSF 2013, 2.52 US insured, 6.62 population.
+- **The pandemic**: insured death rates up to 2.7 times their 2023 level in 2021 against 1.7 for the population.
+- **Not used, and why**: the 2018 to 2020 format (women's share of lives goes 46%, 36%, 37% in three years); above the credible range the table is the population's shape by assumption.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/img/insured_ledger.png" alt="The ledger"></td>
+<td width="50%"><img src="docs/img/insured_old_ages.png" alt="Where the data stop"></td>
+</tr>
+</table>
+
+[Full write-up](docs/insured-lives.md)
 </details>
 
 ## Data sources
@@ -320,6 +384,7 @@ All data comes from official or academically recognized sources. Raw data is **n
 | **INEGI**: Estadísticas de Defunciones Registradas | Death microdata by age, sex, state, cause and year of occurrence | Open data |
 | **CONAPO**: Conciliación Demográfica 1950-2019 and Proyecciones 2020-2070 | Mid-year population by age, sex and state (the exposure) | Open data |
 | **CNSF**: Mexican regulatory tables (CNSF 2013 in force; CNSF 2000-I and EMSSA-09 for history) | Regulatory benchmark | Public documents |
+| **CNSF**: Sistema Estadístico, Vida Individual (2018 to 2025) | Insured lives, sums assured and death claims by age, sex, plan, modality and state, with the cause of each claim (version 2) | Public statistics, one download a year |
 | **SOA**: Mortality and Other Rate Tables (mort.soa.org) | US benchmarks (e.g. 2017 CSO, 2012 IAM, Pri-2012) | Free, XTbML/CSV |
 | **Human Mortality Database** | International comparison countries (Mexico is not in HMD) | Free registration, scientific use; never redistributed here |
 
@@ -355,6 +420,7 @@ uv run mortality ingest conapo                    # population 1950-2070
 uv run mortality ingest hmd                       # needs the login in .env
 uv run mortality ingest soa                       # SOA and Mexican tables
 uv run mortality ingest cnsf                      # CNSF 2013 regulatory tables
+uv run mortality ingest cnsf-vi <folder>          # CNSF individual life statistics (version 2)
 uv run mortality db build                         # SQLite warehouse + data checks
 ```
 
@@ -387,8 +453,9 @@ Mortality-Table-Builder/
 ├── r/               # R scripts: StMoMo projections and cross-checks
 ├── src/mortality/   # the package: ingest, quality, rates, graduation, lifetable, projection,
 │                    #   lexis/portfolio/experience, excess, pricing, stress, reinsurance,
-│                    #   export, demo, validate, warehouse, figures, cli
-└── tests/           # 320+ tests, including headless tests of every dashboard page
+│                    #   insured (+ _compare, _analysis, _sensitivity, _causes), export, demo,
+│                    #   validate, warehouse, figures, cli
+└── tests/           # 410+ tests, including headless tests of every dashboard page
 ```
 
 ## Author

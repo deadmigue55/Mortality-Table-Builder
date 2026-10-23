@@ -21,6 +21,20 @@ def claims_frame():
     frame = pd.DataFrame(
         rows, columns=["year", "age", "sex", "coverage", "claims", "amount_claimed"]
     )
+    frame["cause"] = "INFARTO AGUDO DEL MIOCARDIO"
+    # an endowment maturity booked as a death with a placeholder cause: not a death
+    maturity = pd.DataFrame(
+        {
+            "year": [2024],
+            "age": [62],
+            "sex": ["M"],
+            "coverage": ["Fallecimiento"],
+            "claims": [3],
+            "amount_claimed": [3_000_000.0],
+            "cause": ["LUXACION, ESGUINCE Y TORCEDURA DE ARTICULACIONES Y LIGAMENTOS DEL TOBILLO"],
+        }
+    )
+    frame = pd.concat([frame, maturity], ignore_index=True)
     frame["age"] = frame["age"].astype("Int16")
     frame["sex"] = frame["sex"].astype("string")
     return frame
@@ -35,6 +49,21 @@ def test_base_rule_counts_only_known_positive_death_claims():
     assert total(d, 2024) == 15  # 10 + 5; rider, funeral cover, cancelled and no-detail rows out
     assert total(d, 2023) == 6
     assert set(d["sex"]) == {"M", "F"}
+
+
+def test_maturity_payments_coded_as_sprains_are_not_deaths_unless_asked_for():
+    base = insured.death_cells(claims_frame(), "base")
+    kept = insured.death_cells(claims_frame(), "with_maturities")
+    assert total(base, 2024) == 15
+    assert total(kept, 2024) == 18  # the 3 maturity payments come back
+    assert 62 not in set(base["age"]) and 62 in set(kept["age"])
+
+
+def test_the_rules_refuse_claims_without_a_cause_instead_of_skipping_the_filter():
+    no_cause = claims_frame().drop(columns="cause")
+    with pytest.raises(ValueError, match="cause column"):
+        insured.death_cells(no_cause, "base")
+    assert total(insured.death_cells(no_cause, "with_maturities"), 2024) == 18
 
 
 def test_net_rule_removes_known_cancellations():

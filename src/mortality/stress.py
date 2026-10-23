@@ -51,6 +51,34 @@ def pscore_by_age(excess: pd.DataFrame, year: int) -> dict[str, np.ndarray]:
     return out
 
 
+def insured_pscores(pandemic: pd.DataFrame, year: int) -> dict[str, np.ndarray]:
+    """P-score by single age from the insured lives' own death rates, not the population's.
+
+    ``pandemic``: the ``insured_pandemic`` table (source, year, sex, band, index_vs_2023). The
+    score of an age band is the year's rate relative to 2023, minus one (never below zero). It
+    holds for the ages inside the band; ages below the first band take its value and ages above
+    the last band take the last one, so the whole book is stressed."""
+    out: dict[str, np.ndarray] = {}
+    for sex in ("M", "F"):
+        part = pandemic[
+            (pandemic["source"] == "insured")
+            & (pandemic["year"] == year)
+            & (pandemic["sex"] == sex)
+        ].sort_values("band")
+        scores = np.zeros(MAX_AGE + 1)
+        bands = []
+        for label, index in zip(part["band"], part["index_vs_2023"], strict=True):
+            lo, hi = (int(x) for x in str(label).split("-"))
+            scores[lo : hi + 1] = max(float(index) - 1.0, 0.0)
+            bands.append((lo, hi))
+        if bands:
+            scores[: min(lo for lo, _ in bands)] = scores[min(lo for lo, _ in bands)]
+            top = max(hi for _, hi in bands)
+            scores[top + 1 :] = scores[top]
+        out[sex] = scores
+    return out
+
+
 def first_year_q(inforce: pd.DataFrame, q_all: np.ndarray, lookup: dict | None) -> np.ndarray:
     """Probability of dying in the next twelve months for each policy of an in-force block: the
     expected table, times the company multiplier of its age, sex and duration if one is given."""
@@ -100,11 +128,15 @@ def pandemic_scenarios(
     years=(2020, 2021, 2022),
     dampenings=(1.0, 0.5),
     severities=(0.5, 1.5, 2.0),
+    insured_scores: dict[int, dict[str, np.ndarray]] | None = None,
 ) -> pd.DataFrame:
     """The book's extra claims under each replay of the pandemic and under the regulator's stress.
 
     ``q_regulatory`` is a heavier table (the 99.5th percentile CNSF variant): its uplift is the
-    shock the regulator expects a company to withstand, the comparison for the replays."""
+    shock the regulator expects a company to withstand, the comparison for the replays.
+    ``insured_scores`` (year -> P-scores from the insured lives' own experience) adds the
+    scenarios "as insured lives lived it": the replays assumed insured lives are shielded
+    (dampening of 1 or 0.5), the observed insured experience says what they really were."""
     base = book.claims
     sa = book.inforce["sum_assured"].to_numpy(float)
     rows = []
@@ -121,6 +153,9 @@ def pandemic_scenarios(
         for damp in dampenings:
             add("replay", f"{year} replay", year, damp, 1.0,
                 float(stressed_claims(book, scores, damp, 1.0).sum()))  # fmt: skip
+    for year, scores in (insured_scores or {}).items():
+        add("observed", f"{year} as insured lives lived it", year, 1.0, 1.0,
+            float(stressed_claims(book, scores, 1.0, 1.0).sum()))  # fmt: skip
     ref = max(years, key=lambda y: pscore_by_age(excess, y)["M"][65])
     scores = pscore_by_age(excess, ref)
     for sev in severities:
@@ -319,7 +354,11 @@ def build_tables(con, *, interest: float = 0.04) -> list[tuple[str, str]]:
     age = np.clip(inforce["attained_age"].to_numpy(int), 0, MAX_AGE)
     q_regulatory = np.minimum(q1 * heavy[age] / base[age], 1.0)
     excess = pd.read_sql("SELECT * FROM excess_mortality", con)
-    pandemic = pandemic_scenarios(book, excess, q_regulatory)
+    insured_scores = None
+    if "insured_pandemic" in names:
+        observed = pd.read_sql("SELECT * FROM insured_pandemic WHERE source = 'insured'", con)
+        insured_scores = {year: insured_pscores(observed, year) for year in (2021, 2022)}
+    pandemic = pandemic_scenarios(book, excess, q_regulatory, insured_scores=insured_scores)
     by_age = pandemic_by_age(book, excess, 2021)
 
     # longevity: the annuity block on each basis

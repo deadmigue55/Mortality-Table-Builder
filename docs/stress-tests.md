@@ -89,3 +89,18 @@ Six checks in `validate.py` run against the warehouse (`uv run mortality db chec
 uv run mortality db build      # runs the stress tests on the warehouse's tables
 uv run mortality figures       # writes docs/img/stress_*.png
 ```
+
+## Version 2: the pandemic as insured lives lived it
+
+The replays above assume insured lives suffer the population's excess mortality scaled by a **dampening** (1.0: the same; 0.5: half), because an insured population is healthier. Version 2 has the data to replace the assumption: the insured lives' own death rates by age band ([insured lives](insured-lives.md), the pandemic section). `insured_pscores` turns each band's rate relative to 2023 into a P-score, and `pandemic_scenarios` replays it on the same in-force book as the new kind `observed`.
+
+| Scenario for 2021 | Extra claims in the next twelve months |
+|---|---|
+| The population's excess, insured at 50% (dampening 0.5) | +30% |
+| The population's excess, insured at 100% | +60% |
+| The regulator's 99.5th percentile table | +51% |
+| **As insured lives lived it** | **+133%** |
+
+Insured lives were **not** shielded: their death rates in 2021 were 2.0 times their 2023 level at ages 25 to 44, 2.7 times at 45 to 64 and 1.9 times at 65 to 79, against 1.4, 1.7 and 1.6 for the population. The absolute excess was about half the population's, but the baseline is so low that the relative jump is larger. **The regulator's own stress would not have covered 2021 on an insured book.** A data check (`stress_insured_lives_were_not_shielded`) keeps the finding visible.
+
+The book is still the synthetic one of step 8, so the 133% is the effect on *that* age mix; the point is the comparison between the scenarios, which share the same book.

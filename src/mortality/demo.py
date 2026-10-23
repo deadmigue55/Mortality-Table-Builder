@@ -50,17 +50,27 @@ BUNDLE_TABLES: tuple[str, ...] = (
     "excess_baselines", "excess_mortality", "excess_summary", "excess_monthly",
     "excess_by_cause", "excess_state",
     "pricing_premiums", "pricing_adequacy", "pricing_profit_test", "pricing_sensitivity",
-    "pricing_reserves",
+    "pricing_reserves", "pricing_insured",
     "stress_pandemic_book", "stress_pandemic_age", "stress_longevity", "stress_hedge",
     "reinsurance_concentration", "reinsurance_aggregate", "reinsurance_structures",
     "reinsurance_frontier", "reinsurance_price_sensitivity", "reinsurance_yrt_rating",
     "reinsurance_longevity_swap", "reinsurance_longevity_distribution",
+    # insured lives (version 2): aggregated CNSF statistics; the filters below drop HMD rows
+    "insured_table", "insured_crude", "insured_pooled", "insured_methods", "insured_graduated",
+    "insured_fit_tests", "insured_trend", "insured_relativities", "insured_comparison",
+    "insured_premiums", "insured_gap", "insured_brass", "insured_improvement",
+    "insured_pandemic", "insured_amount", "insured_causes", "insured_ledger", "insured_rules",
+    "insured_sensitivity", "insured_margin", "insured_legacy", "insured_legacy_mix",
 )  # fmt: skip
 
 # Tables copied with some rows removed: (table, column, value to drop, case-insensitive)
 ROW_FILTERS = {
     "life_table_comparison": ("source", "HMD"),
     "source_manifest": ("source", "hmd"),
+    "insured_comparison": ("group", "HMD national"),
+    "insured_brass": ("group", "HMD national"),
+    # the US insured table over the US national table: a ratio built from HMD rates
+    "insured_gap": ("comparison", "US: 2017 Unloaded CSO / national table"),
 }
 
 SAMPLE_POLICIES = 40_000
@@ -138,6 +148,7 @@ def forbidden_in(path: Path) -> list[str]:
     bad = (
         "hmd_",
         "benchmark_countries",
+        "insured_matches",  # the closest national table: HMD rates by country and year
         "inegi_deaths_cells",
         "conapo_population",
         "conapo_deaths",

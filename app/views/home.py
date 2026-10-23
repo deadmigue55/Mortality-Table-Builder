@@ -14,6 +14,15 @@ docs = ui.table("table_docs")
 e0 = summary[summary["year"] == 2023].set_index("sex")["e0"]
 excess_total = float(excess["x"].iloc[0])
 ratio = {s: ui.graduated_curve(2023, s)[40] / ui.cnsf_curve()[40] for s in ("M", "F")}
+insured = ui.sql(
+    "SELECT MIN(ratio_population) lo, MAX(ratio_population) hi FROM insured_table "
+    "WHERE segment = 'all' AND age BETWEEN 25 AND 65"
+).iloc[0]
+quote = ui.sql(
+    "SELECT \"table\" t, premium_per_1000 p FROM insured_premiums WHERE sex = 'M' AND term = 20 "
+    "AND issue_age = 40 AND \"table\" IN ('Mexico insured: Term, traditional', 'CNSF 2013', "
+    "'Mexico population 2023')"
+).set_index("t")["p"]
 
 st.title("Mortality Table Builder")
 st.markdown(
@@ -67,16 +76,19 @@ rebuilds the table from the raw data, then does with it what an insurer or a rei
         """
     )
 with right:
-    st.subheader("Three things it found")
+    st.subheader("Four things it found")
     st.markdown(
         f"""
-1. **Mexican men aged 40 die at {ratio["M"]:.1f} times the rate in the CNSF regulatory table**, and
-   women at {ratio["F"]:.1f} times. A premium priced on the regulatory table is cheap for the general
-   population and only safe for a well-underwritten book.
-2. **{excess_total / 1000:,.0f},000 more people died in 2020 to 2022 than normal**, 1.56 for each death certified
-   as COVID-19, and the regulator's own stress scenario would not have covered a repeat of 2021
-   if insured lives had died like the population.
-3. **Interest rates move an annuity book more than longevity does**: one point of
+1. **Mexicans who buy life insurance die at {insured["lo"]:.0%} to {insured["hi"]:.0%} of the
+   population's rate** between 25 and 65. A man of 40's 20-year term costs
+   **{quote["Mexico insured: Term, traditional"]:.2f}** per 1,000 on the insured table,
+   {quote["CNSF 2013"]:.2f} on the regulator's and {quote["Mexico population 2023"]:.2f} on the population's.
+2. **Mexican men aged 40 die at {ratio["M"]:.1f} times the rate in the CNSF regulatory table**, and
+   women at {ratio["F"]:.1f} times: a premium priced on the population would be far too dear.
+3. **{excess_total / 1000:,.0f},000 more people died in 2020 to 2022 than normal**, 1.56 for each death certified
+   as COVID-19, and the regulator's own stress scenario would not have covered a repeat of 2021:
+   insured lives were not shielded.
+4. **Interest rates move an annuity book more than longevity does**: one point of
    interest is worth more reserve than doubling the projected improvement in mortality.
         """
     )
@@ -84,6 +96,11 @@ with right:
 st.divider()
 st.subheader("Take the tour")
 tour = [
+    (
+        ":material/verified_user:",
+        "Insured lives",
+        "Version 2: the table a quote is priced on, built from the industry's own statistics.",
+    ),
     (
         ":material/monitoring:",
         "Mexico's mortality",
@@ -122,12 +139,12 @@ tour = [
     (
         ":material/verified:",
         "Trust and methods",
-        "All 100 data checks, the sources, the tests and the limits.",
+        "Every data check, the sources, the tests and the limits.",
     ),
 ]
-for row in (tour[:4], tour[4:]):
-    cols = st.columns(4)
-    for col, (icon, title, text) in zip(cols, row, strict=True):
+for row in (tour[:5], tour[5:]):
+    cols = st.columns(5)
+    for col, (icon, title, text) in zip(cols, row, strict=False):  # the last row may be shorter
         with col.container(border=True):
             st.markdown(f"**{icon} {title}**")
             st.caption(text)
@@ -149,7 +166,9 @@ aseguradora o una reaseguradora.
   longevidad, estructuras de reaseguro y un swap de longevidad.
 - **Estudio de experiencia:** método validado sembrando efectos conocidos en una cartera
   sintética y comprobando que se recuperan (15 de 15).
-- **Rigor:** {len(checks)} controles automáticos de datos, más de 300 pruebas unitarias y todo
+- **Tabla de vida asegurada (versión 2):** con las estadísticas de la CNSF de Vida Individual,
+  los asegurados mueren a entre {insured["lo"]:.0%} y {insured["hi"]:.0%} de la tasa de la población.
+- **Rigor:** {len(checks)} controles automáticos de datos, más de 400 pruebas unitarias y todo
   reproducible con un comando.
 
 La cartera de pólizas es **sintética** y los supuestos de mercado (gastos, comisiones, costo de

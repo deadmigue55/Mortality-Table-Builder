@@ -107,7 +107,8 @@ def _without_maturities(rows: pd.DataFrame) -> pd.DataFrame:
     3.6 times a death claim, start in 2022 and lie on savings-type plans. They are not deaths.
     """
     if "cause" not in rows.columns:
-        return rows
+        # silently skipping this would leave maturity payments in the deaths
+        raise ValueError("the claims need their cause column to remove the maturity payments")
     from mortality import insured_causes
 
     return rows[insured_causes.group_causes(rows["cause"]) != insured_causes.IMPLAUSIBLE]
@@ -428,6 +429,23 @@ def _fit_all(ages, deaths, exposure, q_ref) -> tuple[dict, dict]:
         "brass": brass.predict(q_ref),
     }
     return rate, {"relational": rel, "direct": direct, "makeham": gm, "brass": brass}
+
+
+def common_last_age(crude: pd.DataFrame, pop: pd.DataFrame, years=BASE_YEARS) -> int:
+    """One last credible age for both sexes: the shorter of the two ranges.
+
+    The boundary is noisy, and letting each sex have its own makes one sex's extension start
+    before the other's, which can push women's rates up to men's. A product has one credible
+    range, so both sexes are extended by the same rule from the same age.
+    """
+    pooled = pooled_cells(crude, years)
+    last = []
+    for sex in ("M", "F"):
+        q_pop = pop[pop["sex"] == sex].set_index("age")["qx"]
+        part = pooled[(pooled["sex"] == sex) & (pooled["age"] >= FIT_FROM_AGE)].sort_values("age")
+        q_all = q_pop.reindex(part["age"]).to_numpy()
+        last.append(last_credible_age(part["age"], part["deaths"], part["exposure"], q_all))
+    return min(last)
 
 
 MIN_LIVES = 500  # an age with fewer insured lives in any year is too thin to graduate
@@ -920,9 +938,10 @@ def segment_q(
     )
     crude = crude[crude["age"] <= TERMINAL_AGE]
     out = {}
+    last = common_last_age(crude, pop, years)
     for sex in ("M", "F"):
         q_pop = pop[pop["sex"] == sex].set_index("age")["qx"]
-        fits = graduate_sex(crude, q_pop, sex, years=years)
+        fits = graduate_sex(crude, q_pop, sex, years=years, last_age=last)
         chosen = method or select_method(fits.comparison)
         out[sex] = full_table(fits, chosen, q_pop, converge_age=converge_age)
     return out
@@ -956,9 +975,10 @@ def _segment_frames(
         }
 
     methods, graduated, tests, table = [], [], [], []
+    last = common_last_age(crude, pop)
     for sex in ("M", "F"):
         q_pop = pop[pop["sex"] == sex].set_index("age")["qx"]
-        fits = graduate_sex(crude, q_pop, sex)
+        fits = graduate_sex(crude, q_pop, sex, last_age=last)
         chosen = select_method(fits.comparison)
         methods.append(
             fits.comparison.assign(
@@ -1052,8 +1072,8 @@ def build_tables(con) -> list[tuple[str, str]]:
         return docs
 
     claims = pd.read_sql(
-        "SELECT year, age, sex, plan, modality, coverage, claims, amount_claimed, amount_paid "
-        f"FROM cnsf_vi_claims WHERE coverage = '{DEATH_COVER}'",
+        "SELECT year, age, sex, plan, modality, coverage, cause, claims, amount_claimed, "
+        f"amount_paid FROM cnsf_vi_claims WHERE coverage = '{DEATH_COVER}'",
         con,
     )
     # lives holding the death cover: the denominator that matches the numerator

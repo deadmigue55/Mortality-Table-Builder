@@ -15,7 +15,13 @@ from mortality import export, lifetable
 BUNDLE = Path(__file__).resolve().parent.parent / "app" / "data" / "demo.sqlite"
 pytestmark = pytest.mark.skipif(not BUNDLE.exists(), reason="demo bundle not built")
 
-KEYS = {"Mexico 2023, men": "M", "Mexico 2023, women": "F", "CNSF 2013 (regulatory)": "cnsf"}
+KEYS = {
+    "Mexico 2023, men": "M",
+    "Mexico 2023, women": "F",
+    "CNSF 2013 (regulatory)": "cnsf",
+    "Insured lives, men (traditional term)": "insured_M",
+    "Insured lives, women (traditional term)": "insured_F",
+}
 
 
 @pytest.fixture(scope="module")
@@ -59,6 +65,13 @@ def expected(con, table: str, age: int, interest: float, term: int) -> dict[str,
         {"table": "Mexico 2023, men", "age": 40, "interest": 0.04, "term": 20},
         {"table": "CNSF 2013 (regulatory)", "age": 55, "interest": 0.05, "term": 10},
         {"table": "Mexico 2023, women", "age": 30, "interest": 0.03, "term": 25},
+        {"table": "Insured lives, men (traditional term)", "age": 40, "interest": 0.04, "term": 20},
+        {
+            "table": "Insured lives, women (traditional term)",
+            "age": 35,
+            "interest": 0.05,
+            "term": 15,
+        },
     ],
 )
 def test_the_spreadsheet_agrees_with_the_python_commutation_functions(con, tmp_path, inputs):
@@ -86,6 +99,7 @@ def test_the_workbook_has_every_sheet(con, tmp_path):
     export.write_workbook(con, path)
     names = load_workbook(path).sheetnames
     for sheet in ("README", "Calculator", "Table_M", "Table_F", "Table_CNSF", "Rate_Card",
+                  "Table_Insured_M", "Table_Insured_F", "Insured_Rate_Card", "Insured_Premiums",
                   "Excess_Mortality", "Annuity_Stress", "Table_Comparison"):  # fmt: skip
         assert sheet in names
 

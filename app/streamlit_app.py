@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))  # lets pages ``import 
 
 PAGES = [
     ("views/home.py", "Overview", ":material/home:", "overview"),
+    ("views/insured.py", "Insured lives", ":material/verified_user:", "insured"),
     ("views/tables.py", "Mexico's mortality", ":material/monitoring:", "mortality"),
     ("views/future.py", "The future", ":material/trending_up:", "future"),
     ("views/pandemic.py", "The pandemic", ":material/coronavirus:", "pandemic"),

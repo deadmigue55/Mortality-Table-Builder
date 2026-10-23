@@ -140,3 +140,22 @@ q = ...  # 20 annual death probabilities for the policy
 premium = solve_premium(q, a)
 summarise(profit_test(q, premium, a), a.hurdle)
 ```
+
+## Version 2: priced on the insured-lives table
+
+Everything above prices the product on the regulator's table, the way an insurer without its own experience would. Version 2 adds what the industry's own statistics say about the people who buy it ([insured lives](insured-lives.md)). `pricing_insured` solves the same product's premium on the **insured traditional-term table**, rolled to 2026 at the projected improvement and loaded with the **15% margin** for adverse deviation, while the **statutory reserve stays on CNSF 2013**, as the regulation requires. The expenses, commission, lapses and the 10% hurdle are unchanged, so the only thing that moves is the mortality.
+
+| Policy (20-year term) | Gross per 1,000, insured table | Gross per 1,000, CNSF 2013 | Saving |
+|---|---|---|---|
+| Man of 30 | 1.13 | 1.54 | 27% |
+| Man of 40 | 1.57 | 2.32 | 32% |
+| Man of 50 | 2.86 | 4.30 | 33% |
+| Woman of 30 | 0.77 | 1.54 | 50% |
+| Woman of 40 | 1.04 | 2.32 | 55% |
+| Woman of 50 | 1.83 | 4.30 | 57% |
+
+- **The women's saving is larger** because the regulator's table is unisex: it prices a woman as the average of both sexes.
+- **The margin is real.** If mortality is the best estimate, the same premium earns 14.6% (a man of 40) and 11.7% (a woman of 40) instead of 10%.
+- **The other direction.** A premium priced on CNSF 2013 and then experiencing insured mortality earns a margin of 30% of premium (a man of 40) and 46% (a woman); experiencing the population's mortality it loses 171% (a man) and 44% (a woman). `pricing_adequacy` has two new bases, `insured` and `insured_prudent`.
+- **The statutory reserve is the cost of using the heavier table**: the reserve held on CNSF 2013 is larger than the insured basis needs, which is a strain in the first years.
+- Two new data checks: the premium earns the hurdle, and it is below the CNSF-priced one.

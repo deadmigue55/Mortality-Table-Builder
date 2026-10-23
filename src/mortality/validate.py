@@ -984,6 +984,22 @@ CHECKS: tuple[Check, ...] = (
         "The solved gross premium of every product earns the 10% target return",
     ),
     Check(
+        "pricing_insured_premium_earns_the_hurdle",
+        "FAIL",
+        ("pricing_insured",),
+        "SELECT COUNT(*) FROM pricing_insured WHERE ABS(irr - 0.10) > 0.001",
+        "The premium priced on the insured table earns the 10% target return",
+    ),
+    Check(
+        "pricing_insured_premium_is_below_the_cnsf_one",
+        "WARN",
+        ("pricing_insured",),
+        "SELECT COUNT(*) FROM pricing_insured WHERE gross_premium_per_1000 >= "
+        "gross_premium_cnsf_per_1000",
+        "Pricing on insured lives gives a lower premium than pricing on CNSF 2013 (a quote that "
+        "is not lower says the margin or the reserve strain eats the advantage)",
+    ),
+    Check(
         "pricing_premium_exceeds_net_and_rises_with_age",
         "FAIL",
         ("pricing_premiums",),
@@ -1045,6 +1061,16 @@ CHECKS: tuple[Check, ...] = (
         " WHERE a.extra_claims <= 0"
         " OR ABS(b.extra_claims - a.extra_claims / 2) > 1e-6 * a.base_claims",
         "Every replay adds claims, and an insured-lives dampening of 50% halves the extra claims",
+    ),
+    Check(
+        "stress_insured_lives_were_not_shielded",
+        "WARN",
+        ("stress_pandemic_book",),
+        "SELECT COUNT(*) FROM stress_pandemic_book o JOIN stress_pandemic_book r"
+        " ON r.kind = 'replay' AND r.year = o.year AND r.dampening = 0.5"
+        " WHERE o.kind = 'observed' AND o.extra_pct <= r.extra_pct",
+        "The pandemic as insured lives lived it adds more claims than the replay that assumed they"
+        " were half as exposed as the population",
     ),
     Check(
         "stress_severity_is_proportional",

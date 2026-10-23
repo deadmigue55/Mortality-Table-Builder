@@ -321,6 +321,8 @@ BASES = {
     "experience": "Company experience (the synthetic book of step 8)",
     "population": "Mexican population 2023",
     "improving": "CNSF 2013 with projected improvement",
+    "insured": "Insured lives, traditional term (version 2), rolled to 2026",
+    "insured_prudent": "Insured lives with the margin for adverse deviation",
 }
 DESCRIPTIONS = {
     "pricing_premiums": (
@@ -342,6 +344,12 @@ DESCRIPTIONS = {
     "pricing_reserves": (
         "Statutory net premium reserve against best-estimate liability by policy year for the "
         "reference policies"
+    ),
+    "pricing_insured": (
+        "The same level term product priced on the insured-lives table of version 2 (traditional "
+        "term, rolled to 2026, with the margin for adverse deviation) against the CNSF 2013 "
+        "statutory reserve: gross premium per 1,000 for a 10% return, the premium on CNSF 2013, "
+        "the saving, and what the premium earns if mortality is the best estimate"
     ),
 }
 
@@ -420,7 +428,38 @@ def _bases(con) -> dict | None:
             return q_path(base, x, n, factor)
 
         out["improving"] = improving
+    if "insured_table" in names:
+        out.update(_insured_bases(con, names))
     return out
+
+
+IMPROVEMENT_YEARS = 2  # from the middle of the base years (2024) to the pricing year (2026)
+
+
+def _insured_bases(con, names: set[str]) -> dict:
+    """The insured-lives bases: traditional term, rolled to the pricing year, with and without
+    the margin for adverse deviation sized in ``insured_sensitivity``."""
+    table = pd.read_sql(
+        "SELECT sex, age, qx FROM insured_table WHERE segment = 'term_traditional'", con
+    )
+    by_sex = {
+        s: g.set_index("age")["qx"].reindex(range(111)).ffill().to_numpy()
+        for s, g in table.groupby("sex")
+    }
+    if "insured_improvement" in names:
+        rates = pd.read_sql("SELECT sex, age, annual_improvement FROM insured_improvement", con)
+        for s, g in rates.groupby("sex"):
+            r = g.set_index("age")["annual_improvement"].reindex(range(111)).fillna(0.0)
+            by_sex[s] = by_sex[s] * (1.0 - r.clip(lower=0.0).to_numpy()) ** IMPROVEMENT_YEARS
+    margin = 0.15
+    if "insured_margin" in names:
+        found = pd.read_sql("SELECT recommended_margin FROM insured_margin LIMIT 1", con)
+        if len(found):
+            margin = float(found["recommended_margin"].iloc[0])
+    return {
+        "insured": lambda s, x, n: q_path(by_sex[s], x, n),
+        "insured_prudent": lambda s, x, n: q_path(by_sex[s], x, n, np.full(n, 1.0 + margin)),
+    }
 
 
 def build_tables(con, assumptions: Assumptions | None = None) -> list[tuple[str, str]]:
@@ -471,6 +510,31 @@ def build_tables(con, assumptions: Assumptions | None = None) -> list[tuple[str,
              "best_estimate_end": np.append(bel[1:], 0.0), "sex": sex, "issue_age": 40, "term": 20}
         )  # fmt: skip
         rows_res.append(res)
+    rows_insured = []
+    if "insured_prudent" in bases:
+        # priced on the insured basis with its margin; the statutory reserve stays on CNSF 2013
+        for sex in ("M", "F"):
+            for term in TERMS:
+                for age in ISSUE_AGES:
+                    q_cnsf = bases["cnsf"](sex, age, term)
+                    q_best = bases["insured"](sex, age, term)
+                    q_pru = bases["insured_prudent"](sex, age, term)
+                    prem = solve_premium(q_pru, a, q_valuation=q_cnsf)
+                    test = profit_test(q_pru, prem, a, q_valuation=q_cnsf)
+                    s = summarise(test, a.hurdle)
+                    best = summarise(profit_test(q_best, prem, a, q_valuation=q_cnsf), a.hurdle)
+                    on_cnsf = solve_premium(q_cnsf, a)
+                    net = net_premium(q_best, a.valuation_interest, a.sum_assured)
+                    rows_insured.append(
+                        {"sex": sex, "issue_age": age, "term": term,
+                         "net_premium_per_1000": 1000 * net / a.sum_assured,
+                         "gross_premium_per_1000": 1000 * prem / a.sum_assured,
+                         "gross_premium_cnsf_per_1000": 1000 * on_cnsf / a.sum_assured,
+                         "saving_vs_cnsf": 1.0 - prem / on_cnsf,
+                         "irr": s["irr"], "npv": s["npv"], "year_1_profit": s["year_1_profit"],
+                         "payback_year": s["payback_year"],
+                         "irr_best_estimate": best["irr"], "margin_best_estimate": best["margin"]}
+                    )  # fmt: skip
     frames = {
         "pricing_premiums": pd.DataFrame(rows_prem),
         "pricing_adequacy": pd.DataFrame(rows_adequacy),
@@ -478,6 +542,8 @@ def build_tables(con, assumptions: Assumptions | None = None) -> list[tuple[str,
         "pricing_sensitivity": pd.concat(rows_sens, ignore_index=True),
         "pricing_reserves": pd.concat(rows_res, ignore_index=True),
     }
+    if rows_insured:
+        frames["pricing_insured"] = pd.DataFrame(rows_insured)
     docs = []
     for name, frame in frames.items():
         frame.to_sql(name, con, if_exists="replace", index=False)

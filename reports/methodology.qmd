@@ -108,6 +108,42 @@ n["deaths"] = f"{ov.deaths:,.0f}"
 ci = q("SELECT * FROM cohort_tables WHERE sex = 'M'").iloc[0]
 n["cohort_gap"] = f"{ci.annuity_understated_pct:.1%}"
 
+# insured lives (version 2)
+ip = q("SELECT * FROM insured_premiums WHERE term = 20 AND issue_age = 40")
+def prem(table, sex):
+    return float(ip[(ip["table"] == table) & (ip.sex == sex)].premium_per_1000.iloc[0])
+for s in ("M", "F"):
+    n[f"ins40_{s}"] = f"{prem('Mexico insured: Term, traditional', s):.2f}"
+    n[f"mkt40_{s}"] = f"{prem('Mexico insured: All individual life', s):.2f}"
+    n[f"pop40_{s}"] = f"{prem('Mexico population 2023', s):.2f}"
+    n[f"cnsf40_{s}"] = f"{prem('CNSF 2013', s):.2f}"
+n["us40_M"] = f"{prem('US 2017 Unloaded CSO composite male ALB', 'M'):.2f}"
+n["ratio_cnsf_F"] = f"{prem('CNSF 2013', 'F') / prem('Mexico insured: Term, traditional', 'F'):.1f}"
+ig = q("SELECT MIN(ratio_population) lo, MAX(ratio_population) hi FROM insured_table WHERE segment = 'all' AND age BETWEEN 25 AND 65").iloc[0]
+n["gap_lo"], n["gap_hi"] = f"{ig.lo:.0%}", f"{ig.hi:.0%}"
+pooled = q("SELECT segment, SUM(deaths) d, SUM(exposure) / 3 e FROM insured_pooled GROUP BY segment").set_index("segment")
+n["ins_deaths"] = f"{pooled.d['all']:,.0f}"
+n["ins_lives"] = f"{pooled.e['all'] / 1e6:.0f}"
+ipn = q("SELECT * FROM insured_pandemic")
+g = ipn.groupby(["source", "year", "band"])[["deaths", "exposure"]].sum().reset_index()
+g["rate"] = g.deaths / g.exposure
+b23 = g[g.year == 2023].set_index(["source", "band"]).rate
+g["idx"] = [r.rate / b23[(r.source, r.band)] for r in g.itertuples()]
+n["pan_ins"] = f"{g[(g.source == 'insured') & (g.year == 2021)].idx.max():.1f}"
+n["pan_pop"] = f"{g[(g.source == 'population') & (g.year == 2021)].idx.max():.1f}"
+mg = q("SELECT recommended_margin m, MAX(quadrature_margin) qm FROM insured_margin").iloc[0]
+n["margin"], n["margin_q"] = f"{mg.m:.0%}", f"{mg.qm:.1%}"
+si = q("SELECT * FROM pricing_insured WHERE term = 20 AND issue_age = 40").set_index("sex")
+n["gi_M"], n["gc_M"], n["sv_M"] = f"{si.gross_premium_per_1000['M']:.2f}", f"{si.gross_premium_cnsf_per_1000['M']:.2f}", f"{si.saving_vs_cnsf['M']:.0%}"
+n["gi_F"], n["sv_F"] = f"{si.gross_premium_per_1000['F']:.2f}", f"{si.saving_vs_cnsf['F']:.0%}"
+n["observed"] = f"{st[(st.kind == 'observed') & (st.year == 2021)].extra_pct.iloc[0]:.0%}"
+sx = q("SELECT * FROM insured_sensitivity WHERE sex = 'M' AND issue_age = 40 AND term = 20").set_index("alternative")
+n["blend_over"] = f"{sx.change_vs_base['market blend of all products']:.0%}"
+rel = q("SELECT * FROM insured_relativities WHERE segment = 'permanent' AND ages IN ('25-44', '45-65')")
+n["rel_lo"], n["rel_hi"] = f"{rel.k.min():.1f}", f"{rel.k.max():.1f}"
+lg_ = q("SELECT * FROM insured_ledger WHERE year = 2023")
+n["ledger_share"] = f"{lg_[lg_.block == 'no_detail'].claims.sum() / lg_.claims.sum():.0%}"
+
 vr = q("SELECT status, COUNT(*) c FROM validation_results GROUP BY status").set_index("status").c
 n["checks"], n["pass"], n["warn"] = f"{vr.sum()}", f"{vr.get('PASS', 0)}", f"{vr.get('WARN', 0)}"
 n["tables"] = f"{q('SELECT COUNT(*) c FROM table_docs').c.iloc[0]}"
@@ -115,9 +151,9 @@ n["tables"] = f"{q('SELECT COUNT(*) c FROM table_docs').c.iloc[0]}"
 
 # Executive summary {.unnumbered}
 
-Mexico has no up-to-date mortality table that an actuary can use for the population as it is today. The regulatory table in force (CNSF 2013) is more than a decade old and mixes both sexes; the insured-lives tables are older still. This project **rebuilds the table from the raw data** (INEGI registered deaths, CONAPO population) and then does with it what an insurer or a reinsurer does: prices a policy, reserves it, stresses it with the pandemic and with longevity, structures a reinsurance treaty and prices a longevity swap.
+Mexico has no up-to-date mortality table that an actuary can use for the population as it is today, and none for the people an insurer actually quotes. The regulatory table in force (CNSF 2013) is more than a decade old and mixes both sexes; the insured-lives tables are older still. This project **rebuilds the table from the raw data** (INEGI registered deaths, CONAPO population) and then does with it what an insurer or a reinsurer does: prices a policy, reserves it, stresses it with the pandemic and with longevity, structures a reinsurance treaty and prices a longevity swap.
 
-It is built as a pipeline with a hundred automated data checks, over three hundred unit tests and a one-command rebuild, so that every number in this report is computed from the data when the report is rendered. The book of policies used in the applications is **synthetic** and every market assumption is labelled illustrative; the mortality is real or derived from real data.
+Version 2 adds the table a quote is priced on, built from the industry's own insured-lives statistics. The work is a pipeline with `{python} n['checks']` automated data checks, over four hundred unit tests and a one-command rebuild, so that every number in this report is computed from the data when the report is rendered. The book of policies used in the applications is **synthetic** and every market assumption is labelled illustrative; the mortality is real or derived from real data.
 
 | What it found | Result |
 |:--------------------|:----------------------------------|
@@ -126,6 +162,9 @@ It is built as a pipeline with a hundred automated data checks, over three hundr
 | Excess deaths 2020 to 2022 | `{python} n['excess']` (range `{python} n['excess_lo']` to `{python} n['excess_hi']` over four baselines); `{python} n['excess_covid']` per certified COVID-19 death |
 | A repeat of 2021 on an insured book | `{python} n['replay']` more claims in a year, against `{python} n['regulator']` for the regulator's own stress |
 | Annuity reserve | one point of interest (`{python} n['int1']`) matters more than doubling mortality improvement (`{python} n['x2']`) |
+| Insured lives against the population (version 2) | they die at `{python} n['gap_lo']` to `{python} n['gap_hi']` of the population's rate between ages 25 and 65 |
+| A quote: man of 40, 20-year term, net premium per 1,000 | `{python} n['ins40_M']` on the insured table, `{python} n['cnsf40_M']` on CNSF 2013, `{python} n['us40_M']` on the US insured table, `{python} n['pop40_M']` on the population |
+| The pandemic, as insured lives lived it | up to `{python} n['pan_ins']` times their 2023 death rate in 2021 (the population: `{python} n['pan_pop']`); `{python} n['observed']` more claims on an insured book |
 | Reinsurance | the pandemic is `{python} n['pand_share']` of the claims capital; a stop loss relieves `{python} n['sl_relief']` of it at a price of `{python} n['sl_price']` per peso of capital, a quota share `{python} n['qs_price']` |
 | Experience study | `{python} n['recovered']` of `{python} n['planted']` planted effects recovered inside the 95% interval |
 
@@ -137,7 +176,9 @@ It is built as a pipeline with a hundred automated data checks, over three hundr
 
 La esperanza de vida al nacer en 2023 fue de `{python} n['e0_F']` años para las mujeres y `{python} n['e0_M']` para los hombres. Los hombres de 40 años mueren a `{python} n['ratio40_M']` veces la tasa de la tabla regulatoria CNSF 2013. Entre 2020 y 2022 murieron aproximadamente `{python} n['excess']` personas más de lo esperado (rango `{python} n['excess_lo']` a `{python} n['excess_hi']` según cuatro líneas base independientes). Una repetición de 2021 elevaría los siniestros de una cartera asegurada en `{python} n['replay']`; el escenario de estrés de la propia CNSF (percentil 99.5) solo contempla `{python} n['regulator']`.
 
-El proyecto incluye `{python} n['checks']` controles automáticos de datos, más de 300 pruebas unitarias y un procedimiento reproducible con un solo comando. La cartera de pólizas es **sintética** y los supuestos de mercado (gastos, comisiones, costo de capital) son ilustrativos.
+**Versión 2: tabla de vida asegurada.** Con las estadísticas de la CNSF de Vida Individual (2021 a 2025) se construye la tabla con la que se cotiza un seguro. Los asegurados mexicanos mueren a entre `{python} n['gap_lo']` y `{python} n['gap_hi']` de la tasa de la población. Un hombre de 40 años, temporal a 20 años, paga una prima neta de `{python} n['ins40_M']` por millar con la nueva tabla, `{python} n['cnsf40_M']` con CNSF 2013 y `{python} n['pop40_M']` con la población. Los asegurados no estuvieron protegidos de la pandemia: en 2021 sus tasas de muerte llegaron a `{python} n['pan_ins']` veces las de 2023.
+
+El proyecto incluye `{python} n['checks']` controles automáticos de datos, más de 400 pruebas unitarias y un procedimiento reproducible con un solo comando. La cartera de pólizas es **sintética** y los supuestos de mercado (gastos, comisiones, costo de capital) son ilustrativos.
 
 # The problem and the approach
 
@@ -223,6 +264,31 @@ The method, in the order a real study runs:
 
 ![Planted effects against what the study estimates.](../docs/img/experience_recovery.png){width=80%}
 
+# The insured-lives table (version 2)
+
+The population table answers population questions and is the wrong tool for a quote: people who buy life insurance are wealthier, underwritten and mostly urban. Version 2 builds the table from the CNSF's own individual life statistics for 2021 to 2025: `{python} n['ins_deaths']` death claims and about `{python} n['ins_lives']` million insured lives a year in the three base years 2023 to 2025. Every column total is reconciled to the raw spreadsheet cells.
+
+**Three traps in the data would each have moved the premium.** About `{python} n['ledger_share']` of the death claims have no age or sex, and they are not deaths but an adjustment ledger (cancellations outweigh new claims every year, the count stays flat while real deaths halve, and COVID causes appear years after the pandemic). About 2,300 claims blamed on a sprained ankle are endowment maturities booked under the death cover (ages 60 to 69, 3.6 times a normal claim). And deaths must be counted against the lives holding the death cover, not every insured life.
+
+**A table family, not a table.** Whole life and endowments die at up to `{python} n['rel_hi']` times traditional term, so traditional term, credit life and whole life are graduated on their own (Poisson P-splines chosen by one common dispersion and by out-of-sample shape, against Gompertz-Makeham and Brass), thin segments are multiples of traditional term, and the market-wide table is an exposure-weighted blend. Quoting a traditional-term policy on the market-wide table would overcharge by `{python} n['blend_over']`.
+
+| Net premium per 1,000, 20-year term at 40 | Men | Women |
+|:----------------------------------|----------:|----------:|
+| Insured, traditional term | `{python} n['ins40_M']` | `{python} n['ins40_F']` |
+| Insured, market-wide | `{python} n['mkt40_M']` | `{python} n['mkt40_F']` |
+| CNSF 2013 (unisex) | `{python} n['cnsf40_M']` | `{python} n['cnsf40_F']` |
+| Mexican population | `{python} n['pop40_M']` | `{python} n['pop40_F']` |
+
+: What the table changes in a quote {tbl-colwidths="[56,22,22]"}
+
+![Insured and population mortality: the insured-lives table against the population and the regulator's table.](../docs/img/insured_hero.png){width=95%}
+
+**Where it is not reliable.** Above about age 60 for term and 83 for whole life the insured data stop describing insured lives (a term runs out; lives who died stay in the books), so the table follows the population's shape and the gap closes to zero by 105: an assumption, flagged in every table and figure. A standard 20-year term at 40 uses only ages 40 to 59, inside the data.
+
+**What it changes downstream.** A margin of `{python} n['margin']` on mortality is sized from the adverse readings that cannot be ruled out (`{python} n['margin_q']` in quadrature). Priced on the insured table against the CNSF 2013 statutory reserve, the 20-year term of a man of 40 needs a gross premium of `{python} n['gi_M']` per 1,000 against `{python} n['gc_M']` on CNSF 2013 (`{python} n['sv_M']` lower); a woman's is `{python} n['sv_F']` lower. Replaying 2021 as insured lives lived it adds `{python} n['observed']` to a year's claims.
+
+![Which table is used moves a premium more than any modelling choice behind it.](../docs/img/insured_tornado.png){width=85%}
+
 # Applications
 
 ## Excess mortality in the pandemic
@@ -243,7 +309,7 @@ For a man of 40, 20-year term, sum assured 1,000,000 on CNSF 2013, the gross pre
 
 ## Pandemic and longevity stress tests
 
-The pandemic profile (the P-score of each age band and sex in 2021) is replayed on the in-force block of the synthetic portfolio (392,274 policies, MXN 414 billion of sum assured). Expected claims for the next year are MXN `{python} n['base_claims']` million; a repeat of 2021 **adds `{python} n['replay']`** (MXN `{python} n['replay_mxn']` million), or `{python} n['replay_half']` if insureds are healthier than the population. The regulator's own 99.5th percentile table adds `{python} n['regulator']`: it would not have covered 2021 if insured lives had died like the population.
+The pandemic profile (the P-score of each age band and sex in 2021) is replayed on the in-force block of the synthetic portfolio (392,274 policies, MXN 414 billion of sum assured). Expected claims for the next year are MXN `{python} n['base_claims']` million; a repeat of 2021 **adds `{python} n['replay']`** (MXN `{python} n['replay_mxn']` million), or `{python} n['replay_half']` if insureds are healthier than the population. The regulator's own 99.5th percentile table adds `{python} n['regulator']`: it would not have covered 2021 if insured lives had died like the population. The insured statistics of version 2 confirm it and go further: replaying 2021 *as insured lives lived it* adds `{python} n['observed']`.
 
 On an illustrative annuity block, one point less interest adds `{python} n['int1']` to the reserve, more than doubling the projected improvement (`{python} n['x2']`); the regulatory pensions table holds `{python} n['pens']` over the central projection. A pandemic and longevity are natural hedges: an annuity block `{python} n['hedge_ratio']` times the size of the life book would offset a repeat of 2021 exactly.
 
@@ -262,7 +328,7 @@ A longevity swap on the annuity block needs risk capital of `{python} n['swap_ca
 | Layer | What |
 |:--------------|:-------------------------------------------|
 | Data checks | `{python} n['checks']` rules on the warehouse: identities that must hold (FAIL) and known gaps (WARN) |
-| Unit tests | over 300, including property tests (exposure splitting), identities (zero profit) and recovery tests (planted effects) |
+| Unit tests | over 400, including property tests (exposure splitting), identities (zero profit) and recovery tests (planted effects) |
 | Independent checks | HMD life expectancy to 0.007 years; StMoMo in R to 2 x 10^-5^ years; the Excel workbook recomputed by a separate formula engine to 10^-9^ |
 | Provenance | SHA-256 manifest of every input; each table described in the catalog |
 | Rebuild | `uv sync`, then `mortality db build`: the warehouse, the checks and the figures from the sources |
@@ -277,6 +343,7 @@ The dashboard (`mortality app`) and an **Excel workbook with live commutation fo
 - **The books are synthetic and the market terms are assumptions.** Expenses, commissions, lapses, the 10% hurdle, the reinsurer's 6% cost of capital and the pandemic's probability are illustrative; the conclusions that hinge on them say so.
 - **Data limits.** Single-year-of-age deaths exist only from 2020; the long projection history is CONAPO's reconstruction, and INEGI and CONAPO disagree on the age pattern of deaths (men 15 to 39: 34% fewer deaths in INEGI), which breaks life expectancy at 65 across the 2019/2020 join.
 - **Method limits.** The stress tests are one-year shocks on a static block; the reinsurance analysis has no credit or basis risk; the layer prices in the thin tail carry simulation noise; the longevity swap uses a single normal around the central projection, not the stochastic fan.
+- **Insured lives.** The CNSF statistics are aggregated industry data: no policy duration (so no select table), a head count of lives instead of person-years, claims counted in the year they are booked, and reporting that differs between insurers. The 2018 to 2020 format is not pooled (the share of women moves by ten points in a year). Above the credible range the table is the population's shape by assumption.
 - **Scope.** This is not a pricing basis for a regulated product, a reserve certification, or a substitute for a company's own experience. It is a worked, tested demonstration of the method, which can be pointed at a real extract.
 
 # References {.unnumbered}

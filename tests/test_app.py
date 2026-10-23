@@ -55,5 +55,7 @@ def test_bundle_has_every_table_the_pages_read():
     have = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
     con.close()
     needed = {"life_tables", "graduated_qx", "cnsf_rates", "projected_qx", "excess_mortality",
-              "experience_basis", "validation_results", "pricing_premiums"}  # fmt: skip
+              "experience_basis", "validation_results", "pricing_premiums",
+              "insured_table", "insured_premiums", "insured_sensitivity", "insured_pandemic",
+              "insured_causes", "insured_ledger", "insured_relativities"}  # fmt: skip
     assert needed <= have

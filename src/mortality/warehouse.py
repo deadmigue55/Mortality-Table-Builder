@@ -333,10 +333,11 @@ def build(*, paths: Paths | None = None) -> dict[str, int]:
         docs += graduation.build_tables(con)
         docs += insured.build_tables(con)
         docs += insured_compare.build_tables(con)
-        docs += insured_analysis.build_tables(con)
-        docs += insured_sensitivity.build_tables(con)
         docs += lifetable.build_tables(con)
         docs += projection.build_tables(con)
+        # these need the population projection (the improvement rates) and the crude rates
+        docs += insured_analysis.build_tables(con)
+        docs += insured_sensitivity.build_tables(con)
         docs += experience.build_tables(con)
         docs += excess.build_tables(con)
         docs += pricing.build_tables(con)

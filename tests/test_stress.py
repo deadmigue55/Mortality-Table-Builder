@@ -95,6 +95,53 @@ def test_regulatory_row_reports_the_heavier_table():
     assert reg["extra_pct"] == pytest.approx(0.4)
 
 
+def insured_frame(index=2.0) -> pd.DataFrame:
+    rows = []
+    for sex in ("M", "F"):
+        for band, value in (("25-44", index), ("45-64", index + 0.5), ("65-79", 0.9)):
+            rows.append(
+                {
+                    "source": "insured",
+                    "year": 2021,
+                    "sex": sex,
+                    "band": band,
+                    "index_vs_2023": value,
+                }
+            )
+    rows.append(
+        {"source": "population", "year": 2021, "sex": "M", "band": "25-44", "index_vs_2023": 9.0}
+    )
+    return pd.DataFrame(rows)
+
+
+def test_insured_pscores_come_from_the_insured_rates_and_never_go_below_zero():
+    p = stress.insured_pscores(insured_frame(2.0), 2021)
+    assert p["M"][30] == pytest.approx(1.0)  # twice its 2023 rate: a P-score of 1
+    assert p["M"][50] == pytest.approx(1.5)
+    assert p["M"][70] == 0.0  # 0.9 of 2023 is not a credit
+    assert p["M"][18] == pytest.approx(1.0) and p["M"][20] == pytest.approx(1.0)  # below the bands
+    assert p["F"][100] == 0.0  # above the bands: the last band's value
+    assert p["M"][30] != 9.0 - 1.0  # the population row is ignored
+
+
+def test_the_observed_insured_scenario_adds_claims_beyond_the_dampened_replays():
+    book = make_book()
+    scores = {2021: stress.insured_pscores(insured_frame(), 2021)}
+    table = stress.pandemic_scenarios(
+        book, excess_frame(0.3), years=(2021,), dampenings=(1.0,), severities=(),
+        insured_scores=scores,
+    )  # fmt: skip
+    observed = table[table["kind"] == "observed"].iloc[0]
+    replay = table[table["kind"] == "replay"].iloc[0]
+    assert observed["scenario"] == "2021 as insured lives lived it"
+    assert observed["extra_pct"] > replay["extra_pct"]  # insured lives were not shielded
+    # without insured scores the table is unchanged
+    plain = stress.pandemic_scenarios(
+        book, excess_frame(0.3), years=(2021,), dampenings=(1.0,), severities=()
+    )
+    assert set(plain["kind"]) == {"replay"}
+
+
 def test_by_age_table_adds_up_to_the_scenario():
     book = make_book()
     excess = excess_frame()

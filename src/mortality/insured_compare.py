@@ -68,6 +68,13 @@ DESCRIPTIONS = {
 }
 
 
+def group_of(label: str) -> str:
+    """The family of a reference table (HMD tables are tagged separately where they are read)."""
+    if label.startswith("Mexico"):
+        return "Mexico"
+    return "CNSF" if label.startswith("CNSF") else "US insured"
+
+
 def table_from_q(q: pd.Series) -> pd.DataFrame:
     """A life table from a series of q indexed by consecutive ages (the last q is set to 1)."""
     return lifetable._table_from_q(q.index, q.to_numpy())
@@ -165,14 +172,7 @@ def comparison_tables(con) -> dict[str, pd.DataFrame]:
     hmd = hmd_tables(con)
     rows = []
     for (label, sex), q in refs.items():
-        group = (
-            "Mexico"
-            if label.startswith("Mexico")
-            else "CNSF"
-            if label.startswith("CNSF")
-            else "US insured"
-        )
-        rows.append(comparison_row(group, label, sex, q))
+        rows.append(comparison_row(group_of(label), label, sex, q))
     for (label, sex), q in hmd.items():
         rows.append(comparison_row("HMD national", label, sex, q))
     comparison = pd.DataFrame(rows)
@@ -244,7 +244,9 @@ def brass_table(con) -> pd.DataFrame:
     for sex in ("M", "F"):
         pop = refs[("Mexico population 2023", sex)].reindex(ages)
         x = logit(pop.to_numpy())
-        for (label, s), q in {**refs, **hmd}.items():
+        tagged = [(group_of(label), label, s, q) for (label, s), q in refs.items()]
+        tagged += [("HMD national", label, s, q) for (label, s), q in hmd.items()]
+        for group, label, s, q in tagged:
             if s not in (sex, "T") or label == "Mexico population 2023":
                 continue
             y = logit(q.reindex(ages).to_numpy())
@@ -253,7 +255,14 @@ def brass_table(con) -> pd.DataFrame:
             b, a = np.polyfit(x, y, 1)
             rms = float(np.sqrt(np.mean((y - (a + b * x)) ** 2)))
             rows.append(
-                {"sex": sex, "table": label, "a": float(a), "b": float(b), "rms_logit": rms}
+                {
+                    "group": group,
+                    "sex": sex,
+                    "table": label,
+                    "a": float(a),
+                    "b": float(b),
+                    "rms_logit": rms,
+                }
             )
     return pd.DataFrame(rows)
 

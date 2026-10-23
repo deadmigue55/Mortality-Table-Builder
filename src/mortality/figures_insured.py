@@ -137,7 +137,7 @@ def insured_hero(con, out: Path) -> Path:
     axes[0].legend(handles=handles, loc="upper left", fontsize=9)
     _headline(
         fig,
-        "Mexicans who buy life insurance die at one fifth to one seventh the population's rate",
+        "Mexicans who buy life insurance die at a seventh to a quarter of the population's rate",
         "Probability of dying within a year by age. Green: the insured-lives table built from the "
         "CNSF industry statistics 2023-25 (dots are the raw rates it was fitted to). Grey band: "
         "ages where the data stop being a safe guide and the table follows the population's shape.",
@@ -218,7 +218,7 @@ def insured_products(con, out: Path) -> Path:
     axes[0].legend(handles=handles, loc="upper left", fontsize=9)
     _headline(
         fig,
-        "The product matters as much as the person: whole life dies at 2 to 4 times the rate of term",
+        "The product matters as much as the person: whole life dies at 2 to 3.5 times the rate of term",
         "Insured mortality by product, 2023-25. Traditional term is underwritten and recent; "
         "whole life and endowments are older, in force for decades, and include savings-type "
         "plans. Dotted: beyond the last age the data support, where the table follows the population's shape.",
@@ -474,7 +474,7 @@ def insured_relativities(con, out: Path) -> Path:
     axes[1].legend(handles=handles, loc="lower right", fontsize=9)
     _headline(
         fig,
-        "Against traditional term, credit life dies 1.3 to 2 times as fast and whole life 2 to 4 times",
+        "Against traditional term, credit life dies 1.3 to 2 times as fast and whole life 2 to 3.5 times",
         "Multiplier of the traditional-term table that matches each product's deaths, by "
         "age range. The gap widens with age: mixed health at issue on credit and savings products, "
         "and long durations on whole life, show up as the years go by.",
@@ -542,6 +542,7 @@ def insured_tornado(con, out: Path) -> Path:
         "WHERE sex = 'M' AND issue_age = 40 AND term = 20 AND choice <> 'Base table'",
     )
     s["label"] = s["choice"].str.cat(s["alternative"], sep=": ")
+    blend = float(s.loc[s["alternative"].str.startswith("market blend"), "c"].iloc[0])
     s = s[s["c"].abs() > 0.0005].sort_values("c")
     fig, ax = plt.subplots(figsize=(12, 7.4))
     fig.subplots_adjust(top=0.82, bottom=0.09, left=0.5, right=0.95)
@@ -588,7 +589,7 @@ def insured_tornado(con, out: Path) -> Path:
         "Which table you quote on matters more than any modelling choice behind it",
         "Each choice between the CNSF statistics and a table, changed one at a time while the "
         "rest stay as in the base table (traditional term, 2023-25, direct P-spline). Quoting a "
-        "traditional-term policy on the market-wide table would overcharge by 43%.",
+        f"traditional-term policy on the market-wide table would overcharge by {blend:.0%}.",
         SOURCE,
     )
     return _save(fig, out, "insured_tornado.png")
@@ -743,6 +744,50 @@ def insured_old_ages(con, out: Path) -> Path:
     return _save(fig, out, "insured_old_ages.png")
 
 
+# ── 14. The stress test ────────────────────────────────────────────────────
+
+
+def insured_stress(con, out: Path) -> Path:
+    s = _query(
+        con,
+        "SELECT kind, dampening, extra_pct FROM stress_pandemic_book "
+        "WHERE (year = 2021 AND kind IN ('replay', 'observed')) OR kind = 'regulatory'",
+    )
+
+    def pick(kind, dampening=None):
+        part = s[s["kind"] == kind]
+        if dampening is not None:
+            part = part[part["dampening"] == dampening]
+        return float(part["extra_pct"].iloc[0]) * 100
+
+    bars = [
+        ("The population's excess,\ninsured lives at half of it", pick("replay", 0.5), MUTED),
+        ("The population's excess,\ninsured lives like everyone", pick("replay", 1.0), INK_2),
+        ("The regulator's 99.5th\npercentile table", pick("regulatory"), BLUE),
+        ("2021 as insured lives\nlived it", pick("observed"), GREEN),
+    ]
+    fig, ax = plt.subplots(figsize=(11, 6.0))
+    fig.subplots_adjust(top=0.77, bottom=0.17, left=0.09, right=0.97)
+    x = np.arange(len(bars))
+    ax.bar(x, [b[1] for b in bars], 0.58, color=[b[2] for b in bars])
+    for xi, (_, v, _) in zip(x, bars, strict=True):
+        ax.text(xi, v + 2.5, f"+{v:.0f}%", ha="center", fontsize=12, fontweight="bold", color=INK)
+    ax.set_xticks(x)
+    ax.set_xticklabels([b[0] for b in bars], fontsize=10)
+    ax.set_ylabel("Extra claims in the next 12 months (%)")
+    ax.set_ylim(0, max(b[1] for b in bars) * 1.18)
+    ax.axhline(pick("regulatory"), color=BLUE, lw=1, ls=(0, (4, 3)), alpha=0.6, zorder=0)
+    _headline(
+        fig,
+        f"The regulator's stress covers {bars[2][1]:.0f}%; 2021 as insured lives lived it added {bars[3][1]:.0f}%",
+        "Extra claims of the synthetic in-force book (MXN 742 million of expected claims) when 2021 is "
+        "replayed. The first two bars assume insured lives are exposed to half or all of the "
+        "population's excess; the last uses the insured lives' own death rates by age band.",
+        "Source: CNSF Vida Individual 2021-25, INEGI/CONAPO excess mortality, synthetic book · Mortality Table Builder v2",
+    )
+    return _save(fig, out, "insured_stress.png")
+
+
 FIGURES: tuple = (
     insured_hero,
     insured_gap,
@@ -757,4 +802,5 @@ FIGURES: tuple = (
     insured_causes,
     insured_ledger,
     insured_old_ages,
+    insured_stress,
 )

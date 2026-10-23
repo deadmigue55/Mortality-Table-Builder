@@ -10,7 +10,7 @@ ui.header(
     "Trust and methods",
     "How you can check this work: every data check, every source, every table, every limit.",
     "Numbers without provenance are decoration. Every figure on this site comes from a table "
-    "in a warehouse that is rebuilt from the sources with one command, and a hundred automated "
+    "in a warehouse that is rebuilt from the sources with one command, and over a hundred automated "
     "checks run each time. The ones that warn are listed, with the reason.",
 )
 

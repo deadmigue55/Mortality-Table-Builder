@@ -303,6 +303,7 @@ def test_all_check_sql_is_valid(paths):
             "segment, sex, age, qx, qx_lower, qx_upper, source, method, sex_floor, q_population, "
             "q_cnsf2013, ratio_population, ratio_cnsf2013"
         ),
+        "pricing_insured": "gross_premium_per_1000, gross_premium_cnsf_per_1000, irr",
         "insured_crude": "segment, year, sex, age, deaths, exposure",
         "insured_rules": "year, rule, reading, deaths, change_vs_base",
         "insured_premiums": '"table", sex, issue_age, term, premium_per_1000, ratio_to_cnsf2013',
@@ -315,7 +316,9 @@ def test_all_check_sql_is_valid(paths):
         "pricing_adequacy": "sex, issue_age, basis, margin",
         "pricing_reserves": "policy_year, statutory_reserve_end",
         "pricing_sensitivity": "sex, scenario, margin",
-        "stress_pandemic_book": "kind, year, dampening, severity, base_claims, extra_claims",
+        "stress_pandemic_book": (
+            "kind, year, dampening, severity, base_claims, extra_claims, extra_pct"
+        ),
         "stress_pandemic_age": "year, extra_claims",
         "stress_longevity": "scenario, reserve_T",
         "stress_hedge": "shock, life_book_change, annuity_change",

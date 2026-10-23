@@ -33,6 +33,19 @@ TABLES = (
     ("Table_F", "Mexico 2023, women"),
     ("Table_CNSF", "CNSF 2013 (regulatory)"),
 )
+# the insured-lives tables of version 2 (traditional term), added when the bundle holds them
+INSURED_TABLES = (
+    ("Table_Insured_M", "Insured lives, men (traditional term)"),
+    ("Table_Insured_F", "Insured lives, women (traditional term)"),
+)
+
+
+def _tables_for(con: sqlite3.Connection) -> tuple[tuple[str, str], ...]:
+    """The live table sheets: the population and regulatory ones, plus the insured ones if held."""
+    have = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    return TABLES + (INSURED_TABLES if "insured_table" in have else ())
+
+
 HEADER_FILL = PatternFill("solid", fgColor="0B0B0B")
 INPUT_FILL = PatternFill("solid", fgColor="E8F1FC")
 OUTPUT_FILL = PatternFill("solid", fgColor="F1F0EC")
@@ -55,6 +68,11 @@ def _qx_curve(con: sqlite3.Connection, which: str) -> np.ndarray:
         sql = (
             "SELECT age, qx FROM cnsf_rates WHERE \"table\" = 'CNSF M 2013' AND variant = 'base' "
             "ORDER BY age"
+        )
+    elif which.startswith("insured_"):
+        sql = (
+            "SELECT age, qx FROM insured_table WHERE segment = 'term_traditional' "
+            f"AND sex = '{which[-1]}' ORDER BY age"
         )
     else:
         sql = f"SELECT age, qx FROM graduated_qx WHERE year = 2023 AND sex = '{which}' ORDER BY age"
@@ -87,21 +105,22 @@ def _rng(sheet: str, column: str) -> str:
     return f"{sheet}!${column}${FIRST_ROW}:${column}${LAST_ROW}"
 
 
-def _pick(column: str, position: str) -> str:
+def _pick(column: str, position: str, tables=TABLES) -> str:
     """The value of a column of the chosen table at a position (1 = age 0): one INDEX per table,
     chosen by the table number in B9."""
-    parts = ", ".join(f"INDEX({_rng(sheet, column)}, {position})" for sheet, _ in TABLES)
+    parts = ", ".join(f"INDEX({_rng(sheet, column)}, {position})" for sheet, _ in tables)
     return f"CHOOSE($B$9, {parts})"
 
 
-def _calculator(wb: Workbook, defaults: dict | None = None) -> None:
+def _calculator(wb: Workbook, defaults: dict | None = None, tables=TABLES) -> None:
     ws = wb.create_sheet("Calculator", 1)
+    last_option = 2 + len(tables)  # the drop-down list sits in D3 downwards
     ws.column_dimensions["A"].width = 44
     ws.column_dimensions["B"].width = 22
     ws.column_dimensions["D"].width = 28
     ws["A1"], ws["A1"].font = "Actuarial calculator", Font(bold=True, size=14)
     ws["A2"] = "Blue cells are inputs. Everything else is a live formula on the Table_ sheets."
-    d = {"table": TABLES[0][1], "age": 40, "interest": 0.04, "term": 20, "sum_assured": 1_000_000}
+    d = {"table": tables[0][1], "age": 40, "interest": 0.04, "term": 20, "sum_assured": 1_000_000}
     d.update(defaults or {})
     inputs = [
         ("Mortality table", d["table"]),
@@ -117,23 +136,27 @@ def _calculator(wb: Workbook, defaults: dict | None = None) -> None:
         cell.font, cell.fill = INPUT_FONT, INPUT_FILL
     ws["B5"].number_format = "0.00%"
     ws["B7"].number_format = "#,##0"
-    for offset, (_, label) in enumerate(TABLES):
+    for offset, (_, label) in enumerate(tables):
         ws.cell(row=3 + offset, column=4, value=label)  # the list behind the drop-down
     ws["D2"] = "Tables"
-    ws["A9"], ws["B9"] = "Table number (helper)", "=MATCH(B3, D3:D5, 0)"
+    ws["A9"], ws["B9"] = "Table number (helper)", f"=MATCH(B3, D3:D{last_option}, 0)"
     ws["A10"], ws["B10"] = "Position of age x (helper)", "=B4+1"
     ws["A11"], ws["B11"] = "Position of age x + n (helper)", f"=MIN(B4+B6,{LAST_AGE})+1"
-    check = DataValidation(type="list", formula1="=$D$3:$D$5", allow_blank=False)
+    check = DataValidation(type="list", formula1=f"=$D$3:$D${last_option}", allow_blank=False)
     ages = DataValidation(type="whole", operator="between", formula1="0", formula2="100")
     ws.add_data_validation(check)
     ws.add_data_validation(ages)
     check.add("B3")
     ages.add("B4")
-    dx, nx, mx = _pick("E", "$B$10"), _pick("F", "$B$10"), _pick("H", "$B$10")
-    nxn, mxn = _pick("F", "$B$11"), _pick("H", "$B$11")
-    lx = _pick("C", "$B$10")
+    dx, nx, mx = (
+        _pick("E", "$B$10", tables),
+        _pick("F", "$B$10", tables),
+        _pick("H", "$B$10", tables),
+    )
+    nxn, mxn = _pick("F", "$B$11", tables), _pick("H", "$B$11", tables)
+    lx = _pick("C", "$B$10", tables)
     ex_sum = ", ".join(
-        f'SUMIF({_rng(sheet, "A")}, ">"&$B$4, {_rng(sheet, "C")})' for sheet, _ in TABLES
+        f'SUMIF({_rng(sheet, "A")}, ">"&$B$4, {_rng(sheet, "C")})' for sheet, _ in tables
     )
     out = [
         ("Curtate life expectancy e(x), years", f"=CHOOSE($B$9, {ex_sum})/({lx})"),
@@ -209,7 +232,7 @@ def _readme(wb: Workbook) -> None:
             None,
         ),
         (
-            "2. Table_M, Table_F and Table_CNSF hold qx and the formulas for lx, dx, Dx, Nx, Cx and Mx. Click any cell to audit it.",
+            "2. The Table_ sheets (population, CNSF 2013 and, from version 2, the insured-lives tables) hold qx and the formulas for lx, dx, Dx, Nx, Cx and Mx. Click any cell to audit it.",
             None,
         ),
         (
@@ -217,7 +240,7 @@ def _readme(wb: Workbook) -> None:
             None,
         ),
         (
-            "4. Rate_Card, Excess_Mortality, Annuity_Stress and Table_Comparison hold results of the full pipeline as values.",
+            "4. Rate_Card, Insured_Rate_Card, Insured_Premiums, Excess_Mortality, Annuity_Stress and Table_Comparison hold results of the full pipeline as values.",
             None,
         ),
         ("", None),
@@ -251,9 +274,11 @@ def _readme(wb: Workbook) -> None:
 def build_workbook(con: sqlite3.Connection, defaults: dict | None = None) -> Workbook:
     """The workbook, from a connection to the warehouse or to the demo bundle."""
     wb = Workbook()
+    tables = _tables_for(con)
     _readme(wb)
-    _calculator(wb, defaults)
-    for (sheet, label), key in zip(TABLES, ("M", "F", "cnsf"), strict=True):
+    _calculator(wb, defaults, tables)
+    keys = ("M", "F", "cnsf", "insured_M", "insured_F")
+    for (sheet, label), key in zip(tables, keys, strict=False):
         _table_sheet(wb, sheet, label, _qx_curve(con, key))
     premiums = pd.read_sql(
         "SELECT sex AS Sex, issue_age AS [Issue age], term AS Term, net_premium_per_1000 AS "
@@ -278,6 +303,47 @@ def build_workbook(con: sqlite3.Connection, defaults: dict | None = None) -> Wor
             "Year-1 profit": "#,##0",
         },
     )
+    have = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    if "pricing_insured" in have:
+        insured_card = pd.read_sql(
+            "SELECT sex AS Sex, issue_age AS [Issue age], term AS Term, net_premium_per_1000 AS "
+            "[Net per 1000], gross_premium_per_1000 AS [Gross per 1000], gross_premium_cnsf_per_1000 "
+            "AS [Gross per 1000 on CNSF 2013], saving_vs_cnsf AS [Saving], irr AS IRR, "
+            "irr_best_estimate AS [IRR at best estimate] FROM pricing_insured "
+            "ORDER BY sex, term, issue_age",
+            con,
+        )
+        _values_sheet(
+            wb,
+            "Insured_Rate_Card",
+            insured_card,
+            "The same product priced on the insured-lives table (traditional term, rolled to 2026, "
+            "with the 15% margin) against the CNSF 2013 statutory reserve, for a 10% return "
+            "(illustrative expenses and lapses).",
+            {
+                "Net per 1000": "0.000",
+                "Gross per 1000": "0.000",
+                "Gross per 1000 on CNSF 2013": "0.000",
+                "Saving": "0%",
+                "IRR": "0.0%",
+                "IRR at best estimate": "0.0%",
+            },
+        )
+    if "insured_premiums" in have:
+        premiums_by_table = pd.read_sql(
+            'SELECT "table" AS [Table], sex AS Sex, issue_age AS [Issue age], term AS Term, '
+            "premium_per_1000 AS [Net per 1000], ratio_to_cnsf2013 AS [Against CNSF 2013] "
+            'FROM insured_premiums ORDER BY "table", sex, term, issue_age',
+            con,
+        )
+        _values_sheet(
+            wb,
+            "Insured_Premiums",
+            premiums_by_table,
+            "Net annual premium per 1,000 of a level term cover on every table compared (insured "
+            "products, population, CNSF 2013, US 2017 CSO), at 4% interest.",
+            {"Net per 1000": "0.000", "Against CNSF 2013": "0.00"},
+        )
     excess = pd.read_sql(
         "SELECT year AS Year, observed AS Observed, expected_central AS Expected, excess AS "
         "[Excess deaths], excess_low AS Low, excess_high AS High, p_score AS [P-score], "

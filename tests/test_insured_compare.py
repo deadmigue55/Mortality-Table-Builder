@@ -132,6 +132,13 @@ def test_brass_describes_a_table_as_shift_and_tilt_of_the_population(con):
     assert own["rms_logit"] < 0.05
 
 
+def test_hmd_rows_are_tagged_so_the_public_bundle_can_drop_them(con):
+    brass = cmp.brass_table(con)
+    assert set(brass["group"]) == {"Mexico", "CNSF", "US insured", "HMD national"}
+    assert brass[brass["group"] == "HMD national"]["table"].str.endswith("2019").all()
+    assert cmp.group_of("US 2017 Unloaded CSO composite male ALB") == "US insured"
+
+
 def test_build_tables_stores_and_documents_everything(con):
     docs = cmp.build_tables(con)
     assert {name for name, _ in docs} == set(cmp.DESCRIPTIONS)

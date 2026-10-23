@@ -72,6 +72,20 @@ Raw data is never committed to this repository. Download scripts (roadmap step 2
   - The 2013 tables rest on experience that is now over a decade old, so they predate the COVID-19 years and recent mortality improvement. That gap is part of the motivation for this project.
   - In practice, each insurer also builds its own experience tables, which are not public. A transparent population table built from official data is the closest public substitute and a useful check on both.
 
+### CNSF: Sistema Estadístico del Subramo de Vida Individual (version 2)
+- **What:** the industry's own statistics for individual life insurance: for every year, the insured lives, the premium and sum assured, and the claims, by age, sex, plan, modality, state and (from 2021) the text of the cause of each claim. They describe the people who actually buy life insurance, which is what a pricing table needs and what population data cannot give.
+- **Where:** the CNSF's statistics pages (<https://www.gob.mx/cnsf/acciones-y-programas/estadistica-de-seguros>), one download per year. `uv run mortality ingest cnsf-vi <folder>` imports a folder of them.
+- **Two formats, never mixed silently:**
+
+  | Years | Format | Content | Use |
+  |---|---|---|---|
+  | 2021 to 2025 | Excel workbook (`<year> Vida Individual Bases.xlsx`, about 75 to 84 MB) with sheets `Comisiones` (insured lives exposed during the year), `Emision` (lives, premium and sum assured by cover) and `Siniestros` (claims by cover, with the cause as text) | About 1.2 million rows a year over the three sheets | The table |
+  | 2018 to 2020 | Microsoft Access database with coded columns, a single insured count and no cause of death | 1.1 million issue rows and 99 thousand claim rows | A published cross-check only (see [insured lives](insured-lives.md), decision 13) |
+
+- **Reading the Access files without installing anything:** the Windows ODBC driver is called from a small PowerShell script (`src/mortality/ingest/access_export.ps1`), so no compiled Python package is needed (compiled packages can be blocked by Windows Smart App Control).
+- **Checks:** every workbook's row counts and column totals are summed from the raw cells while reading, independently of the cleaning, and the warehouse checks prove nothing was lost or changed. Sex and age labels the cleaning would turn into missing values are counted too.
+- **Limits:** these are aggregated industry statistics, not policy records. There is no policy duration or issue year, the exposure is a head count of lives (not person-years), claims are counted in the year they are booked, and a person with two policies counts twice (in the claims as well as in the exposure, so the rate is not distorted). See [insured lives](insured-lives.md) for how each is handled.
+
 ## United States: industry benchmarks
 
 ### Society of Actuaries: Mortality and Other Rate Tables (MORT)

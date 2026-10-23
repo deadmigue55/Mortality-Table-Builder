@@ -4,6 +4,42 @@ All notable changes to this project are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-10-22
+
+**The insured-lives table**: a mortality table for pricing quotes, built from the CNSF's own
+individual life statistics instead of the whole population. Version 1's population table is kept
+as the reference for population questions.
+
+### Added
+- Ingestion of the CNSF individual life statistics: Excel workbooks 2021 to 2025 and the older
+  Access databases 2018 to 2020 (read through the Windows ODBC driver from PowerShell, with no
+  extra Python package), with control totals summed from the raw cells.
+- A table family: traditional term, credit life, and whole life and endowment are graduated on
+  their own; other term modalities are an age-varying multiple of traditional term; the
+  market-wide and term tables are exposure-weighted blends. Direct and relational P-splines,
+  Gompertz-Makeham and Brass are compared by quasi-AIC (one common dispersion) and out-of-sample
+  shape; one credible range per product, extended to the population above it.
+- Comparisons with the population, CNSF 2013, the US 2017 Unloaded CSO and nine national tables:
+  premiums, the insured/population gap, the closest national table, Brass shift and tilt.
+- Analyses: improvement rates, the pandemic in insured lives, amount against count, causes of
+  claims, why the 2018 to 2020 format is not pooled, a one-at-a-time sensitivity of the premium to
+  every modelling choice, and a margin (15%) sized from the adverse readings.
+- 13 new figures, a dashboard page ("Insured lives"), `docs/insured-lives.md` with a log of
+  every decision, and 22 new data checks.
+- The stress test replays 2021 *as insured lives lived it*.
+
+### Found in the data (and handled)
+- One death claim in five has no age or sex: an adjustment ledger of settlements and
+  cancellations, not deaths. Excluded; the readings that add it back are sensitivities.
+- About 2,300 claims blamed on a sprained ankle are endowment maturities booked under the death
+  cover (ages 60 to 69, 3.6 times a normal claim). Excluded.
+- Deaths are measured against the lives holding the death cover, not every life.
+- Insured lives were not shielded from COVID-19: up to 2.7 times their 2023 death rate in 2021.
+
+### Changed
+- The warehouse build order puts the insured modules that need the population projection after
+  it. The bundle allow-list carries the insured tables and drops every row that holds HMD data.
+
 ## [1.0.0] - 2026-10-22
 
 The **population study**: Mexico's mortality rebuilt from INEGI registered deaths and CONAPO
