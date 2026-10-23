@@ -11,7 +11,7 @@ The dashboard reads one small file, `app/data/demo.sqlite` (about 3.5 MB), plus 
 5. Set sharing to **public** (app menu, Settings, Sharing); a private app sends every visitor to a login page. The deployed app is <https://mortality-table-builder.streamlit.app/>.
 6. Add the public URL to the README (a line under the badges) and to the portfolio site.
 
-The app sleeps after a period of inactivity on the free tier and wakes on the next visit.
+The app sleeps after about 12 hours without a visitor on the free tier and wakes on the next visit, which then waits behind a wake-up page. To avoid that for the first visitor, `.github/workflows/keep-alive.yml` opens the app in a real browser every six hours (`scripts/keep_alive.py`, Playwright), clicks the wake-up button if it finds one, and fails, which makes GitHub email the owner, if the app is down or shows "Error running app". A plain HTTP request does not count as a visit; a browser does. GitHub pauses scheduled workflows after 60 days without a commit to the repository: any commit, or **Run workflow** in the Actions tab, restarts them.
 
 ## Run it locally
 

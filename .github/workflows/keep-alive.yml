@@ -1,0 +1,36 @@
+name: Keep the dashboard awake
+
+# Streamlit Community Cloud puts a free app to sleep after about 12 hours without a visitor, and the
+# next visitor (a recruiter, say) waits behind a wake-up page. This job visits the app in a real
+# browser every six hours so that rarely happens, and fails (GitHub emails the owner) if the app is
+# down or shows "Error running app".
+#
+# GitHub pauses scheduled workflows in a repository that has had no commits for 60 days; any commit
+# or a manual run from the Actions tab starts them again.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  visit:
+    name: Visit the live app
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install a browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Visit the dashboard
+        run: python scripts/keep_alive.py
