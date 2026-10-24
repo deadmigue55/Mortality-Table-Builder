@@ -9,7 +9,7 @@ An end-to-end actuarial pipeline where every formula is written out and every nu
 
 [![Live demo](https://img.shields.io/badge/live%20demo-open%20the%20dashboard-FF4B4B?logo=streamlit&logoColor=white)](https://mortality-table-builder.streamlit.app/)
 [![CI](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml/badge.svg)](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-440%2B-brightgreen)
+![Tests](https://img.shields.io/badge/tests-650%2B-brightgreen)
 ![Data checks](https://img.shields.io/badge/data%20checks-122-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
@@ -99,7 +99,7 @@ A model that "looks plausible" is not enough, so each method is checked against 
 - **Against another language.** The projection models are re-fitted in R with `StMoMo` and agree to **0.00002 years**.
 - **Against a known truth.** A synthetic policy book has effects planted in it; the experience study recovers **15 of 15**.
 - **Against a spreadsheet.** The Excel workbook's formulas are recomputed by an independent formula engine and match the Python code to **1e-9**.
-- **Against itself.** More than **440 tests** and **122 data checks** (118 pass, 4 documented warnings) run on every commit, and every identity in the [handbook](docs/handbook/README.md#how-the-handbook-stays-correct) is tested numerically against the code.
+- **Against itself.** More than **650 tests** and **122 data checks** (118 pass, 4 documented warnings) run on every commit, and every identity in the [handbook](docs/handbook/README.md#how-the-handbook-stays-correct) is tested numerically against the code.
 - **Against drift.** Every raw file is logged with its SHA-256 checksum; the demo bundle is built from an allow-list, so licensed data can never leak into the repository.
 
 ## Quick start
@@ -180,7 +180,7 @@ Mortality-Table-Builder/
 ├── reports/         # the Quarto report (PDF) and the Excel workbook
 ├── r/               # R scripts: StMoMo projections and cross-checks
 ├── scripts/         # tools, including the handbook's formula checker
-└── tests/           # 440+ tests, including headless tests of every dashboard page
+└── tests/           # 650+ tests, including headless tests of every dashboard page
 ```
 
 ## Author
