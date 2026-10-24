@@ -75,12 +75,12 @@ Actuarial language is precise, and that precision is useful, so this project kee
 
 | Term | In plain words | Read more |
 |---|---|---|
-| **Reinsurance** | Insurance for insurers: the company passes part of its risk to a reinsurer in exchange for a premium | [Reinsurance](../reinsurance.md) |
-| **Quota share** | The reinsurer takes a fixed percentage of every policy, its premiums and its claims | [Reinsurance](../reinsurance.md) |
-| **Surplus** | The company keeps each policy up to a retention limit and the reinsurer takes the rest | [Reinsurance](../reinsurance.md) |
-| **Excess of loss / stop loss** | The reinsurer pays claims above a threshold: per life (excess of loss) or on the whole year's total (stop loss) | [Reinsurance](../reinsurance.md) |
-| **YRT** (yearly renewable term) | A reinsurance premium charged every year per unit of sum at risk, rather than a share of the original premium | [Reinsurance](../reinsurance.md) |
-| **Longevity swap** | A contract in which the company pays a fixed amount and receives the pensions actually due, so that someone else carries the risk of people living longer than expected | [Reinsurance](../reinsurance.md) |
+| **Reinsurance** | Insurance for insurers: the company passes part of its risk to a reinsurer in exchange for a premium | [Ch. 10](10-reinsurance.md) |
+| **Quota share** | The reinsurer takes a fixed percentage of every policy, its premiums and its claims | [Ch. 10](10-reinsurance.md#103-the-covers-and-their-price) |
+| **Surplus** | The company keeps each policy up to a retention limit and the reinsurer takes the rest | [Ch. 10](10-reinsurance.md#103-the-covers-and-their-price) |
+| **Excess of loss / stop loss** | The reinsurer pays claims above a threshold: per life (excess of loss) or on the whole year's total (stop loss) | [Ch. 10](10-reinsurance.md#103-the-covers-and-their-price) |
+| **YRT** (yearly renewable term) | A reinsurance premium charged every year per unit of sum at risk, rather than a share of the original premium | [Ch. 10](10-reinsurance.md#105-rating-a-treaty-by-cedant-experience-rating) |
+| **Longevity swap** | A contract in which the company pays a fixed amount and receives the pensions actually due, so that someone else carries the risk of people living longer than expected | [Ch. 10](10-reinsurance.md#106-what-a-longevity-swap-costs) |
 
 ## Sources and institutions
 

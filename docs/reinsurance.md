@@ -2,6 +2,8 @@
 
 What a cedant buys, what it costs, and what a reinsurer sees. The analysis takes the same in-force block and annuity block as the [stress tests](stress-tests.md) and asks the four questions a reinsurance desk asks: **where is the risk, which cover relieves it most cheaply, how should the treaty be rated by cedant, and what does it cost to take longevity off an annuity book?**
 
+**The mathematics (the compound-Poisson simulation, the covers and their price, layer prices, experience rating with claim-size credibility, and the longevity swap fee) is derived in [handbook chapter 10](handbook/10-reinsurance.md); this page is the results.**
+
 Code: `src/mortality/reinsurance.py` (15 unit tests in `tests/test_reinsurance.py`), nine data checks in `validate.py`. Charts: `uv run mortality figures`. Tables: `reinsurance_concentration`, `reinsurance_aggregate`, `reinsurance_structures`, `reinsurance_frontier`, `reinsurance_price_sensitivity`, `reinsurance_yrt_rating`, `reinsurance_longevity_swap`, `reinsurance_longevity_distribution`.
 
 > **What is real and what is assumed.** The mortality, the pandemic profile and the improvement scenarios are the project's own, from real data. The books are synthetic (the portfolio of [step 8](experience-study.md), the annuity block of step 9c). The market terms are **assumptions**, listed below, chosen to be plausible and to be changed: a reinsurer's cost of capital of 6%, a cedant's of 10%, a pandemic once in 30 years at half the population's excess, a 65% loss ratio and a 30% ceding commission. Conclusions that depend on them say so.

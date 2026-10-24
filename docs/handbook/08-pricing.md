@@ -252,7 +252,7 @@ print(summarise(profit_test(q, premium, a), a.hurdle)["irr"])  # 0.10
 
 - **Only level term is priced:** no whole life, no savings component, no policyholder options.
 - **One interest rate and one expense scale** for all scenarios, flat in time: there is no stochastic interest or inflation.
-- **Reserves are per policy in force** and net of reinsurance; reinsurance is the subject of chapter 10.
+- **Reserves are per policy in force** and net of reinsurance; reinsurance is the subject of [chapter 10](10-reinsurance.md).
 - **A mortality cushion is not a capital requirement.** Solvency capital under the regulator's rules is beyond the scope of the project.
 - **No surrender value.** The lapse-supported product makes lapses nearly neutral; a product that pays a surrender value would not behave this way.
 - **The assumptions are illustrative.** The expense, commission, lapse and hurdle values are not those of any company, and the company-experience basis comes from a synthetic portfolio.
