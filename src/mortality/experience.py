@@ -562,7 +562,7 @@ def build_basis(cells: pd.DataFrame, q_basis: pd.Series, ages=range(18, 101)) ->
     The multiplier of each (sex, age group, duration group) comes from a GLM on the non-pandemic
     years. The overall level and each factor effect are shrunk toward 1.0 (the expected table) by
     limited-fluctuation credibility on the deaths behind them, then interpolated between age-group
-    centres so the table has no steps. ``multiplier_upper`` is the 95% upper bound from the
+    centers so the table has no steps. ``multiplier_upper`` is the 95% upper bound from the
     model's covariance: a margin an actuary can add where a prudent basis is required.
     """
     fit = fit_relativities(cells, BASIS_FACTORS)
@@ -779,7 +779,7 @@ def term_premium_table(
 
 
 def region_groups(state_smr: dict[str, float]) -> dict[str, str]:
-    """Group states into LOW, MID and HIGH terciles of standardised mortality ratio."""
+    """Group states into LOW, MID and HIGH terciles of standardized mortality ratio."""
     s = pd.Series(state_smr, dtype=float)
     return pd.qcut(s, 3, labels=["LOW", "MID", "HIGH"]).astype(str).to_dict()
 
@@ -815,7 +815,7 @@ def run_study(
 ) -> dict[str, pd.DataFrame]:
     """Run every stage of the experience study on a policy extract.
 
-    ``q_basis``: the expected table, annual q by age. ``state_smr``: state standardised mortality
+    ``q_basis``: the expected table, annual q by age. ``state_smr``: state standardized mortality
     ratios, used only to group states into risk terciles. ``truth``: the planted effects, if the
     extract is synthetic, which adds a recovery table. Returns the result tables by name.
     """

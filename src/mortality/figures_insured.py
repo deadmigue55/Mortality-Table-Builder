@@ -4,7 +4,7 @@ They follow the project's figure style (see ``figures.py``): the title states th
 muted line explains how to read it, series are labeled directly or in a legend, one axis per
 chart. Colors have a role that never changes: the insured table is green, the population
 near-black, the CNSF 2013 regulatory table gray and dashed, the US insured table violet. Where a
-figure is split by sex it uses one panel per sex, so the colours are free for the sources. The
+figure is split by sex it uses one panel per sex, so the colors are free for the sources. The
 palette was checked with the dataviz validator (contrast, color-blind separation).
 """
 
@@ -99,8 +99,17 @@ def insured_hero(con, out: Path) -> Path:
         ax.scatter(crude["age"], crude["rate"], s=9, color=GREEN, alpha=0.35, lw=0, zorder=2)
         ax.plot(solid["age"], solid["qx"], color=GREEN, lw=2.6, zorder=4)
         ax.plot(dotted["age"], dotted["qx"], color=GREEN, lw=2.0, ls=(0, (1, 2)), zorder=4)
-        t_solid, _ = _split(tt)
+        t_solid, t_dotted = _split(tt)
         ax.plot(t_solid["age"], t_solid["qx"], color=GREEN, lw=1.2, alpha=0.7, zorder=3)
+        ax.plot(
+            t_dotted["age"],
+            t_dotted["qx"],
+            color=GREEN,
+            lw=1.2,
+            alpha=0.7,
+            ls=(0, (1, 2)),
+            zorder=3,
+        )
         ax.set_yscale("log")
         ax.set_ylim(5e-5, 0.8)
         ax.set_xlim(18, 100)
@@ -174,7 +183,7 @@ def insured_gap(con, out: Path) -> Path:
         Line2D([], [], color=color, lw=lw, ls=ls, label=label)
         for color, ls, lw, label in styles.values()
     ]
-    axes[0].legend(handles=handles, loc="center left", bbox_to_anchor=(0.0, 0.45), fontsize=9)
+    axes[0].legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.9), fontsize=9)
     _headline(
         fig,
         "Mexican insured lives sit about three times further below their population than American ones",
@@ -323,7 +332,7 @@ def insured_countries(con, out: Path) -> Path:
         ax.set_xlim(0.2, 12)
         ax.xaxis.set_minor_formatter(NullFormatter())
         _sex_title(ax, sex)
-        ax.set_xlabel("Net premium per 1,000, 20-year term at 40 (log scale)")
+        ax.set_xlabel("Net premium per 1,000, 20-year term at 40 (log scale)", fontsize=9.5)
         ax.grid(axis="x")
         ax.grid(axis="y", visible=False)
     _headline(
@@ -520,7 +529,7 @@ def insured_amount(con, out: Path) -> Path:
     ax.set_xlim(34, 77)
     ax.set_xlabel("Age (decade midpoint)")
     ax.set_ylabel("Death rate by sum assured / death rate by count")
-    ax.text(76, 0.97, "equal", fontsize=8.5, color=INK_2, ha="right", va="top")
+    ax.text(76.2, 1.0, "equal", fontsize=9.5, color=INK_2, ha="left", va="center")
     _headline(
         fig,
         "Per peso of cover, traditional term costs 25-40% more than its death count suggests",
@@ -623,7 +632,7 @@ def insured_causes(con, out: Path) -> Path:
         ax.grid(axis="y", visible=False)
     _headline(
         fig,
-        "Heart attacks lead men's claims and cancer women's; about one claim in eight is too vague to classify",
+        "Heart attacks lead men's claims, cancer women's; one claim in eight is too vague to classify",
         "Cause of death claims, grouped by keyword from the text of the claim. The field mixes "
         "underlying and immediate causes (shock, acidosis, arrest), so it describes a pattern, "
         "not an exact cause-of-death statistic.",
@@ -723,15 +732,12 @@ def insured_old_ages(con, out: Path) -> Path:
         ax.set_title(title, loc="left", fontsize=12, fontweight="bold")
         ax.set_xlabel("Age")
         ax.text(21, 1.03, "same as the population", fontsize=8.5, color=INK_2)
+        note = "extended by\nassumption"
         if segment == "term_traditional":
             ax.set_ylabel("Insured mortality as a share of the population's")
-            ax.text(
-                solid["age"].max() + 1.5,
-                0.5,
-                "extended by assumption:\nthe gap closes to zero\nby age 105",
-                fontsize=8.5,
-                color=INK_2,
-            )
+            note = "extended by assumption:\nthe gap closes to zero\nby age 105"
+        # in the shaded band, above the dotted curve
+        ax.text(solid["age"].max() + 1.5, 0.9, note, fontsize=8.5, color=INK_2, va="top")
     _headline(
         fig,
         "Above the sixties the insured data are not a safe guide, so the table follows the population",

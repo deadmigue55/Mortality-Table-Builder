@@ -65,7 +65,7 @@ SOURCES: tuple[Source, ...] = (
     Source(
         "conapo_deaths",
         "conapo/deaths_modelled.parquet",
-        "CONAPO modelled deaths, a cross-check on INEGI",
+        "CONAPO modeled deaths, a cross-check on INEGI",
         ("year", "state_code", "sex", "age"),
     ),
     Source(

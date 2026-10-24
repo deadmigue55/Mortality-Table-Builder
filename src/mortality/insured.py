@@ -612,7 +612,7 @@ DESCRIPTIONS = {
         "CNSF 2013"
     ),
     "insured_trend": (
-        "Age-standardised insured death rates by year and sex, and the fitted annual change "
+        "Age-standardized insured death rates by year and sex, and the fitted annual change "
         "over the base years with its 95% interval"
     ),
     "insured_relativities": (
@@ -927,7 +927,7 @@ def segment_q(
 ) -> dict[str, pd.Series]:
     """The q table (ages 0 to 110) of a segment for each sex under alternative choices.
 
-    This is the table-building pipeline with every modelling choice exposed as an argument, so
+    This is the table-building pipeline with every modeling choice exposed as an argument, so
     the sensitivity analysis can change one choice at a time: the reading of the claims sheet
     (``rule``), the years pooled, the graduation ``method`` (default: the one selected), the
     age at which the insured table meets the population (``converge_age``) and the share of

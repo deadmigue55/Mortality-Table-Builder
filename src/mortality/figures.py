@@ -36,6 +36,9 @@ SYNTHETIC = (
 )
 
 
+SAVE_DPI = 150
+
+
 def _style() -> None:
     plt.rcParams.update(
         {
@@ -48,6 +51,7 @@ def _style() -> None:
             "axes.spines.right": False,
             "axes.spines.left": False,
             "axes.grid": True,
+            "axes.axisbelow": True,  # gridlines behind bars and lines, never across them
             "axes.grid.axis": "y",
             "grid.color": GRID,
             "grid.linewidth": 0.8,
@@ -66,18 +70,75 @@ def _style() -> None:
 
 def _headline(fig, title: str, subtitle: str, source: str | None = None) -> None:
     """Left-aligned headline that states the finding, a muted line beneath, a source footer."""
-    fig.text(0.015, 0.965, title, fontsize=15.5, fontweight="bold", va="top", ha="left")
+    head = fig.text(0.015, 0.965, title, fontsize=15.5, fontweight="bold", va="top", ha="left")
+    screen_dpi, fig.dpi = fig.dpi, SAVE_DPI  # glyphs are laid out slightly wider at the saved dpi
+    renderer = fig.canvas.get_renderer()
+    while (  # a long finding shrinks to fit the width rather than run off the edge
+        head.get_window_extent(renderer).width > 0.955 * fig.bbox.width and head.get_fontsize() > 12
+    ):
+        head.set_fontsize(head.get_fontsize() - 0.25)
+    fig.dpi = screen_dpi
     wrapped = textwrap.fill(subtitle, width=125)
     fig.text(
-        0.015, 0.905, wrapped, fontsize=10.5, color=INK_2, va="top", ha="left", linespacing=1.4
-    )
-    fig.text(0.015, 0.012, source or SOURCE, fontsize=8, color=INK_2, va="bottom", ha="left")
+        0.015, 0.905, wrapped, fontsize=10.5, color=INK_2, va="top", ha="left", linespacing=1.4,
+        gid="subtitle",
+    )  # fmt: skip
+    fig.text(
+        0.015, 0.012, source or SOURCE, fontsize=8, color=INK_2, va="bottom", ha="left",
+        gid="source",
+    )  # fmt: skip
+
+
+def _keep_clear(fig, gap_px: float = 14.0) -> None:
+    """Move the plot area so axis labels never touch the source line, and panel titles never
+    touch the subtitle: each figure's text runs to a different length, so measure, not guess."""
+    screen_dpi, fig.dpi = fig.dpi, SAVE_DPI
+    try:
+        texts = {t.get_gid(): t for t in fig.texts if t.get_gid()}
+        if not {"subtitle", "source"} <= texts.keys() or not fig.axes:
+            return
+        height = fig.bbox.height
+        for _ in range(3):  # a move can reveal the next collision, so settle in a few passes
+            fig.canvas.draw()  # label positions are only final after a draw
+            renderer = fig.canvas.get_renderer()
+            sub = texts["subtitle"].get_window_extent(renderer)
+            src = texts["source"].get_window_extent(renderer)
+            low = min(
+                (ax.xaxis.label.get_window_extent(renderer).y0 for ax in fig.axes
+                 if ax.xaxis.label.get_text() and ax.axison),
+                default=None,
+            )  # fmt: skip
+            tops = []
+            for ax in fig.axes:
+                if not ax.axison:
+                    continue
+                top = ax.get_window_extent(renderer).y1
+                for title in (ax.title, ax._left_title):
+                    if title.get_text():
+                        top = max(top, title.get_window_extent(renderer).y1)
+                tops.append(top)
+            moved = False
+            if low is not None and low < src.y1 + gap_px:
+                fig.subplots_adjust(
+                    bottom=fig.subplotpars.bottom + (src.y1 + gap_px - low) / height
+                )
+                moved = True
+            if tops and max(tops) > sub.y0 - gap_px:
+                fig.subplots_adjust(
+                    top=fig.subplotpars.top - (max(tops) - sub.y0 + gap_px) / height
+                )
+                moved = True
+            if not moved:
+                break
+    finally:
+        fig.dpi = screen_dpi
 
 
 def _save(fig, out: Path, name: str) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     path = out / name
-    fig.savefig(path, dpi=150)
+    _keep_clear(fig)
+    fig.savefig(path, dpi=SAVE_DPI)
     plt.close(fig)
     return path
 
@@ -654,7 +715,13 @@ def life_expectancy_trend(con, out: Path) -> Path:
     ax.legend(
         handles=[
             Line2D(
-                [], [], color=INK_2, lw=2.8, marker="o", ms=6, label="This project (INEGI deaths)"
+                [],
+                [],
+                color=INK_2,
+                lw=2.8,
+                marker="o",
+                ms=6,
+                label="This project (INEGI deaths, from 2020)",
             ),
             Line2D([], [], color=INK_2, lw=1.7, ls=(0, (4, 2)), label="CONAPO"),
         ],
@@ -810,7 +877,7 @@ def annuity_values(con, out: Path) -> Path:
         ax.grid(axis="y", visible=False)
         ax.grid(axis="x", visible=True)
         ax.set_xlabel("Value of 1 a year for life from 65 (4% interest)")
-        ax.set_xlim(10.3, 17.6)
+        ax.set_xlim(10.3, 18.2)
     _headline(
         fig,
         f"CNSF 2013 overstates pension cost by {gaps['M']:.0%} (men) and {gaps['F']:.0%} (women)",
@@ -896,7 +963,13 @@ def projection_backtest_chart(con, out: Path) -> Path:
         shown = years >= 1970
         ax.plot(years[shown], actual[shown], color=INK, lw=2.6, label="What happened (CONAPO)")
         ax.axvline(1999.5, color=INK_2, lw=0.8, ls=(0, (2, 3)))
-        errors[sex] = float(band[2][-1] - actual[years == 2019][0])
+        errors[sex] = float(  # the stored backtest, so the label matches the page and the handbook
+            con.execute(
+                "SELECT e0_error FROM projection_backtest WHERE sex = ? AND origin = 1999 "
+                "AND horizon = 20 AND model = 'lee_carter_jump_off' AND fit_start = 1970",
+                (sex,),
+            ).fetchone()[0]
+        )
         ax.text(2019, band[2][-1] + 0.5, f"+{errors[sex]:.1f} yrs", ha="right", fontsize=10,
                 color=INK, fontweight="bold")  # fmt: skip
         ax.set_xlim(1970, 2020)
@@ -1439,7 +1512,7 @@ def experience_impact_chart(con, out: Path) -> Path:
         f"CNSF 2013 overprices women's term cover by {-f40['change_pct']:.0%}; "
         f"the block's claims run {-total['pv_change_pct']:.0%} lower",
         f"Net 20-year term premium: women at 40 {f40['change_pct']:+.0%}, men "
-        f"{m40['change_pct']:+.0%} (a unisex table cross-subsidises). PV of future death "
+        f"{m40['change_pct']:+.0%} (a unisex table cross-subsidizes). PV of future death "
         f"benefits of the in-force block falls MXN {saved:,.0f} million at 4% interest. The "
         "prudent margin (95% upper bound) is the price of the data's thinness.",
         source=SYNTHETIC,
@@ -1459,7 +1532,8 @@ def excess_waves(con, out: Path) -> Path:
     fig, ax = plt.subplots(figsize=(11, 6.4))
     fig.subplots_adjust(top=0.78, bottom=0.10, left=0.09, right=0.95)
     ax.fill_between(x, m["baseline"] / 1000, m["deaths"] / 1000, where=m["deaths"] > m["baseline"],
-                    color=ORANGE, alpha=0.30, lw=0, label="Excess deaths")  # fmt: skip
+                    interpolate=True, color=ORANGE, alpha=0.30, lw=0,
+                    label="Excess deaths")  # fmt: skip
     ax.fill_between(x, 0, m["covid_deaths"] / 1000, color=BLUE, alpha=0.30, lw=0,
                     label="Certified as COVID-19")  # fmt: skip
     ax.plot(x, m["deaths"] / 1000, color=INK, lw=2.2, label="All deaths")
@@ -1646,7 +1720,7 @@ def pricing_signature(con, out: Path) -> Path:
     if break_even:
         ax.annotate(
             f"Cumulative profit turns positive in year {break_even}",
-            xy=(break_even, 0), xytext=(break_even + 1.5, -1300), fontsize=9.5, color=INK,
+            xy=(break_even, 0), xytext=(break_even - 0.5, -1300), fontsize=9.5, color=INK,
             arrowprops={"arrowstyle": "->", "color": INK_2},
         )  # fmt: skip
     # Where a renewal-year premium goes (year 5, per policy in force)
@@ -1767,7 +1841,7 @@ def pricing_tornado(con, out: Path) -> Path:
         fig,
         "Mortality is the assumption that decides the return",
         f"One assumption moved at a time on a man of 40, 20-year term, premium held fixed. "
-        f"Blue favourable, orange adverse. A lapse-supported product is almost indifferent to "
+        f"Blue favorable, orange adverse. A lapse-supported product is almost indifferent to "
         f"lapses ({rows[0][2]:+.1f}% margin); mortality ±20% moves it by {top[2]:+.1f}%.",
         PRICING_SOURCE,
     )
@@ -2192,14 +2266,15 @@ def pipeline_diagram(con, out: Path) -> Path:
         if i:
             arrow(1.5 + i * 19.6 - 2.2, 37.7, 1.5 + i * 19.6 - 0.1, 37.7)
     ax.add_patch(
-        FancyBboxPatch((1.5, 44.3), 96.9, 2.7, boxstyle="round,pad=0.2,rounding_size=0.8",
+        FancyBboxPatch((1.5, 45.0), 96.9, 2.5, boxstyle="round,pad=0.2,rounding_size=0.8",
                        fc="#f1f0ec", ec=GRID, zorder=1)
     )  # fmt: skip
     note = f"SQLite warehouse · SHA-256 manifest of every input · {n_checks} data checks"
-    ax.text(50, 45.65, note, ha="center", va="center", fontsize=8.4, color=INK_2, zorder=3)
+    ax.text(50, 46.25, note, ha="center", va="center", fontsize=8.4, color=INK_2, zorder=3)
     for i in range(3):
-        arrow(19 + i * 30, 49.6, 19 + i * 30, 47.5)
-    arrow(10.1, 44.0, 10.1, 43.0)
+        arrow(19 + i * 30, 49.6, 19 + i * 30, 47.9)
+    for i in range(5):  # the warehouse feeds every step of the core
+        arrow(10.1 + i * 19.6, 44.7, 10.1 + i * 19.6, 43.0)
     # row 3: applications
     apps = [
         ("Experience study", "A/E, GLM, claims lag", AQUA),
@@ -2217,9 +2292,13 @@ def pipeline_diagram(con, out: Path) -> Path:
         ("Excel workbook", "live commutation formulas"),
         ("Report", "Quarto, PDF and HTML"),
     ]
+    bus = 13.0  # every application can feed every output: one joining line, not five arrows
+    for i in range(5):
+        ax.plot([10.1 + i * 19.6] * 2, [15.0, bus], color=INK_2, lw=1.3, zorder=1)
+    ax.plot([10.1, 88.5], [bus, bus], color=INK_2, lw=1.3, zorder=1, solid_capstyle="round")
     for i, (t, s_) in enumerate(outs):
         box(6 + i * 30, 2.5, 26, 8, t, s_, INK)
-        arrow(19 + i * 30, 15.0, 19 + i * 30, 11.3)
+        arrow(19 + i * 30, bus, 19 + i * 30, 11.3)
     _headline(
         fig,
         "One pipeline, from registered deaths to treaties",
@@ -2248,9 +2327,11 @@ def social_preview(con, out: Path) -> Path:
     pop = _query(con, "SELECT age, qx FROM graduated_qx WHERE year = 2023 AND sex = 'M'")
     ins = _query(
         con,
-        "SELECT age, qx FROM insured_table WHERE segment = 'term_traditional' AND sex = 'M' "
-        "AND age BETWEEN 18 AND 60",
+        "SELECT age, qx, source FROM insured_table WHERE segment = 'all' AND sex = 'M' "
+        "AND age BETWEEN 18 AND 100 ORDER BY age",
     )
+    fitted = ins[ins["source"] != "extended"]
+    extended = ins[ins["age"] >= fitted["age"].max()]  # joins the dotted part to the solid one
 
     def glow(x, y, color, lw, **kw):
         """A line with a soft neon halo (three wider, fainter strokes underneath)."""
@@ -2260,7 +2341,9 @@ def social_preview(con, out: Path) -> Path:
 
     glow(base.index, base.values, dim, 2.0, ls=(0, (4, 3)), label="CNSF 2013 (regulator)")
     glow(pop["age"], pop["qx"], text, 2.8, label="Population, men")
-    glow(ins["age"], ins["qx"], green, 3.4, label="Insured lives, men")
+    glow(fitted["age"], fitted["qx"], green, 3.4, label="Insured lives, men")
+    ax.plot(extended["age"], extended["qx"], color=green, lw=2.6, ls=(0, (1, 1.6)),
+            solid_capstyle="round")  # fmt: skip
     ax.set_yscale("log")
     ax.set_xlim(18, 100)
     ax.set_ylim(1.5e-4, 0.5)

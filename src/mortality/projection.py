@@ -462,7 +462,7 @@ SCENARIO_NAMES = {
     "rebased_long_run": "Lee-Carter restarted at the observed 2024 rates, drift from 1970-2019",
     "rebased_recent": "As above with the drift of the last 20 years only (the stagnation of men)",
     "cbd_rebased": "Cairns-Blake-Dowd restarted at the observed 2024 rates (ages 60 and over)",
-    "conapo_official": "CONAPO's official projection (modelled deaths and population)",
+    "conapo_official": "CONAPO's official projection (modeled deaths and population)",
 }
 
 
@@ -799,10 +799,10 @@ def backtest_calibration(bt: pd.DataFrame) -> pd.DataFrame:
 
 
 def source_gap(con) -> pd.DataFrame:
-    """INEGI-based graduated rates against CONAPO's modelled rates, by age band, 2020 onwards.
+    """INEGI-based graduated rates against CONAPO's modeled rates, by age band, 2020 onwards.
 
     Deaths are compared on the same population: the graduated rate times CONAPO's population
-    against CONAPO's modelled deaths. A ratio below 1 means INEGI registers fewer deaths than
+    against CONAPO's modeled deaths. A ratio below 1 means INEGI registers fewer deaths than
     CONAPO models in that age band.
     """
     df = pd.read_sql(
@@ -858,7 +858,7 @@ DESCRIPTIONS = {
         "value at 65: the empirical width of the fan, wider than the model's own"
     ),
     "source_gap": (
-        "Deaths implied by INEGI-based graduated rates against CONAPO's modelled deaths on the "
+        "Deaths implied by INEGI-based graduated rates against CONAPO's modeled deaths on the "
         "same population, by year, sex and age band: the two sources disagree on the age pattern"
     ),
 }

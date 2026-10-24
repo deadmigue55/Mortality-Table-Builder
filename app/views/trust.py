@@ -74,7 +74,7 @@ with tab_sources:
     )
     st.markdown(
         """
-| Source | Used for | Licence note |
+| Source | Used for | License note |
 |---|---|---|
 | **INEGI** registered deaths (microdata, 2020 to 2024) and interactive tables (2014 to 2019) | observed deaths, cause, state | open government data |
 | **CONAPO** population and projections, 1950 to 2070 | exposure, long history, official benchmark | open government data |
@@ -118,7 +118,7 @@ Real analysis is honest about what it cannot say. The limits of this project, by
 - The pandemic stress assumes the insured population died like the general one, or at half the excess: an assumption, not an estimate, until a real company supplies its 2020 to 2021 experience.
 
 **Books and markets**
-- The insurance portfolio, the annuity block, expenses, commissions, lapses, the 10% hurdle, the reinsurer's cost of capital and the pandemic probability are **illustrative assumptions**, labelled wherever they appear.
+- The insurance portfolio, the annuity block, expenses, commissions, lapses, the 10% hurdle, the reinsurer's cost of capital and the pandemic probability are **illustrative assumptions**, labeled wherever they appear.
 - Reinsurance results assume no credit risk, no basis risk and a one-year static block. Solvency capital under the CNSF's rules is out of scope.
 
 **What this is not.** It is not a pricing basis for a regulated product, a reserve certification, or a substitute for a company's own experience. It is a worked, tested demonstration of the method.

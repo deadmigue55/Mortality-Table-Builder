@@ -1,4 +1,4 @@
-"""How much each modelling choice moves the price of a standard quote.
+"""How much each modeling choice moves the price of a standard quote.
 
 Every choice that stands between the CNSF statistics and a table is changed one at a time, the
 table is rebuilt with the same code, and the net annual premium of three reference policies is
@@ -27,12 +27,12 @@ PRICING_YEAR = 2026
 TABLE_YEAR = 2024  # the middle of the base years: where the pooled table sits in time
 DESCRIPTIONS = {
     "insured_sensitivity": (
-        "Net annual premium per 1,000 of reference term policies when each modelling choice is "
+        "Net annual premium per 1,000 of reference term policies when each modeling choice is "
         "changed one at a time: what was changed, the alternative, the premium and its change "
         "from the base table"
     ),
     "insured_margin": (
-        "The margin for adverse deviation sized from the adverse modelling choices, combined in "
+        "The margin for adverse deviation sized from the adverse modeling choices, combined in "
         "quadrature, for each reference policy, and the loading recommended"
     ),
 }

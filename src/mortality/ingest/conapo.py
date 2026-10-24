@@ -4,7 +4,7 @@ A single ZIP holds Excel workbooks in long format (one row per year, state, age,
 We use three of them:
 
 * ``0_Pob_Mitad``: mid-year (1 July) population, the **exposure** for death rates.
-* ``1_Defunciones``: CONAPO's own modelled deaths, kept as a cross-check against INEGI.
+* ``1_Defunciones``: CONAPO's own modeled deaths, kept as a cross-check against INEGI.
 * ``6_Esperanza_Vida_Nacer``: life expectancy at birth, a sanity check for our tables.
 
 Years up to 2019 are CONAPO's reconciled estimates; 2020 onward are projections from the
@@ -65,7 +65,7 @@ def download(
 
 
 def clean(raw: pd.DataFrame, wb: Workbook) -> pd.DataFrame:
-    """Rename columns, standardise sex and flag projected years."""
+    """Rename columns, standardize sex and flag projected years."""
     needed = {"AÑO", "CVE_GEO", "ENTIDAD", "SEXO", wb.value_col}
     if wb.output != WORKBOOKS["e0"].output:
         needed.add("EDAD")

@@ -1,4 +1,4 @@
-"""Crude mortality rates, standardisation and first benchmarks.
+"""Crude mortality rates, standardization and first benchmarks.
 
 Everything is built from three inputs, all already in the warehouse:
 
@@ -192,11 +192,11 @@ def allocate_cube_unknowns(cube: pd.DataFrame) -> pd.DataFrame:
 
 
 def standardise(deaths, exposure, weights, alpha: float = 0.05) -> dict[str, float]:
-    """Directly age-standardised rate with a Fay-Feuer gamma interval.
+    """Directly age-standardized rate with a Fay-Feuer gamma interval.
 
     ``deaths`` and ``exposure`` are arrays over the standard's age groups. The rate answers
     "what would the death rate be if this population had the standard age structure?", which
-    removes the effect of ageing when comparing years or places.
+    removes the effect of aging when comparing years or places.
     """
     d = np.asarray(deaths, dtype=float)
     n = np.asarray(exposure, dtype=float)
@@ -217,7 +217,7 @@ def standardise(deaths, exposure, weights, alpha: float = 0.05) -> dict[str, flo
 
 
 def age_standardised(grouped: pd.DataFrame) -> pd.DataFrame:
-    """Segi-standardised rates per year, basis and sex from ``crude_grouped`` output."""
+    """Segi-standardized rates per year, basis and sex from ``crude_grouped`` output."""
     g = grouped.assign(segi=[segi_group(b) for b in grouped["band"]])
     rows = []
     for (basis, year, sex), cell in g.groupby(["basis", "year", "sex"]):
@@ -252,7 +252,7 @@ def ae_interval(actual, expected, alpha: float = 0.05):
 def smr_table(
     observed: pd.DataFrame, population: pd.DataFrame, region: str = "state"
 ) -> pd.DataFrame:
-    """Indirectly standardised mortality ratios (SMR) of regions against their combined total.
+    """Indirectly standardized mortality ratios (SMR) of regions against their combined total.
 
     ``observed``: region, sex, band, deaths. ``population``: region, sex, band, exposure.
     Expected deaths apply the pooled sex-and-band rate to each region's population, so the
@@ -408,7 +408,7 @@ def _benchmark_tables(con) -> dict[str, tuple[pd.Series, str]]:
 
 
 def build_tables(con) -> list[tuple[str, str]]:
-    """Create the rate, standardisation and benchmark tables; returns (name, description)."""
+    """Create the rate, standardization and benchmark tables; returns (name, description)."""
     docs: list[tuple[str, str]] = []
     if not _has(con, "conapo_population", "deaths_adjusted"):
         return docs
@@ -461,8 +461,8 @@ def build_tables(con) -> list[tuple[str, str]]:
         docs,
         "age_standardised_rates",
         age_standardised(grouped),
-        "Segi world-standard age-standardised death rate with Fay-Feuer 95% interval, by "
-        "year and sex, next to the crude rate; removes the effect of population ageing",
+        "Segi world-standard age-standardized death rate with Fay-Feuer 95% interval, by "
+        "year and sex, next to the crude rate; removes the effect of population aging",
     )
 
     _bridge_table(con, docs)
@@ -565,7 +565,7 @@ def _state_table(con, docs: list[tuple[str, str]]) -> None:
         docs,
         "state_smr",
         table,
-        f"Standardised mortality ratio of each state in {year} (latest complete non-COVID "
+        f"Standardized mortality ratio of each state in {year} (latest complete non-COVID "
         "year): observed deaths over the deaths its age-sex structure predicts at national "
         "rates, with exact 95% intervals. Deaths of people with unknown state are excluded",
     )

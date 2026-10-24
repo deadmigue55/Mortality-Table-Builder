@@ -138,7 +138,7 @@ with t_quote:
         )
     st.caption(
         "Net premium of a level term cover at 4% interest: the cost of mortality alone, without "
-        "expenses, commission or profit. Which table is used matters more than any modelling "
+        "expenses, commission or profit. Which table is used matters more than any modeling "
         "choice behind it (next tab)."
     )
     ui.source_note(["insured_premiums", "insured_margin"], "insured-lives.md")

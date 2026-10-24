@@ -5,7 +5,7 @@ docs/graduation.md). Graduation fits a smooth curve through them. Four methods a
 the same data, then an old-age closure completes the table to age 110:
 
 * **Poisson P-spline** (Eilers and Marx): a B-spline curve for log m with a penalty on second
-  differences of its coefficients, fitted by penalised maximum likelihood.
+  differences of its coefficients, fitted by penalized maximum likelihood.
 * **Whittaker-Henderson**: the classic actuarial graduation, a weighted least-squares fit on
   log m with a penalty on third differences. It is the P-spline with one coefficient per age.
 * **Heligman-Pollard** (1980): eight-parameter law for the whole age range.
@@ -184,7 +184,7 @@ def whittaker_henderson(
     """Classic Whittaker-Henderson graduation of log m with weights equal to deaths.
 
     ``var(log m) ~ 1 / deaths`` for a Poisson count, so deaths are the inverse-variance weights.
-    The result minimises ``sum w (y - z)^2 + lam * sum (diff^order z)^2``.
+    The result minimizes ``sum w (y - z)^2 + lam * sum (diff^order z)^2``.
     """
     x = np.asarray(ages, dtype=float)
     d = np.asarray(deaths, dtype=float)
@@ -272,10 +272,10 @@ def fit_parametric(
 ) -> tuple[np.ndarray, float]:
     """Poisson maximum likelihood for a mortality law; returns (parameters, deviance).
 
-    Minimising the Poisson deviance is the same as maximising the likelihood, and writing it as
+    Minimizing the Poisson deviance is the same as maximizing the likelihood, and writing it as
     a sum of squared deviance residuals lets a least-squares solver with Jacobian-based scaling
     handle parameters whose effects differ by orders of magnitude (the childhood terms of
-    Heligman-Pollard against the old-age terms), which a plain likelihood optimiser does not.
+    Heligman-Pollard against the old-age terms), which a plain likelihood optimizer does not.
     The first start is ``start``; the others are random perturbations inside the bounds, since
     laws like Heligman-Pollard have several local optima. The lowest deviance wins.
     """
@@ -331,7 +331,7 @@ def parametric(name: str, law, ages, deaths, exposure, start, bounds, *, n_param
 
 
 def fit_tests(deaths, exposure, mx, edf: float) -> dict[str, float]:
-    """The standard graduation tests on standardised residuals ``(D - E) / sqrt(E)``.
+    """The standard graduation tests on standardized residuals ``(D - E) / sqrt(E)``.
 
     With counts this large, the chi-square and the runs test almost always flag *some* lack of
     fit; the dispersion (chi-square per degree of freedom) says how large it is, and the share

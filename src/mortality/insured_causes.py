@@ -60,7 +60,7 @@ GROUPS = (*(name for name, _ in RULES), "other")
 LABELS = {
     "covid": "COVID-19",
     "not_a_cause_of_death": "Entries that cannot cause a death (sprains)",
-    "heart_attack_and_ischaemic": "Heart attack and ischaemic heart disease",
+    "heart_attack_and_ischaemic": "Heart attack and ischemic heart disease",
     "stroke": "Stroke",
     "other_circulatory": "Other circulatory",
     "cancer": "Cancer",

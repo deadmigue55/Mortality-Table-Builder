@@ -489,7 +489,7 @@ CHECKS: tuple[Check, ...] = (
         " WHERE k.complete = 1 AND d.year >= 2000"
         " GROUP BY d.year, c.deaths"
         " HAVING SUM(d.deaths) / c.deaths < 0.85 OR SUM(d.deaths) / c.deaths > 1.15)",
-        "For complete years, INEGI deaths are within 15% of CONAPO's modelled deaths",
+        "For complete years, INEGI deaths are within 15% of CONAPO's modeled deaths",
     ),
     # ── Rates ───────────────────────────────────────────────────────────────
     Check(
@@ -621,7 +621,7 @@ CHECKS: tuple[Check, ...] = (
         ("graduation_fit_tests",),
         "SELECT COUNT(*) FROM graduation_fit_tests"
         " WHERE method = 'pspline' AND share_beyond_2 > 0.15",
-        "Fewer than 15% of P-spline standardised residuals fall beyond 2 (4.6% for a perfect fit)",
+        "Fewer than 15% of P-spline standardized residuals fall beyond 2 (4.6% for a perfect fit)",
     ),
     Check(
         "crude_old_age_sex_order",

@@ -119,3 +119,32 @@ def test_documentation_uses_american_spelling():
             plain = re.sub(r"`[^`]*`|\]\([^)]*\)|https?://\S+", " ", line)
             offenders += [f"{path.name}:{number}: {m.group(0)}" for m in british.finditer(plain)]
     assert not offenders, "\n".join(offenders[:20])
+
+
+BRITISH_WORDS = re.compile(
+    r"\b(standardis\w+|modell\w*|labell\w*|summaris\w+|penalis\w+|optimis(?:e|ed|es|er|ing|ation)"
+    r"|judgement|behaviour\w*|ageing|centres?|colour\w*|licence|favour\w*|subsidis\w+|grey"
+    r"|analyse\w*|normalis\w+|recognis\w+|utilis\w+|organis\w+|characteris\w+|minimis\w+"
+    r"|maximis\w+|realis(?:e|ed|es|ing|ation)|programme|catalogue|whilst)\b",
+    re.I,
+)
+
+
+def test_text_shown_to_readers_by_the_figures_and_the_dashboard_is_american():
+    """The pages are checked above; the words drawn on a chart or typed in the dashboard are
+    string literals in the code, so read those too (identifiers and SQL names are not text)."""
+    import ast
+
+    files = [
+        *sorted((ROOT / "src" / "mortality").rglob("*.py")),
+        *sorted((ROOT / "app").rglob("*.py")),
+    ]
+    offenders = []
+    for path in files:
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                if re.fullmatch(r"[a-z0-9_.]+", node.value):  # a file or table name, not text
+                    continue
+                for m in BRITISH_WORDS.finditer(node.value):
+                    offenders.append(f"{path.relative_to(ROOT)}:{node.lineno}: {m.group(0)}")
+    assert not offenders, "\n".join(offenders[:30])

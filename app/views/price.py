@@ -199,7 +199,7 @@ with tab_tornado:
             x=[r[1] for r in rows_t],
             orientation="h",
             marker_color=ui.BLUE,
-            name="Favourable",
+            name="Favorable",
         )
     )
     fig.add_trace(

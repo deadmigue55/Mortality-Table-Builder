@@ -163,9 +163,9 @@ with tab_states:
     smr = ui.table("state_smr").set_index("state")
     names = smr["state_name"]
     metric = st.radio(
-        "Show", ["Standardised mortality ratio", "Excess mortality 2020 to 2022"], horizontal=True
+        "Show", ["Standardized mortality ratio", "Excess mortality 2020 to 2022"], horizontal=True
     )
-    if metric.startswith("Standardised"):
+    if metric.startswith("Standardized"):
         fig = ui.tile_map(smr["smr"], names, "SMR", fmt=".2f", mid=1.0,
                           colorscale=[[0, ui.AQUA], [0.5, "#f1f0ec"], [1, ui.ORANGE]])  # fmt: skip
         ui.show(fig, key="smr")
@@ -194,7 +194,7 @@ with tab_method:
     st.markdown(
         "Raw death rates are jagged: at some ages a few hundred deaths decide the value. The pipeline "
         "**completes** late registrations (chain ladder), then **graduates** the rates with a "
-        "penalised spline chosen by a dispersion-corrected information criterion, and closes the "
+        "penalized spline chosen by a dispersion-corrected information criterion, and closes the "
         "old ages with a Kannisto model."
     )
     c1, c2 = st.columns(2)
@@ -228,7 +228,7 @@ with tab_method:
     fig.update_xaxes(title="Age")
     ui.show(ui.style(fig, 440), key="grad")
     st.caption(
-        "Grey dots are the crude rates; the line is the graduated table that feeds every later step. "
+        "Gray dots are the crude rates; the line is the graduated table that feeds every later step. "
         "Digit preference (more deaths reported at ages ending in 0 and 5 among men) is detected and "
         "smoothed away, and the crude old-age sex crossover from about age 88, a sign of age "
         "exaggeration, is corrected."
