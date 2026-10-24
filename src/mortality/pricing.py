@@ -143,7 +143,8 @@ def irr(cash: np.ndarray, near: float = 0.10) -> float:
     value is zero. Returns NaN when there is no sign change (no meaningful rate).
 
     A profit stream can change sign more than once (a small loss in the last year, say), so the
-    present value is scanned over a grid of rates and every sign change refined by bisection;
+    present value is scanned over a grid of rates and every sign change refined by bisection (a grid
+    point where the present value is exactly zero is itself a root);
     when there are several roots the one nearest ``near`` is reported."""
     c = np.asarray(cash, dtype=float)
     if not (c.min() < 0 < c.max()):
@@ -156,7 +157,9 @@ def irr(cash: np.ndarray, near: float = 0.10) -> float:
     grid = np.linspace(-0.9, 3.0, 1561)
     values = np.array([pv(r) for r in grid])
     flips = np.flatnonzero(np.sign(values[:-1]) * np.sign(values[1:]) < 0)
-    roots = []
+    roots = [
+        float(r) for r in grid[values == 0.0]
+    ]  # a root exactly on a grid point is no sign change
     for k in flips:
         lo, hi, f_lo = grid[k], grid[k + 1], values[k]
         for _ in range(60):

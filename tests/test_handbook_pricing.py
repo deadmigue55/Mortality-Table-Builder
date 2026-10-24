@@ -360,3 +360,11 @@ def test_chapter_numbers_match_the_database(demo):
     assert [
         round(insured.loc[r, "irr_best_estimate"] * 100, 1) for r in (("M", 40), ("F", 40))
     ] == [14.6, 11.7]
+
+
+def test_irr_finds_a_root_that_falls_exactly_on_a_scan_grid_point():
+    """-100 + 200/(1+r) is exactly zero at r = 100%, a point of the scan grid: the present value there is 0,
+    not a sign change, and the root must still be found (on Linux the 20% root of the stream above
+    also lands exactly on zero)."""
+    assert pr.irr(np.array([-100.0, 200.0])) == pytest.approx(1.0, abs=1e-12)
+    assert pr.irr(np.array([-100.0, 200.0]), near=0.5) == pytest.approx(1.0, abs=1e-12)
