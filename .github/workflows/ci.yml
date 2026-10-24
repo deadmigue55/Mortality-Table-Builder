@@ -31,7 +31,18 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Tests
-        run: uv run pytest --cov=mortality --cov-report=term-missing
+        run: uv run pytest --cov=mortality --cov-report=term-missing -rf --tb=short 2>&1 | tee pytest.log; exit "${PIPESTATUS[0]}"
+
+      - name: Failure summary
+        if: failure()
+        run: |
+          python3 - <<'EOF'
+          import re
+          t = open("pytest.log", encoding="utf-8").read()
+          i = t.find("= FAILURES =")
+          s = t[i:i + 3000] if i >= 0 else t[-3000:]
+          print("::error title=pytest::" + s.replace("%", "%25").replace("\r", "").replace("\n", "%0A"))
+          EOF
 
   r:
     name: R · packages load
