@@ -214,9 +214,10 @@ class BrassFit:
     """``logit q_insured = a + b * logit q_reference`` fitted to deaths out of an exposure.
 
     ``a`` shifts the whole curve (how much lighter the insured mortality is), ``b`` tilts it
-    (``b < 1`` means the gap narrows as mortality rises with age). Two numbers describe the
-    selection of an insured group against the population, which makes them stable where the
-    data are thin and easy to compare between groups and countries.
+    (``b > 1`` means the gap narrows as mortality rises with age: the ratio of the insured
+    rate to the reference is about ``exp(a) * q_reference ** (b - 1)``). Two numbers describe
+    the selection of an insured group against the population, which makes them stable where
+    the data are thin and easy to compare between groups and countries.
     """
 
     a: float

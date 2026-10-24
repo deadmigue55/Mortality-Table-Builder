@@ -122,7 +122,7 @@ $$
 
 Only the **product** $`d \times s`$ matters: halving the dampening halves the extra claims and doubling the severity doubles them, which is how the replays at half the excess and at 1.5 and 2 times it relate to the full one. The cap at certain death binds only at the very oldest ages.
 
-**As insured lives lived it.** Version 2 of the project replaces the assumption about dampening with data: the insured lives' own death rates by age band (chapter 11). The P-score of a band is that year's rate relative to 2023, minus one, never below zero, and the ages outside the first and last band take the nearest band's value so that the whole book is stressed:
+**As insured lives lived it.** Version 2 of the project replaces the assumption about dampening with data: the insured lives' own death rates by age band ([chapter 11](11-insured-lives.md)). The P-score of a band is that year's rate relative to 2023, minus one, never below zero, and the ages outside the first and last band take the nearest band's value so that the whole book is stressed:
 
 $$
 P_b^{\text{insured}} = \max\!\left(\frac{m^{\text{insured}}_{b,y}}{m^{\text{insured}}_{b,2023}} - 1,\ 0\right). \tag{9.14}

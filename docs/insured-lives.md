@@ -1,5 +1,7 @@
 # Insured lives: a mortality table for pricing quotes (version 2)
 
+**The mathematics behind each rule (what counts as a death, the relational graduation, where the data stop, the extension, the margin) is derived, with worked examples, in [handbook chapter 11](handbook/11-insured-lives.md); this page is the results.**
+
 Version 1 of this project rebuilt Mexico's mortality from the registered deaths of the whole population. That answers population questions (life expectancy, the pandemic, longevity). It is the wrong table for **pricing a life insurance quote**, because the people who buy life insurance are not a sample of the population: they are wealthier, underwritten and mostly urban. This document builds the table a pricing actuary needs from the industry's own statistics, and explains every choice on the way, with what the alternative would have done to a quote.
 
 <p align="center"><img src="img/insured_hero.png" alt="Insured and population mortality" width="900"></p>
@@ -133,7 +135,7 @@ With counts this large a chi-square test almost always rejects (the data are not
 
 <p align="center"><img src="img/insured_gap.png" alt="Insured against national mortality, Mexico and the United States" width="900"></p>
 
-Between ages 25 and 65 the market table is at **14% to 25%** of the population for men and **18% to 24%** for women; traditional term alone is at 11% to 17% for men. The US insured table (2017 Unloaded CSO) is at 44% to 70% (men) and 49% to 79% (women) of the US national table. The CNSF 2013 regulatory table sits at 23% to 31% of the Mexican population for men: version 1's "3 to 4 times" was real. It describes an industry whose clients are a small, wealthy, underwritten club.
+Between ages 25 and 65 the market table is at **14% to 25%** of the population for men and **18% to 23%** for women; traditional term alone is at 11% to 17% for men. The US insured table (2017 Unloaded CSO) is at 44% to 70% (men) and 49% to 79% (women) of the US national table. The CNSF 2013 regulatory table sits at 23% to 31% of the Mexican population for men: version 1's "3 to 4 times" was real. It describes an industry whose clients are a small, wealthy, underwritten club.
 
 ### Who do insured Mexicans die like?
 
@@ -156,7 +158,7 @@ Net annual premium per 1,000 of a 20-year term, at 4% interest:
 | **Women 40** | **0.38** | 0.64 | 1.74 | 2.62 | 1.69 | 3.27 |
 | **Women 50** | 0.99 | 1.76 | 3.72 | 5.57 | 4.20 | 7.70 |
 
-The regulator's table is unisex, so for women it is **4.6 times** the insured premium at 40. Using it overstates a woman's cost; using the population table overstates a man's by 7.8 times.
+The regulator's table is unisex, so for women it is **4.6 times** the insured premium at 40. Using it overstates a woman's cost; using the population table overstates a man's by 7.7 times.
 
 ### What it means for an insurer: price, volume and return
 

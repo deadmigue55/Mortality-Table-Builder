@@ -48,7 +48,7 @@ Actuarial language is precise, and that precision is useful, so this project kee
 | **Best-estimate liability** | The expected present value of future claims and costs minus future premiums, with no safety margin | | [Ch. 8](08-pricing.md#84-the-best-estimate-liability) |
 | **Profit test** | Projecting a policy's cash flows year by year to see when it breaks even and what return it earns | | [Ch. 8](08-pricing.md#82-the-profit-test) |
 | **IRR** | Internal rate of return: the yearly return a policy earns on the money the company puts in | | [Ch. 8](08-pricing.md#82-the-profit-test) |
-| **Margin for adverse deviation** | A deliberate cushion added to mortality so that a bad but plausible outcome does not turn the product into a loss | | [Insured lives](../insured-lives.md) |
+| **Margin for adverse deviation** | A deliberate cushion added to mortality so that a bad but plausible outcome does not turn the product into a loss | | [Ch. 11](11-insured-lives.md#116-the-price-the-margin-and-the-law-of-large-numbers) |
 
 ## Looking back at experience
 

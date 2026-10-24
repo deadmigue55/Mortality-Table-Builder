@@ -58,4 +58,3 @@ A README that promises numbers is only as good as its upkeep, so the numbers are
 - A documentation site (MkDocs Material with MathJax on GitHub Pages) so the handbook renders with numbered equations
   and search. It needs a small build step that converts the GitHub-safe inline math back to standard LaTeX.
 - A dark-mode variant of the hero image through a `<picture>` element.
-- Handbook chapters 2, 3, 4 and 6 to 11 (chapters 1 and 5 and the glossary are done).

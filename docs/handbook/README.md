@@ -22,7 +22,7 @@ The [front page](../../README.md) and the [results](../results.md) say *what was
 | 8 | [Pricing, profit and reserves](08-pricing.md) | What should a policy cost? | [Pricing](../pricing.md) | `pricing.py` | done |
 | 9 | [Excess mortality and stress tests](09-excess-stress.md) | What did the pandemic cost, and what would a repeat do? | [Excess](../excess-mortality.md), [stress](../stress-tests.md) | `excess.py`, `stress.py` | done |
 | 10 | [Reinsurance](10-reinsurance.md) | How is risk shared and priced? | [Reinsurance](../reinsurance.md) | `reinsurance.py` | done |
-| 11 | The insured-lives table | Which table should a quote use? | [Insured lives](../insured-lives.md) | `insured*.py` | in progress |
+| 11 | [The insured-lives table](11-insured-lives.md) | Which table should a quote use? | [Insured lives](../insured-lives.md) | `insured*.py` | done |
 
 ## What every chapter contains
 

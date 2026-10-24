@@ -87,7 +87,7 @@ Every step is explained in plain words on this page and in [the results](docs/re
 | 8 | **Pricing and reserves** | What should a policy cost? | [Pricing](docs/pricing.md) | [**Chapter 8**](docs/handbook/08-pricing.md) |
 | 9 | **Pandemic and stress** | What did COVID-19 cost, and what would a repeat do? | [Excess](docs/excess-mortality.md), [stress](docs/stress-tests.md) | [**Chapter 9**](docs/handbook/09-excess-stress.md) |
 | 10 | **Reinsurance** | How is the risk shared, and what does it cost? | [Reinsurance](docs/reinsurance.md) | [**Chapter 10**](docs/handbook/10-reinsurance.md) |
-| 11 | **Insured lives** | Which table should a quote actually use? | [Insured lives](docs/insured-lives.md) | Chapter 11 |
+| 11 | **Insured lives** | Which table should a quote actually use? | [Insured lives](docs/insured-lives.md) | [**Chapter 11**](docs/handbook/11-insured-lives.md) |
 
 New to the vocabulary? The [glossary](docs/handbook/00-glossary.md) explains every term in plain words.
 

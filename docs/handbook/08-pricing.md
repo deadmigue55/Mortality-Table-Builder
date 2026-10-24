@@ -126,7 +126,7 @@ The **sensitivity** of one priced policy changes one assumption at a time, with 
 
 ## 8.7 Pricing on the insured-lives table
 
-Everything above prices on the regulator's table, the way an insurer without its own experience would. Version 2 of the project adds what the industry's own statistics say about the people who buy the product (chapter 11): the premium is solved on the **insured traditional-term table**, rolled forward from the middle of its base years (2024) to the pricing year (2026) at the table's age-specific improvement $`r_x`$, and loaded with a **margin for adverse deviation** of 15%:
+Everything above prices on the regulator's table, the way an insurer without its own experience would. Version 2 of the project adds what the industry's own statistics say about the people who buy the product ([chapter 11](11-insured-lives.md)): the premium is solved on the **insured traditional-term table**, rolled forward from the middle of its base years (2024) to the pricing year (2026) at the table's age-specific improvement $`r_x`$, and loaded with a **margin for adverse deviation** of 15%:
 
 $$
 q^{\text{priced}}_x = q^{\text{insured}}_x\ \bigl(1 - r_x\bigr)^{2}\ (1 + 0.15), \qquad V_t \text{ still on CNSF 2013.} \tag{8.13}
