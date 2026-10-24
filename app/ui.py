@@ -41,7 +41,7 @@ def connection() -> sqlite3.Connection:
     if not path.exists():
         st.error(f"{path} not found. Run `uv run mortality app-data` first.")
         st.stop()
-    return sqlite3.connect(path, check_same_thread=False)
+    return sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True, check_same_thread=False)
 
 
 @st.cache_data(show_spinner=False)
@@ -85,12 +85,6 @@ def graduated_curve(year: int, sex: str) -> np.ndarray:
 def projection_cube(sex: str) -> np.ndarray:
     df = sql("SELECT year, age, qx FROM projected_qx WHERE sex = ?", (sex,))
     return df.pivot_table(index="year", columns="age", values="qx").sort_index().to_numpy()
-
-
-@st.cache_data(show_spinner=False)
-def projection_years() -> tuple[int, int]:
-    row = sql("SELECT MIN(year) lo, MAX(year) hi FROM projected_qx").iloc[0]
-    return int(row["lo"]), int(row["hi"])
 
 
 # ── Charts ──────────────────────────────────────────────────────────────────

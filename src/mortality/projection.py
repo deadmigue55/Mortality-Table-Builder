@@ -456,14 +456,6 @@ LAST_YEAR = 2070  # the horizon of CONAPO's official projection
 COHORT_HORIZON = 2115  # long enough for someone reaching 65 in 2070 to reach 110
 RECENT_YEARS = 20  # the "recent drift" scenario uses the last 20 years of the series
 FAN_LEVELS = (0.05, 0.25, 0.5, 0.75, 0.95)
-SCENARIO_NAMES = {
-    "observed": "Observed: CONAPO reconstruction to 2019, this project's graduated rates 2020-2024",
-    "pre_covid_trend": "Lee-Carter trend from 2019, as if there had been no pandemic",
-    "rebased_long_run": "Lee-Carter restarted at the observed 2024 rates, drift from 1970-2019",
-    "rebased_recent": "As above with the drift of the last 20 years only (the stagnation of men)",
-    "cbd_rebased": "Cairns-Blake-Dowd restarted at the observed 2024 rates (ages 60 and over)",
-    "conapo_official": "CONAPO's official projection (modeled deaths and population)",
-}
 
 
 def central_lee_carter(

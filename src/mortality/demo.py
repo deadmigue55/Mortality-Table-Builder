@@ -16,7 +16,6 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from mortality import experience as ex
@@ -171,9 +170,3 @@ def hmd_rows_in(path: Path) -> int:
         return int(total)
     finally:
         con.close()
-
-
-def sample_has_deaths(path: Path) -> int:
-    """Deaths in the sample extract (a check that it is usable for a study)."""
-    df = pd.read_csv(path, usecols=["status"])
-    return int(np.sum(df["status"] == "DEATH"))

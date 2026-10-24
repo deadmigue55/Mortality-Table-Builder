@@ -9,6 +9,7 @@ font = "sans serif"
 [server]
 headless = true
 enableXsrfProtection = true
+maxUploadSize = 25  # MB; the 40,000-policy sample is 3 MB
 
 [browser]
 gatherUsageStats = false

@@ -32,7 +32,7 @@ One row per policy, as any administration system can produce:
 | `product` (TERM, WHOLE_LIFE, ENDOWMENT), `term_years` | the contract; empty term for whole life |
 | `sum_assured` | amount at risk, MXN |
 | `uw_class`, `channel`, `state` | rating factors: underwriting class, distribution channel, INEGI state code |
-| `status` (IN_FORCE, DEATH, LAPSE, EXPIRED), `exit_date` | how and when the policy left observation |
+| `status` (IN_FORCE, DEATH, LAPSE, EXPIRED; any other value is excluded and shown in the reconciliation), `exit_date` | how and when the policy left observation |
 | `notification_date` | when a death was reported (for the claims-lag estimate) |
 
 ## The synthetic portfolio

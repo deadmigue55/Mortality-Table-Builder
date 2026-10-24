@@ -109,6 +109,8 @@ def median_age_at_death(table: pd.DataFrame) -> float:
     """Age at which half of the radix has died, interpolated linearly inside the year."""
     share = table["lx"].to_numpy() / table["lx"].iloc[0]
     ages = table["age"].to_numpy()
+    if not (share <= 0.5).any():
+        return float("nan")
     k = int(np.argmax(share <= 0.5))
     if k == 0:
         return float(ages[0])

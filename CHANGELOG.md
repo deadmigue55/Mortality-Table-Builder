@@ -19,6 +19,10 @@ All notable changes to this project are listed here. The format follows
 - A scheduled workflow (`keep-alive.yml`) that opens the live dashboard in a browser every six hours.
 
 ### Fixed
+- The experience study no longer reads an unrecognised `status` (for example `Death`) as a non-death exit: values are trimmed and upper-cased, and any other value is excluded and shown in the checks and the reconciliation.
+- The dashboard caps its cache of uploaded studies (3 entries, one hour) and the upload size (25 MB), and opens its database read-only.
+- `pypdf` 6.21.2, which fixes three published vulnerabilities.
+- `median_age_at_death` returns NaN, not the first age, when survival never falls to one half.
 - Cut-off metric values on the overview and Insured lives pages, and the "one fifth to one
   seventh" wording, which did not match the 14% to 25% found.
 
