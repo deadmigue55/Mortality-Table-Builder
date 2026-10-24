@@ -6,6 +6,11 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        exclude: ^mkdocs\.yml$
+      - id: check-yaml  # MkDocs configuration uses Python tags, which the safe loader refuses
+        name: check yaml (mkdocs.yml, syntax only)
+        files: ^mkdocs\.yml$
+        args: ["--unsafe"]
       - id: check-toml
       - id: check-merge-conflict
       - id: detect-private-key

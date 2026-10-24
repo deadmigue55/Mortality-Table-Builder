@@ -53,8 +53,25 @@ A README that promises numbers is only as good as its upkeep, so the numbers are
 - The "3 million death records" figure was wrong (the INEGI microdata hold 4,676,249 registered deaths for 2020 to 2024),
   and it had been copied into the dashboard, the social card, the README and the portfolio. One number, one source.
 
+## The documentation site
+
+uv, polars and most of the repositories studied send readers who want depth to a documentation site, so this one has
+one: <https://deadmigue55.github.io/Mortality-Table-Builder/> (MkDocs Material, MathJax, search, light and dark).
+
+- **One source.** The site is built from the same Markdown GitHub shows; the README is its front page. A small hook
+  (`scripts/docs_hooks.py`) converts what only GitHub understands while the site is built: the inline math written
+  `` $`...`$ `` becomes `\(...\)`, `> [!NOTE]` callouts become admonitions, and links that leave `docs/` point at the
+  repository. Nothing is duplicated, so the repository and the site cannot drift apart.
+- **Checked like the rest.** Every push builds the site in strict mode, then `scripts/check_site.py` crawls the result
+  (about 2,800 links, images and anchors) and fails on a dead one; `tests/test_docs_site.py` pins the transforms and
+  fails if a page is missing from the menu. A browser check, run by hand when the math setup changes
+  (it needs a real browser, so it is not in the workflow), typesets every chapter in MathJax, compares the formulas
+  drawn with the formulas written, and looks for any that show an unknown command.
+- **Two things only the site could show.** MathJax's default bundle lacks `\boldsymbol` and `\cancel`: a formula
+  that uses one shows as red text until the extension is loaded, which no Markdown check can see. And an image
+  written as raw HTML (`<img src>`) in a page that is not at the site root pointed one folder too shallow and returned
+  404; MkDocs only fixes Markdown-style images. Both are now handled and tested.
+
 ## Not done (yet)
 
-- A documentation site (MkDocs Material with MathJax on GitHub Pages) so the handbook renders with numbered equations
-  and search. It needs a small build step that converts the GitHub-safe inline math back to standard LaTeX.
 - A dark-mode variant of the hero image through a `<picture>` element.

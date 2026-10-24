@@ -1,0 +1,84 @@
+/* The brand of the repository's figures: midnight navy, apricot, the blue and orange of the charts. */
+:root {
+  --mtb-navy: #07162b;
+  --mtb-apricot: #ff8a3d;
+  --mtb-blue: #2a78d6;
+  --mtb-orange: #eb6834;
+  --mtb-green: #0b8a5c;
+}
+
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--mtb-navy);
+  --md-primary-fg-color--light: #1b3a63;
+  --md-primary-fg-color--dark: #040d1a;
+  --md-accent-fg-color: #c2410c;
+  --md-typeset-a-color: #1d5fb3;
+  --md-default-bg-color: #fcfcfb;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--mtb-navy);
+  --md-accent-fg-color: var(--mtb-apricot);
+  --md-typeset-a-color: #7db4f5;
+  --md-default-bg-color: #0a1424;
+  --md-default-bg-color--light: #0e1b30;
+  --md-code-bg-color: #0e1b30;
+}
+
+/* The figures are drawn on a warm off-white; give them a card so they sit well on both themes. */
+.md-typeset img {
+  border-radius: 8px;
+}
+.md-typeset p img,
+.md-typeset td img {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 10%), 0 8px 24px -12px rgb(7 22 43 / 25%);
+}
+.md-typeset img[src*="social_preview"],
+.md-typeset img[src*="pipeline"] {
+  max-width: 100%;
+  height: auto;
+}
+
+/* The home page is the README, whose own title is the picture: keep an h1 for readers who hear it. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Wide tables (the results tables) scroll instead of squashing. */
+.md-typeset table:not([class]) {
+  font-size: 0.74rem;
+}
+.md-typeset__table {
+  display: block;
+}
+
+/* Display equations: room to breathe, and a long one scrolls rather than breaking the page. */
+.md-typeset .arithmatex {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.md-typeset div.arithmatex {
+  margin: 1.1em 0;
+}
+
+/* A little more air in the body text for the long derivations. */
+.md-typeset {
+  line-height: 1.7;
+}
+.md-typeset h1 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--md-default-fg-color);
+}
+.md-typeset h2 {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}

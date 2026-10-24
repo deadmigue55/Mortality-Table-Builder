@@ -8,6 +8,7 @@
 An end-to-end actuarial pipeline where every formula is written out and every number is tested.
 
 [![Live demo](https://img.shields.io/badge/live%20demo-open%20the%20dashboard-FF4B4B?logo=streamlit&logoColor=white)](https://mortality-table-builder.streamlit.app/)
+[![Docs](https://img.shields.io/badge/docs-site%20%26%20handbook-2a78d6)](https://deadmigue55.github.io/Mortality-Table-Builder/)
 [![CI](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml/badge.svg)](https://github.com/deadmigue55/Mortality-Table-Builder/actions/workflows/ci.yml)
 ![Tests](https://img.shields.io/badge/tests-650%2B-brightgreen)
 ![Data checks](https://img.shields.io/badge/data%20checks-122-brightgreen)
