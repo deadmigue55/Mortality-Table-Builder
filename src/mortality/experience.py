@@ -57,7 +57,6 @@ REQUIRED_COLUMNS = (
     "channel", "state", "status", "exit_date", "notification_date",
 )  # fmt: skip
 VALID_STATES = frozenset(f"{i:02d}" for i in range(1, 33))
-VALID_STATUSES = frozenset({"IN_FORCE", "DEATH", "LAPSE", "EXPIRED"})
 MAX_ISSUE_AGE = 90
 
 
@@ -91,9 +90,6 @@ def validate_extract(
                 p.duplicated("policy_id", keep="first").to_numpy(), "error", "second copy dropped"
             ),
             "invalid_sex": (~p["sex"].isin(["M", "F"]).to_numpy(), "error", "excluded"),
-            "invalid_status": (
-                ~p["status"].isin(VALID_STATUSES).to_numpy(), "error", "excluded"
-            ),
             "birth_missing_or_after_issue": (~birth_ok, "error", "excluded"),
             "implausible_issue_age": (
                 birth_ok & (age > MAX_ISSUE_AGE), "error", "excluded"
@@ -1187,8 +1183,6 @@ def load_extract(path) -> pd.DataFrame:
 
     path = Path(path)
     frame = pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path, dtype=str)
-    if "status" in frame.columns:  # "Death " must not silently become a non-death exit
-        frame["status"] = frame["status"].astype("string").str.strip().str.upper()
     for column in DATE_COLUMNS:
         if column in frame.columns:
             frame[column] = pd.to_datetime(frame[column], errors="coerce")

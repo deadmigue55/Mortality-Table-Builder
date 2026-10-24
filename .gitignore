@@ -62,5 +62,3 @@ reports/*.typ
 # Local tools
 scripts/mathcheck/node_modules/
 site/
-
-graphify-out/

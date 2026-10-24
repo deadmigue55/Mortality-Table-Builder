@@ -526,6 +526,13 @@ def enforce_sex_order(male: pd.DataFrame, female: pd.DataFrame, from_age: int = 
 
 # ── Warehouse tables ────────────────────────────────────────────────────────
 
+METHOD_LABEL = {
+    "pspline": "Poisson P-spline",
+    "whittaker_henderson": "Whittaker-Henderson",
+    "heligman_pollard": "Heligman-Pollard",
+    "gompertz_makeham": "Gompertz-Makeham",
+}
+
 
 def digit_preference(
     crude: pd.DataFrame, fitted: pd.DataFrame, lo: int = 25, hi: int = 70

@@ -23,11 +23,7 @@ ui.header(
 ui.synthetic_note()
 
 
-@st.cache_data(
-    show_spinner="Running the study (about 10 seconds for 40,000 policies)...",
-    max_entries=3,  # each entry holds a whole study; unbounded, uploads fill the server's RAM
-    ttl=3600,
-)
+@st.cache_data(show_spinner="Running the study (about 10 seconds for 40,000 policies)...")
 def run_study(raw: bytes, s: str, e: str, x: str):
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "extract.csv"

@@ -29,6 +29,7 @@ import pandas as pd
 from mortality import experience as ex
 
 MAX_AGE = 110
+PROJECTION_BASE_YEAR = 2025
 
 
 # ── Pandemic ────────────────────────────────────────────────────────────────

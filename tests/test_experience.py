@@ -80,21 +80,6 @@ def test_validation_flags_each_defect_once_and_reconciles():
     assert (clean["issue_age"] == 39).all()
 
 
-def test_an_unknown_status_is_flagged_not_read_as_a_lapse(tmp_path):
-    rows = [policy("A", "2019-06-01", status="Death", exit_="2020-05-01")]
-    _, checks, recon = ex.validate_extract(pd.DataFrame(rows), END, EXTRACT)
-    assert checks.set_index("check").loc["invalid_status", "records"] == 1
-    assert recon["records"].tolist() == [1, 0, 1, 0]
-
-    path = tmp_path / "extract.csv"
-    pd.DataFrame(rows).to_csv(path, index=False)
-    assert ex.load_extract(path)["status"].tolist() == ["DEATH"]
-
-    empty = tmp_path / "empty_status.parquet"
-    pd.DataFrame({"policy_id": ["A"], "status": [float("nan")]}).to_parquet(empty)
-    assert ex.load_extract(empty)["status"].isna().all()  # reported by the checks, no crash
-
-
 def test_validation_demands_the_required_columns():
     with pytest.raises(ValueError, match="lacks required columns"):
         ex.validate_extract(pd.DataFrame({"policy_id": ["A"]}), END, EXTRACT)

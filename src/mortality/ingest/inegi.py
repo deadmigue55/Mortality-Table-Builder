@@ -32,6 +32,9 @@ from mortality.ingest.download import Download, NotAFileError, fetch
 SOURCE = "inegi"
 BASE = "https://www.inegi.org.mx/contenidos/programas"
 
+# Years whose URL has been confirmed to return a ZIP (checked October 2026).
+CONFIRMED_YEARS = range(2020, 2025)
+
 # Columns kept from the 74 in the raw file, with the names we use.
 KEEP = {
     "SEXO": "sex_code",
